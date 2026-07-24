@@ -3,7 +3,9 @@ FROM node:20-slim AS build
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+# À modifier dans votre frontend/Dockerfile
+RUN npm install --legacy-peer-deps
+
 
 COPY . .
 RUN npm run build
