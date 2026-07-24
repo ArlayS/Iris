@@ -18,6 +18,7 @@ from config import (
     missing_oauth_settings,
 )
 from models.ticket import AuthenticatedHelper
+from services.demo_data import DEMO_AVATARS, DEMO_HELPER_ID
 
 
 DISCORD_AUTHORIZE_URL = "https://discord.com/oauth2/authorize"
@@ -101,12 +102,17 @@ async def exchange_code(code: str) -> AuthenticatedHelper:
 
 
 def create_session(helper: AuthenticatedHelper) -> str:
-    ensure_oauth_configuration()
+    if not APP_SESSION_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Configuration de session manquante.",
+        )
     payload = {
         "sub": helper.id,
         "username": helper.username,
         "global_name": helper.global_name,
         "avatar_url": helper.avatar_url,
+        "mode": helper.mode,
         "exp": int(time.time()) + 60 * 60 * 12,
     }
     encoded = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
@@ -139,6 +145,7 @@ def parse_session(raw_session: str | None) -> AuthenticatedHelper | None:
             username=payload["username"],
             global_name=payload.get("global_name"),
             avatar_url=payload.get("avatar_url"),
+            mode=payload.get("mode", "discord"),
         )
     except (KeyError, ValueError, json.JSONDecodeError):
         return None
@@ -153,3 +160,13 @@ def current_helper(request: Request) -> AuthenticatedHelper:
 
 def create_state() -> str:
     return secrets.token_urlsafe(32)
+
+
+def demo_helper() -> AuthenticatedHelper:
+    return AuthenticatedHelper(
+        id=DEMO_HELPER_ID,
+        username="iris.demo",
+        global_name="Lina · Helper",
+        avatar_url=DEMO_AVATARS["helper"],
+        mode="demo",
+    )

@@ -38,11 +38,11 @@ function AuthenticatedApp({ helper }) {
   };
 
   return (
-    <AppShell helper={helper} tickets={tickets} onLogout={logout}>
+    <AppShell helper={helper} tickets={tickets} onLogout={logout} isDemo={helper.mode === "demo"}>
       <Routes>
-        <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} />} />
+        <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} isDemo={helper.mode === "demo"} />} />
         <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
-        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} />} />
+        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} isDemo={helper.mode === "demo"} />} />
         <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

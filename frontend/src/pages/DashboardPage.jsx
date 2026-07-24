@@ -1,17 +1,17 @@
-import { Activity, ArrowRight, FileText, Plus, Radio, Users } from "lucide-react";
+import { Activity, ArrowRight, FileText, Headphones, Plus, Radio, Sparkles, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
 
-export default function DashboardPage({ stats, tickets }) {
+export default function DashboardPage({ stats, tickets, isDemo }) {
   const latest = tickets[0];
   return (
     <section className="page-content dashboard-page" data-testid="dashboard-page">
       <header className="page-header">
         <div>
-          <p className="eyebrow">VUE D’ENSEMBLE</p>
-          <h1>Command center</h1>
+          <p className="eyebrow">OPÉRATIONS / TEMPS RÉEL</p>
+          <h1>Votre vue d’intervention.</h1>
         </div>
-        <Link className="primary-button" to="/new" data-testid="dashboard-new-ticket-button">
+        <Link className="primary-button" to={isDemo && tickets[0] ? `/tickets/${tickets[0].id}` : "/new"} data-testid="dashboard-new-ticket-button">
           <Plus size={17} /> Nouveau ticket
         </Link>
       </header>
@@ -22,9 +22,14 @@ export default function DashboardPage({ stats, tickets }) {
         <div className="metric-block"><Users size={18} /><span>Dossiers clos</span><strong data-testid="archived-ticket-count">{stats.archived_count}</strong></div>
       </div>
 
+      <section className="command-hero" data-testid="command-hero">
+        <div><p className="eyebrow">SIGNAL PRIORITAIRE</p><h2>{latest ? latest.title : "La file est prête."}</h2><p>{latest ? `Dossier ${latest.id} · ${latest.member.display_name || latest.member.username} attend votre attention.` : "Importez un salon Discord pour initier un dossier."}</p></div>
+        {latest ? <Link to={`/tickets/${latest.id}`} className="hero-open" data-testid="open-priority-ticket"><span>Ouvrir le dossier</span><ArrowRight size={20} /></Link> : <Radio size={32} />}
+      </section>
+
       <div className="dashboard-grid">
         <section className="activity-pane" data-testid="ticket-activity-panel">
-          <div className="section-heading"><span>ACTIVITÉ RÉCENTE</span><span className="live-dot">LIVE</span></div>
+          <div className="section-heading"><span>ACTIVITÉ RÉCENTE</span><span className="live-dot">LIVE SIGNAL</span></div>
           {tickets.length === 0 ? (
             <div className="dashboard-empty" data-testid="dashboard-empty-state">
               <Radio size={28} />
@@ -48,10 +53,11 @@ export default function DashboardPage({ stats, tickets }) {
           )}
         </section>
         <aside className="system-pane" data-testid="system-status-panel">
-          <p className="eyebrow">SYSTEM STATUS</p>
-          <div><span>Discord API</span><b>PRÊT</b></div>
-          <div><span>Base de données</span><b>CONNECTÉE</b></div>
+          <p className="eyebrow">INTELLIGENCE</p>
+          <div><span><Activity size={15} /> Discord API</span><b>{isDemo ? "SIMULÉE" : "PRÊT"}</b></div>
+          <div><span><Headphones size={15} /> Comptes-rendus</span><b>{tickets.length}</b></div>
           <div><span>Dernier dossier</span><strong>{latest ? `#${latest.channel_name}` : "—"}</strong></div>
+          {isDemo && <div><span><Sparkles size={15} /> Démonstration</span><b>ACTIVE</b></div>}
         </aside>
       </div>
     </section>

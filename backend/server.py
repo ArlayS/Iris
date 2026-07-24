@@ -3,6 +3,7 @@ from starlette.middleware.cors import CORSMiddleware
 import logging
 from config import CORS_ORIGINS
 from database import client, initialize_indexes
+from services.demo_data import seed_demo_tickets
 from routers import auth, members, tickets
 
 
@@ -37,6 +38,7 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup() -> None:
     await initialize_indexes()
+    await seed_demo_tickets()
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

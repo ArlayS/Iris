@@ -1,4 +1,4 @@
-import { Archive, Check, ChevronLeft, FileText, LoaderCircle, MessageSquareText, RefreshCw, Save, Volume2 } from "lucide-react";
+import { Archive, Check, ChevronLeft, FileText, LoaderCircle, MessageSquareText, Pause, Play, RefreshCw, Save, ShieldCheck, Sparkles, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { api, getErrorMessage } from "../api/client";
 const formatTime = (timestamp) => new Date(timestamp).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
 
-export default function TicketWorkspacePage({ onTicketUpdate }) {
+export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
   const { ticketId } = useParams();
   const [ticket, setTicket] = useState(null);
   const [notes, setNotes] = useState("");
@@ -18,6 +18,7 @@ export default function TicketWorkspacePage({ onTicketUpdate }) {
   const [syncing, setSyncing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const loadTicket = async () => {
@@ -79,6 +80,8 @@ export default function TicketWorkspacePage({ onTicketUpdate }) {
   if (loading) return <div className="loading-page" data-testid="ticket-loading"><LoaderCircle className="spin" size={26} /> Chargement du dossier…</div>;
   if (error || !ticket) return <div className="loading-page error-page" data-testid="ticket-load-error">{error || "Ticket introuvable."}</div>;
 
+  const waveform = [38, 66, 44, 82, 54, 91, 47, 73, 35, 63, 86, 52, 76, 43, 68, 94, 57, 71, 39, 62, 83, 49, 74, 45];
+
   return (
     <section className="workspace-page" data-testid="ticket-workspace-page">
       <header className="workspace-header">
@@ -86,7 +89,7 @@ export default function TicketWorkspacePage({ onTicketUpdate }) {
           <Link to="/" className="back-link" data-testid="ticket-back-link"><ChevronLeft size={16} /> Tickets</Link>
           <div className="member-title" data-testid="ticket-member-header">
             <img src={ticket.member.avatar_url} alt="" />
-            <span><p>#{ticket.channel_name}</p><h1>{ticket.member.display_name || ticket.member.username}</h1></span>
+            <span><p>{ticket.id} · #{ticket.channel_name}</p><h1>{ticket.member.display_name || ticket.member.username}</h1></span>
           </div>
         </div>
         <div className="workspace-actions">
@@ -100,7 +103,13 @@ export default function TicketWorkspacePage({ onTicketUpdate }) {
         </div>
       </header>
 
-      <div className="ticket-meta" data-testid="ticket-metadata"><span>MEMBRE · {ticket.member.id}</span><span>CANAL · {ticket.channel_id}</span><span>{ticket.message_count} MESSAGES</span><span>SYNC · {ticket.last_synced_at ? formatTime(ticket.last_synced_at) : "—"}</span></div>
+      <div className="ticket-meta" data-testid="ticket-metadata">
+        <span>MEMBRE · {ticket.member.id}</span>
+        <span>CANAL · {ticket.channel_id}</span>
+        <span>{ticket.message_count} MESSAGES</span>
+        <span>SYNC · {ticket.last_synced_at ? formatTime(ticket.last_synced_at) : "—"}</span>
+        {isDemo && <span className="workspace-demo-badge"><Sparkles size={12} /> DÉMONSTRATION</span>}
+      </div>
 
       <div className="workspace-grid">
         <section className="workspace-column transcript-column" data-testid="transcript-panel">
@@ -108,7 +117,7 @@ export default function TicketWorkspacePage({ onTicketUpdate }) {
           <div className="transcript-scroll">
             {ticket.transcript.length === 0 && <p className="empty-transcript" data-testid="empty-transcript">Aucun message dans ce salon.</p>}
             {ticket.transcript.map((message) => (
-              <article className="transcript-message" key={message.id} data-testid={`transcript-message-${message.id}`}>
+              <article className={`transcript-message ${message.author.id === "iris-demo-helper" ? "helper-message" : "member-message"}`} key={message.id} data-testid={`transcript-message-${message.id}`}>
                 <img src={message.author.avatar_url} alt="" />
                 <div>
                   <div className="message-line"><strong>{message.author.display_name || message.author.username}</strong><time>{formatTime(message.timestamp)}</time></div>
@@ -119,28 +128,39 @@ export default function TicketWorkspacePage({ onTicketUpdate }) {
             ))}
           </div>
         </section>
-        <section className="workspace-column editor-column" data-testid="notes-panel">
-          <div className="column-header"><span><FileText size={16} /> NOTE INTERNE</span><b><Check size={15} /></b></div>
-          <textarea
-            aria-label="Note interne"
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder="Laissez une note utile pour l’équipe…"
-            value={notes}
-            data-testid="ticket-notes-input"
-          />
-          <p className="editor-foot">Visible uniquement dans Iris</p>
-        </section>
-        <section className="workspace-column editor-column" data-testid="vocal-panel">
-          <div className="column-header"><span><Volume2 size={16} /> COMPTE-RENDU VOCAL</span><b><Check size={15} /></b></div>
-          <textarea
-            aria-label="Compte-rendu vocal"
-            onChange={(event) => setVocalSummary(event.target.value)}
-            placeholder="Consignez les éléments évoqués en vocal…"
-            value={vocalSummary}
-            data-testid="ticket-vocal-input"
-          />
-          <p className="editor-foot">Synthèse de l’assistance vocale</p>
-        </section>
+        <aside className="intelligence-panel" data-testid="vocal-panel">
+          <div className="vocal-widget">
+            <div className="intelligence-label"><span><Sparkles size={15} /> INTELLIGENCE VOCALE</span><b>ANALYSE</b></div>
+            <p className="vocal-title">Compte-rendu de session</p>
+            <div className="vocal-player">
+              <button className="play-control" type="button" onClick={() => setPlaying((current) => !current)} data-testid="vocal-play-button" aria-label="Lire le compte-rendu vocal">
+                {playing ? <Pause size={17} fill="currentColor" /> : <Play size={17} fill="currentColor" />}
+              </button>
+              <div className={`waveform ${playing ? "is-playing" : ""}`} data-testid="vocal-waveform">
+                {waveform.map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}
+              </div>
+              <span data-testid="vocal-duration">{ticket.id === "TKT-0891" ? "01:12" : ticket.id === "TKT-0890" ? "00:45" : "02:03"}</span>
+            </div>
+            <textarea
+              aria-label="Compte-rendu vocal"
+              onChange={(event) => setVocalSummary(event.target.value)}
+              placeholder="Synthèse vocale…"
+              value={vocalSummary}
+              data-testid="ticket-vocal-input"
+            />
+          </div>
+          <section className="notes-widget" data-testid="notes-panel">
+            <div className="column-header"><span><FileText size={16} /> NOTE INTERNE</span><b><Check size={15} /></b></div>
+            <textarea
+              aria-label="Note interne"
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Laissez une note utile pour l’équipe…"
+              value={notes}
+              data-testid="ticket-notes-input"
+            />
+            <p className="editor-foot"><ShieldCheck size={13} /> Visible uniquement dans Iris</p>
+          </section>
+        </aside>
       </div>
     </section>
   );

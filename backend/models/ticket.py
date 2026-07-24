@@ -64,6 +64,7 @@ class TicketDetail(TicketSummary):
     vocal_summary: str = ""
     last_synced_at: str | None = None
     created_by: str
+    is_demo: bool = False
 
 
 class TicketStats(BaseModel):
@@ -77,6 +78,7 @@ class AuthenticatedHelper(BaseModel):
     username: str
     global_name: str | None = None
     avatar_url: str | None = None
+    mode: Literal["discord", "demo"] = "discord"
 
 
 class AuthSession(BaseModel):

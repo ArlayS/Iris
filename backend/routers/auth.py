@@ -8,6 +8,7 @@ from services.auth_service import (
     create_oauth_url,
     create_session,
     create_state,
+    demo_helper,
     exchange_code,
     parse_session,
 )
@@ -53,6 +54,20 @@ async def discord_callback(code: str, state: str, request: Request) -> RedirectR
 async def session(request: Request) -> AuthSession:
     helper = parse_session(request.cookies.get(SESSION_COOKIE))
     return AuthSession(authenticated=helper is not None, helper=helper)
+
+
+@router.post("/demo-session", response_model=AuthSession)
+async def start_demo_session(response: Response) -> AuthSession:
+    helper = demo_helper()
+    response.set_cookie(
+        SESSION_COOKIE,
+        create_session(helper),
+        max_age=43200,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    return AuthSession(authenticated=True, helper=helper)
 
 
 @router.post("/logout", response_model=AuthSession)

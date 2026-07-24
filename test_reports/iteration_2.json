@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 2 — Full end-to-end validation of the new demo-mode flow (POST /api/auth/demo-session + 3 seeded tickets) against the public preview URL. Backend: 32/32 pytest cases pass covering demo-session lifecycle, stats (2/1/10), 3 demo tickets exposed with full transcripts + notes + vocal summaries, notes/vocal persistence after PATCH, demo sync that never contacts Discord, archive/reactivate, demo scope isolation, cookie clearing on logout, unauthenticated 401 guards preserved, and no MongoDB _id leakage. Frontend desktop (1920x1080): login-page → demo-access-btn opens session (no Discord redirect), dashboard shows exactly TKT-0891/TKT-0890/TKT-0888 with stats 2/1/10, ticket-row-TKT-0891 opens workspace, vocal-play-button toggles waveform is-playing, notes and vocal input save and persist after full page reload, sync-ticket-button on a demo dossier does not contact Discord and preserves notes/vocal, and after POST /api/auth/logout the /tickets/TKT-0891 route falls back to the login page (route protection). Mobile 390x800 dashboard has no horizontal overflow (scrollWidth == clientWidth == 390). CRITICAL BUG CONFIRMED: the helper-message transcript bubbles (demo-891-2 and demo-891-4) still render vertically (text container width = 0, height > 1200 px) despite the CSS 'fix' claimed by main agent. This is exactly the regression the review asked to verify — the fix is INSUFFICIENT.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "TicketWorkspacePage transcript / .transcript-message.helper-message",
+        "issue": "Helper reply bubbles render with text container width = 0 (each character on its own line, bubble height ~1200-1300px) on desktop. Confirmed on demo-891-2 and demo-891-4 in TKT-0891. Root cause: .transcript-message uses grid-template-columns: 28px minmax(0, 1fr); and .transcript-message.helper-message img { order: 2; } — CSS Grid auto-placement follows the `order` value, so the avatar (order 2) is placed in the 1fr column and the message content div (default order 0) is forced into the 28px column, collapsing the text to a single-character width. The CSS override at App.css:479-508 is the source. Fix suggestion: for .transcript-message.helper-message, reverse the columns e.g. grid-template-columns: minmax(0, 1fr) 28px; (and keep img order:2), or drop `order` and use direction/row-reverse via display:flex. Member messages (demo-891-1, demo-891-3) are unaffected (width 553px, height 20px).",
+        "selector": "[data-testid='transcript-message-demo-891-2'], [data-testid='transcript-message-demo-891-4']",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_demo_mode.py",
+    "/app/backend/tests/test_iris_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix helper-message bubble collapse in frontend/src/App.css: change .transcript-message.helper-message to grid-template-columns: minmax(0, 1fr) 28px (matching img { order: 2 }), or restructure with flex-row-reverse so the avatar sits on the right without forcing the text into the 28px column. Verify visually that demo-891-2 and demo-891-4 render as single-line paragraphs, not vertical stacks of characters."
+  ],
+  "critical_code_review_comments": [
+    "auth_service.demo_helper() cleanly mints an AuthenticatedHelper with mode='demo' and the HMAC-signed cookie flows through the same parse_session path — no separate auth branch, good.",
+    "tickets.ticket_scope() correctly partitions demo vs real tickets by demo_ticket flag ($or {exists:false} OR {demo:false} for the real branch), so a demo helper cannot see real tickets and vice-versa — verified with test_no_real_tickets_appear_in_demo_scope and test_create_ticket_denied_for_demo_helper.",
+    "sync_ticket() short-circuits when ticket.is_demo is True and only refreshes last_synced_at — never hits DiscordService, exactly as required.",
+    "demo_data.seed_demo_tickets uses {$setOnInsert} + upsert, so notes/vocal edits on a demo ticket are not overwritten on server restart. Confirmed with reload-persistence UI test.",
+    "TicketWorkspacePage renders the helper vs member class correctly (author.id === 'iris-demo-helper' → helper-message), but the App.css override for helper-message with `order: 2` and a `28px minmax(0, 1fr)` grid is the direct cause of the vertical-text regression. Not a business-logic bug — a pure CSS grid placement mistake.",
+    "LoginPage.openDemo does not clear the loading state on success (window.location.assign is fine, but if the reload is delayed the spinner shows longer than needed). Minor UX only.",
+    "AuthenticatedApp.updateTicket recomputes stats via a separate /tickets/stats fetch on every ticket update — fine but wasteful; consider incremental client-side stats. Non-blocking."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_demo_mode.py",
+    "/app/backend/tests/test_iris_api.py"
+  ],
+  "success_rate": {"backend": "100% (32/32)", "frontend": "83% — all flows pass except the helper bubble width regression (item #5 of the review)"},
+  "test_credentials": "None required. All flows exercised via POST /api/auth/demo-session (demo helper 'iris-demo-helper', mode='demo'). Real Discord OAuth intentionally unconfigured; login returns 503 with a French message that never leaks any secret.",
+  "seed_data_creation": "Demo tickets TKT-0891, TKT-0890, TKT-0888 are seeded on backend startup via seed_demo_tickets() (upsert with $setOnInsert). Tests patched notes/vocal on TKT-0891 with TEST_ prefixed strings — these are demo docs and remain in the demo scope; they do not pollute any real Discord data.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run `REACT_APP_BACKEND_URL=<preview> pytest /app/backend/tests/ -v` — 32 tests. For the frontend, the critical thing to verify after the CSS fix is: open /tickets/TKT-0891 as a demo user and confirm the p element inside [data-testid='transcript-message-demo-891-2'] has bounding_box().width > 200 and height < 100 on 1920x1080. If the main agent re-styles with flexbox instead of grid, keep the data-testids stable (transcript-message-{message.id}, vocal-play-button, vocal-waveform, ticket-notes-input, ticket-vocal-input, save-ticket-button, sync-ticket-button).",
+  "rca of the issue": "Helper bubble vertical text — Root Cause Analysis. Reproduction: (1) POST /api/auth/demo-session (2) open /tickets/TKT-0891 (3) inspect [data-testid='transcript-message-demo-891-2']. Observed: outer bbox 620x1294, inner <p> bbox width=0 height=1229. Root cause: in /app/frontend/src/App.css lines 479-508, .transcript-message declares `grid-template-columns: 28px minmax(0, 1fr)` and .transcript-message.helper-message img adds `order: 2`. In CSS Grid, `order` participates in auto-placement — the visually-second item is placed into grid-column 2. Since only two children exist (img and div) and img is now order:2, img is placed in column 2 (the 1fr wide track) and the content div (order 0) is placed in column 1 (the 28px track). Result: the text container is 28px wide, wrapping every character. Mitigation: either reverse grid-template-columns for helper-message to `minmax(0, 1fr) 28px` (keeps `order:2`), or drop `order` on img and instead use `direction: rtl` on the row / flip with a separate DOM order for helpers, or restructure to flex with `flex-direction: row-reverse` and `img { flex: 0 0 28px; }` on the helper variant. The simplest one-line fix is: `.transcript-message.helper-message { grid-template-columns: minmax(0, 1fr) 28px; }` inside the existing helper-message rule."
+}
