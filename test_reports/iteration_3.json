@@ -1,0 +1,28 @@
+{
+  "summary": "Iteration 3 — Retest of the helper-bubble CSS fix in /app/frontend/src/App.css (.transcript-message.helper-message { grid-template-columns: minmax(0, 1fr) 28px }). Frontend-only testing per review request against https://iris-logs.preview.emergentagent.com. Executed a Playwright script against the public preview URL: (1) opened /login, clicked [data-testid='demo-access-btn'] (no Discord redirect), (2) dashboard listed the 3 demo tickets, opened ticket-row-TKT-0891, (3) measured bounding boxes of [data-testid='transcript-message-demo-891-2'] and [data-testid='transcript-message-demo-891-4'] on desktop 1920x1080: outer 620x66, inner content <div> 581x66, inner <p> 553x20 — width > 200 px and height < 100 px on both helper messages. (4) [data-testid='transcript-message-demo-891-1'] (member) renders correctly at 620x66 with inner 581x66. (5) [data-testid='vocal-play-button'] is visible, enabled, clickable — click toggles [data-testid='vocal-waveform'] class to 'waveform is-playing'. (6) Mobile 390x800 dashboard: document.documentElement.scrollWidth == clientWidth == 390 and body.scrollWidth == 390 — no horizontal overflow. The regression flagged in iteration_2 is RESOLVED and no side effect was observed on member messages, vocal widget, or mobile layout. Screenshots captured for both desktop workspace and mobile dashboard.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_3.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "App.css line 497 fix is correct and minimal: .transcript-message.helper-message swaps to grid-template-columns: minmax(0, 1fr) 28px while keeping img { order: 2 }, so the content div (order 0) lands in the 1fr track and the avatar in the 28px track. Behaviour matches iteration_2's suggested one-line mitigation.",
+    "No other member/helper style regression detected — member message keeps 28px minmax(0,1fr) columns as before and renders identically to iteration_2.",
+    "Vocal widget (play button + waveform + text summary) is untouched and still works.",
+    "Mobile responsive layout at 390x800 stays inside the viewport (no horizontal scroll).",
+    "Minor (non-blocking): the demo login button spinner is not cleared before window.location.assign (already noted in iteration_2). No user-facing impact."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "not tested (frontend-only per request)", "frontend": "100% (helper bubble fix + member render + vocal button + mobile no-overflow all pass)" },
+  "test_credentials": "None. Used the [data-testid='demo-access-btn'] flow which POSTs /api/auth/demo-session with no Discord OAuth.",
+  "seed_data_creation": "Reused existing demo seed (TKT-0891 / TKT-0890 / TKT-0888). No new data created. Notes/vocal fields on TKT-0891 still contain the TEST_UI values left by iteration_2 — they are demo-scope only and safe to leave.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The helper-message vertical-text regression is fully fixed. If future iterations restructure the transcript to flex/row-reverse, keep the following stable data-testids: transcript-message-{message.id}, transcript-message-demo-891-1..4, vocal-play-button, vocal-waveform, ticket-row-TKT-0891, demo-access-btn. Assertion thresholds that catch the bug: on 1920x1080, inner <p> of a helper-message must have width > 200 and height < 100.",
+  "rca of the issue": "Iteration 2 diagnosed the root cause: CSS Grid `order` reorders children into the visual grid tracks, so `img { order: 2 }` was landing the avatar in the 1fr track and the content div in the 28px track, collapsing text to 1 char per line. The applied fix reverses grid-template-columns to `minmax(0, 1fr) 28px` for the helper variant only, so the 1fr track is now the visually-first (left, content) track and the 28px avatar sits on the right — matching the intended right-aligned helper bubble. Verified: helper <p> width jumped from 0 px to 553 px and height dropped from 1229 px to 20 px on demo-891-2 and demo-891-4."
+}

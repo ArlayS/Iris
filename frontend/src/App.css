@@ -494,6 +494,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .transcript-message.helper-message {
+  grid-template-columns: minmax(0, 1fr) 28px;
   margin-left: auto;
   width: min(86%, 620px);
 }
