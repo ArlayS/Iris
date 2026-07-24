@@ -40,6 +40,11 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 - Ajout de la création instantanée de suivi test et d’un formulaire complet pour les dossiers démo.
 - Les dossiers proposent désormais Écoute, Notes privées, Compte-rendu vocal et Statut de suivi persistant.
 
+## Connexion et import Discord — 2026-07-24
+- Bot Discord relié au serveur configuré et rôle Helper identifié comme autorisation obligatoire.
+- OAuth Discord vérifie d’abord l’appartenance au serveur, puis le rôle Helper avant de créer une session Iris.
+- Import de salons prêt : validation du serveur, contrôle du type de salon et historique paginé par lots de 100 messages.
+
 ## Backlog priorisé
 ### P0 — configuration nécessaire
 - Ajouter un nouveau `DISCORD_BOT_TOKEN` après réinitialisation.

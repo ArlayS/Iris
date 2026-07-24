@@ -71,7 +71,7 @@ body {
 .login-page h1,
 .page-header h1,
 .new-ticket-intro h1 {
-  color: var(--ink);
+  color: #1e342a;
   font-family: "Manrope", sans-serif;
   font-weight: 600;
   letter-spacing: 0;
@@ -83,15 +83,20 @@ body {
 }
 
 .login-specs {
-  color: var(--sage);
+  color: #365847;
   font-family: "IBM Plex Sans", sans-serif;
+}
+
+.login-specs span {
+  color: #365847;
+  font-weight: 600;
 }
 
 .discord-button,
 .calm-primary-button {
   align-items: center;
-  background: var(--sage);
-  border: 1px solid var(--sage);
+  background: #365f4c;
+  border: 1px solid #365f4c;
   border-radius: 999px;
   color: #fff;
   cursor: pointer;
@@ -105,7 +110,7 @@ body {
 
 .discord-button:hover,
 .calm-primary-button:hover {
-  background: #3d584e;
+  background: #294c3b;
   box-shadow: 0 7px 17px rgba(74, 103, 92, 0.16);
   color: #fff;
   transform: translateY(-1px);

@@ -26,20 +26,20 @@ export default function LoginPage() {
       <section className="login-grid">
         <div className="login-identity">
           <div className="login-mark">I</div>
-          <p className="eyebrow">IRIS / HELPER INTELLIGENCE</p>
-          <h1>Chaque demande mérite un poste de commande.</h1>
+          <p className="eyebrow">IRIS / ESPACE D’ÉCOUTE</p>
+          <h1>Un espace d’écoute, pour accompagner avec soin.</h1>
           <p className="login-description">
-            Une vision précise des conversations, décisions et passages en vocal de votre équipe Discord.
+            Centralisez les demandes d’aide, les repères privés et la continuité de suivi des personnes accompagnées.
           </p>
           <div className="login-specs">
-            <span><RadioTower size={15} /> DISCORD SYNC</span>
+            <span><RadioTower size={15} /> ESPACE CONFIDENTIEL</span>
             <span><ShieldCheck size={15} /> ACCÈS HELPERS</span>
           </div>
         </div>
         <div className="login-action">
-          <p className="eyebrow">POINT D’ENTRÉE</p>
-          <h2>Accéder à Iris</h2>
-          <p>Utilisez votre compte Discord pour ouvrir votre session helper.</p>
+          <p className="eyebrow">ACCÈS SÉCURISÉ</p>
+          <h2>Accéder à l’espace helpers</h2>
+          <p>Connectez-vous avec Discord. L’accès est réservé aux membres ayant le rôle Helper du serveur.</p>
           <a
             className="discord-button"
             href={`${backendUrl}/api/auth/discord/login`}
@@ -57,7 +57,7 @@ export default function LoginPage() {
           <small>3 dossiers fictifs, sans connexion à Discord réel.</small>
         </div>
       </section>
-      <footer data-testid="login-footer">IRIS · HELPER OPERATIONS · SYSTÈME INTERNE</footer>
+      <footer data-testid="login-footer">IRIS · ESPACE CONFIDENTIEL · ÉQUIPE HELPERS</footer>
     </main>
   );
 }
