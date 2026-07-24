@@ -1,10 +1,11 @@
-import { ChevronLeft, Database, Hash, UserRound } from "lucide-react";
+import { ChevronLeft, HeartHandshake, LockKeyhole, NotebookPen } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import NewTicketForm from "../components/NewTicketForm";
+import DemoCaseForm from "../components/DemoCaseForm";
 
 
-export default function NewTicketPage({ onCreated }) {
+export default function NewTicketPage({ onCreated, isDemo }) {
   const navigate = useNavigate();
   const created = (ticket) => {
     onCreated(ticket);
@@ -16,16 +17,16 @@ export default function NewTicketPage({ onCreated }) {
       <Link className="back-link" to="/" data-testid="new-ticket-back-link"><ChevronLeft size={16} /> Retour au centre</Link>
       <div className="new-ticket-layout">
         <div className="new-ticket-intro">
-          <p className="eyebrow">NOUVEAU DOSSIER / 02</p>
-          <h1>Importer un ticket Discord.</h1>
-          <p>Le système vérifie le membre, récupère le salon et archive l’historique complet du ticket.</p>
+          <p className="eyebrow">NOUVEAU SUIVI</p>
+          <h1>Ouvrir un espace d’écoute.</h1>
+          <p>Chaque dossier est un espace de travail privé pour organiser l’écoute, les notes et le suivi de la personne accompagnée.</p>
           <div className="process-list">
-            <div><UserRound size={18} /><span><b>01 · Membre</b>Identification via l’ID Discord</span></div>
-            <div><Hash size={18} /><span><b>02 · Salon</b>Contrôle du ticket dans le serveur</span></div>
-            <div><Database size={18} /><span><b>03 · Registre</b>Copie locale et consultable</span></div>
+            <div><HeartHandshake size={18} /><span><b>01 · Écoute</b>Accueillir la demande avec attention</span></div>
+            <div><NotebookPen size={18} /><span><b>02 · Notes privées</b>Conserver les repères utiles au suivi</span></div>
+            <div><LockKeyhole size={18} /><span><b>03 · Continuité</b>Mettre à jour le statut de suivi</span></div>
           </div>
         </div>
-        <NewTicketForm onCreated={created} />
+        {isDemo ? <DemoCaseForm onCreated={created} /> : <NewTicketForm onCreated={created} />}
       </div>
     </section>
   );

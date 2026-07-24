@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "@/App.css";
+import "@/MentalHealth.css";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 
@@ -32,6 +33,17 @@ function AuthenticatedApp({ helper }) {
       .catch(() => undefined);
   };
 
+  const createQuickCase = async () => {
+    const response = await api.post("/tickets/demo", {
+      name: "Nouvelle personne",
+      reason: "Demande d’écoute à préciser",
+      priority: "routine",
+      follow_up_status: "à écouter",
+    });
+    updateTicket(response.data);
+    return response.data;
+  };
+
   const logout = async () => {
     await api.post("/auth/logout");
     window.location.assign("/");
@@ -40,10 +52,10 @@ function AuthenticatedApp({ helper }) {
   return (
     <AppShell helper={helper} tickets={tickets} onLogout={logout} isDemo={helper.mode === "demo"}>
       <Routes>
-        <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} isDemo={helper.mode === "demo"} />} />
-        <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
+        <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} isDemo={helper.mode === "demo"} onQuickCreate={createQuickCase} />} />
+        <Route path="/new" element={<NewTicketPage onCreated={updateTicket} isDemo={helper.mode === "demo"} />} />
         <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} isDemo={helper.mode === "demo"} />} />
-        <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
+        <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} isDemo={helper.mode === "demo"} onQuickCreate={createQuickCase} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
@@ -67,7 +79,7 @@ function App() {
     <div className="App">
       <BrowserRouter>
         {session.authenticated ? <AuthenticatedApp helper={session.helper} /> : <LoginPage />}
-        <Toaster theme="dark" position="bottom-right" />
+        <Toaster theme="light" position="bottom-right" />
       </BrowserRouter>
     </div>
   );

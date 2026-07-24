@@ -44,6 +44,14 @@ class TicketUpdate(BaseModel):
     notes: str | None = Field(default=None, max_length=25000)
     vocal_summary: str | None = Field(default=None, max_length=25000)
     status: Literal["active", "archived"] | None = None
+    follow_up_status: Literal["à écouter", "en suivi", "stable"] | None = None
+
+
+class DemoCaseCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    reason: str = Field(min_length=3, max_length=500)
+    priority: Literal["routine", "prioritaire", "urgent"] = "routine"
+    follow_up_status: Literal["à écouter", "en suivi", "stable"] = "à écouter"
 
 
 class TicketSummary(BaseModel):
@@ -56,6 +64,8 @@ class TicketSummary(BaseModel):
     message_count: int
     updated_at: str
     created_at: str
+    priority: Literal["routine", "prioritaire", "urgent"] = "routine"
+    follow_up_status: Literal["à écouter", "en suivi", "stable"] = "à écouter"
 
 
 class TicketDetail(TicketSummary):

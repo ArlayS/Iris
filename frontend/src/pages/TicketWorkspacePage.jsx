@@ -1,4 +1,4 @@
-import { Archive, Check, ChevronLeft, FileText, LoaderCircle, MessageSquareText, Pause, Play, RefreshCw, Save, ShieldCheck, Sparkles, Volume2 } from "lucide-react";
+import { Archive, Check, ChevronLeft, FileText, HeartHandshake, LoaderCircle, Pause, Play, RefreshCw, Save, ShieldCheck, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [playing, setPlaying] = useState(false);
+  const [followUpStatus, setFollowUpStatus] = useState("à écouter");
 
   useEffect(() => {
     const loadTicket = async () => {
@@ -29,6 +30,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
         setTicket(response.data);
         setNotes(response.data.notes || "");
         setVocalSummary(response.data.vocal_summary || "");
+        setFollowUpStatus(response.data.follow_up_status || "à écouter");
       } catch (requestError) {
         setError(getErrorMessage(requestError));
       } finally {
@@ -41,7 +43,11 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
   const save = async () => {
     setSaving(true);
     try {
-      const response = await api.patch(`/tickets/${ticketId}`, { notes, vocal_summary: vocalSummary });
+      const response = await api.patch(`/tickets/${ticketId}`, {
+        notes,
+        vocal_summary: vocalSummary,
+        follow_up_status: followUpStatus,
+      });
       setTicket(response.data);
       onTicketUpdate(response.data);
       toast.success("Dossier enregistré.");
@@ -89,7 +95,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
           <Link to="/" className="back-link" data-testid="ticket-back-link"><ChevronLeft size={16} /> Tickets</Link>
           <div className="member-title" data-testid="ticket-member-header">
             <img src={ticket.member.avatar_url} alt="" />
-            <span><p>{ticket.id} · #{ticket.channel_name}</p><h1>{ticket.member.display_name || ticket.member.username}</h1></span>
+            <span><p>{ticket.id} · ESPACE CONFIDENTIEL</p><h1>{ticket.member.display_name || ticket.member.username}</h1></span>
           </div>
         </div>
         <div className="workspace-actions">
@@ -104,16 +110,21 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
       </header>
 
       <div className="ticket-meta" data-testid="ticket-metadata">
-        <span>MEMBRE · {ticket.member.id}</span>
-        <span>CANAL · {ticket.channel_id}</span>
-        <span>{ticket.message_count} MESSAGES</span>
-        <span>SYNC · {ticket.last_synced_at ? formatTime(ticket.last_synced_at) : "—"}</span>
-        {isDemo && <span className="workspace-demo-badge"><Sparkles size={12} /> DÉMONSTRATION</span>}
+        <span>DOSSIER PRIVÉ · {ticket.id}</span>
+        <span>{ticket.message_count} ÉCHANGES</span>
+        <span>OUVERT LE · {ticket.created_at ? formatTime(ticket.created_at) : "—"}</span>
+        <label className="follow-up-control" htmlFor="follow-up-status">STATUT DE SUIVI
+          <select id="follow-up-status" value={followUpStatus} onChange={(event) => setFollowUpStatus(event.target.value)} data-testid="follow-up-status-select">
+            <option value="à écouter">À écouter</option>
+            <option value="en suivi">En suivi</option>
+            <option value="stable">Stable</option>
+          </select>
+        </label>
       </div>
 
       <div className="workspace-grid">
         <section className="workspace-column transcript-column" data-testid="transcript-panel">
-          <div className="column-header"><span><MessageSquareText size={16} /> TRANSCRIPTION</span><b>{ticket.message_count}</b></div>
+          <div className="column-header"><span><HeartHandshake size={16} /> ÉCOUTE</span><b>{ticket.message_count}</b></div>
           <div className="transcript-scroll">
             {ticket.transcript.length === 0 && <p className="empty-transcript" data-testid="empty-transcript">Aucun message dans ce salon.</p>}
             {ticket.transcript.map((message) => (
@@ -130,8 +141,8 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
         </section>
         <aside className="intelligence-panel" data-testid="vocal-panel">
           <div className="vocal-widget">
-            <div className="intelligence-label"><span><Sparkles size={15} /> INTELLIGENCE VOCALE</span><b>ANALYSE</b></div>
-            <p className="vocal-title">Compte-rendu de session</p>
+            <div className="intelligence-label"><span><Volume2 size={15} /> COMPTE-RENDU VOCAL</span><b>PRIVÉ</b></div>
+            <p className="vocal-title">Repères de l’échange</p>
             <div className="vocal-player">
               <button className="play-control" type="button" onClick={() => setPlaying((current) => !current)} data-testid="vocal-play-button" aria-label="Lire le compte-rendu vocal">
                 {playing ? <Pause size={17} fill="currentColor" /> : <Play size={17} fill="currentColor" />}
@@ -150,7 +161,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
             />
           </div>
           <section className="notes-widget" data-testid="notes-panel">
-            <div className="column-header"><span><FileText size={16} /> NOTE INTERNE</span><b><Check size={15} /></b></div>
+            <div className="column-header"><span><FileText size={16} /> NOTES PRIVÉES</span><b><Check size={15} /></b></div>
             <textarea
               aria-label="Note interne"
               onChange={(event) => setNotes(event.target.value)}

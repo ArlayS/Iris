@@ -55,20 +55,21 @@ class TestDemoSession:
 
 # --- Demo tickets exposure ---
 class TestDemoTickets:
-    def test_stats_are_2_1_10(self, demo_client):
+    def test_stats_include_seed(self, demo_client):
+        # Seed has 2 active + 1 archived at minimum; SUIVI-* cases add on top.
         r = demo_client.get(f"{BASE_URL}/api/tickets/stats", timeout=15)
         assert r.status_code == 200
         stats = r.json()
-        assert stats["active_count"] == 2
-        assert stats["archived_count"] == 1
-        assert stats["total_messages"] == 10
+        assert stats["active_count"] >= 2
+        assert stats["archived_count"] >= 1
+        assert stats["total_messages"] >= 10
 
     def test_three_demo_tickets_present(self, demo_client):
         r = demo_client.get(f"{BASE_URL}/api/tickets", timeout=15)
         assert r.status_code == 200
         tickets = r.json()
         ids = {t["id"] for t in tickets}
-        assert ids == {"TKT-0888", "TKT-0890", "TKT-0891"}
+        assert {"TKT-0888", "TKT-0890", "TKT-0891"} <= ids
         # Statuses match the seed
         statuses = {t["id"]: t["status"] for t in tickets}
         assert statuses["TKT-0891"] == "active"
@@ -80,7 +81,7 @@ class TestDemoTickets:
         assert r.status_code == 200
         detail = r.json()
         assert detail["id"] == "TKT-0891"
-        assert detail["title"] == "Problème de synchronisation API"
+        assert "Anxiété" in detail["title"]
         assert detail["member"]["display_name"] == "Alexandre D."
         assert len(detail["transcript"]) == 4
         # Helper messages must be present (demo-891-2 and demo-891-4)
@@ -171,7 +172,9 @@ class TestDemoIsolation:
         r = demo_client.get(f"{BASE_URL}/api/tickets", timeout=15)
         assert r.status_code == 200
         for ticket in r.json():
-            assert ticket["id"].startswith("TKT-08"), f"non-demo ticket leaked: {ticket['id']}"
+            assert ticket["id"].startswith("TKT-08") or ticket["id"].startswith("SUIVI-"), (
+                f"non-demo ticket leaked: {ticket['id']}"
+            )
 
 
 # --- Guards still enforced against unauthenticated callers ---

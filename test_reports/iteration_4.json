@@ -1,0 +1,45 @@
+{
+  "summary": "Iteration 4 — end-to-end validation of the mental-health helper UI + demo case creation flow. Backend: added new /app/backend/tests/test_demo_case_creation.py covering POST /api/tickets/demo (401 without session, 201 with demo session, SUIVI-* id shape, no Mongo _id leak, Pydantic validation on name/reason/priority/follow_up_status, retrievability of created case, follow_up_status PATCH persistence, mental-health vocabulary in seed). Updated stale /app/backend/tests/test_demo_mode.py assertions that hard-coded the pre-existing 'Problème de synchronisation API' title, the 2/1/10 stats, and rejected SUIVI-* ids. Full run against the public URL: 26/26 passed. Frontend: automated Playwright scenario against https://iris-logs.preview.emergentagent.com — demo-access-btn logs in and lands on dashboard-page; new light theme (body bg rgb(249,249,247), text rgb(28,38,34) — no dark/cyber theme); dashboard shows mental-health vocabulary (Suivis ouverts / Échanges consignés / Suivis stabilisés / Écoute active / Notes privées / CONFIDENTIEL); seed tickets TKT-0891 & TKT-0890 & TKT-0888 use mental-health wording (Anxiété / Isolement / ressources pour proche) with follow_up_status + priority metadata rendered. quick-demo-case-button creates a SUIVI-* dossier, redirects to /tickets/SUIVI-XXXXXX, panels (transcript-panel / vocal-panel / notes-panel / ticket-notes-input / ticket-vocal-input / follow-up-status-select / save-ticket-button) are all present with empty notes and vocal fields. save-ticket-button persists notes / vocal_summary / follow_up_status through a full page reload. complete-case-form-button routes to /new; complete-case-form (case-name-input + case-reason-input + case-priority-select + case-follow-up-select + complete-case-submit-button) creates a SUIVI-* dossier and the workspace header displays the provided name and pre-selected follow-up. Mobile 390x800 on /, /tickets/SUIVI-XXXXXX and /new: document.scrollWidth = clientWidth = 390, no horizontal overflow. All required data-testids from the review request are present and interactive.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Dashboard 'SUIVIS EN COURS' table",
+        "issues": [
+          "Status pill shows 'EN SUIVI' (from ticket.status === 'active') on the same row where the middle column shows follow_up_status='stable' — two different meanings sharing similar wording is confusing. Consider labelling the right pill 'ACTIF/ARCHIVÉ' and keeping 'en suivi/à écouter/stable' only in the follow-up column.",
+          "Dashboard truncates to first 8 tickets (tickets.slice(0, 8)); accumulating SUIVI-* test cases push archived TKT-0888 off the visible list. Not a blocker but worth a paginator or an 'Archivés' tab (archives route exists but has no clear UI entry point in AppShell)."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_demo_case_creation.py",
+    "/app/backend/tests/test_demo_mode.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optional cleanup: remove the many TEST_/SUIVI-* dossiers created during automated runs (they are demo-scope only). A simple 'delete demo user-created cases on demo-session bootstrap' would keep the dashboard uncluttered.",
+    "Optional UX: differentiate the 'status' pill label ('ACTIF' vs 'ARCHIVÉ') from the 'follow_up_status' column to avoid two 'EN SUIVI' meanings on the same row."
+  ],
+  "critical_code_review_comments": [
+    "backend/routers/tickets.py POST /tickets/demo correctly gates on is_demo_helper() and returns a 403 for a non-demo session — good, but the endpoint depends on the same current_helper dependency so an unauthenticated caller still gets 401 first (verified). The insert writes demo_ticket=True and demo_schema_version=2 which keeps demo scope isolation working.",
+    "backend/models/ticket.py TicketUpdate now includes follow_up_status (Literal) — enum validation confirmed via 422 on 'en attente'. Nice narrow Pydantic contract.",
+    "frontend/src/components/DemoCaseForm.jsx: HTML5 minLength=3 on the textarea plus required will block short values in the UI, matching the Pydantic min_length=3 constraint, so client and server agree.",
+    "frontend/src/pages/TicketWorkspacePage.jsx: follow_up_status is loaded from response and PATCHed on save alongside notes/vocal_summary — the reload persistence check passes end-to-end.",
+    "frontend/src/App.js createQuickCase() posts default 'Nouvelle personne' / 'Demande d'écoute à préciser' — this satisfies the review requirement of a fictitious empty dossier and the workspace fields (notes/vocal) are indeed empty on load.",
+    "Minor: DashboardPage renders both `ticket.follow_up_status` (french enum) and a status pill that reads 'EN SUIVI'/'STABLE' derived from ticket.status. Same wording, different semantics — see design_issues."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_demo_case_creation.py",
+    "/app/backend/tests/test_demo_mode.py"
+  ],
+  "success_rate": { "backend": "100% (26/26)", "frontend": "100% (all critical flows: demo login, quick case, complete form, notes/vocal/follow-up persistence, mobile no-overflow)" },
+  "test_credentials": "None. Demo mode via [data-testid='demo-access-btn'] which POSTs /api/auth/demo-session. Discord OAuth intentionally not tested (env not configured).",
+  "seed_data_creation": "Several TEST_ / TEST Zoe / TEST Camille / TEST Alex / TEST Suivi demo SUIVI-* dossiers were created and left in the demo tickets collection. They're demo-scope only (demo_ticket=True) and safe to keep; consider a small teardown to reset the demo dashboard.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "New stable data-testids to rely on for demo-mode: quick-demo-case-button, complete-case-form-button, complete-case-form, case-name-input, case-reason-input, case-priority-select, case-follow-up-select, complete-case-submit-button, ticket-notes-input, ticket-vocal-input, follow-up-status-select, save-ticket-button, ticket-workspace-page, ticket-member-header. Backend regression suite lives in /app/backend/tests/test_demo_mode.py + /app/backend/tests/test_demo_case_creation.py — run with REACT_APP_BACKEND_URL exported. Demo dashboard now contains many SUIVI-* rows due to accumulated test runs; that pushes seed TKT-0888 off the first 8 rows of the dashboard table (still available via direct URL /tickets/TKT-0888).",
+  "rca of the issue": "The user-reported bug was two-fold: (a) the UI vocabulary didn't match a mental-health helper (previous seed said 'Problème de synchronisation API', 'CANAL SÉCURISÉ', 'CYBER' theme), and (b) 'ticket creation didn't work' because the only path in the previous build was POST /api/tickets which requires a Discord bot token and real Discord IDs. Fix stack verified in this iteration: (1) mental-health seed in services/demo_data.py rewrites all 3 tickets and their transcripts with anxiété / isolement / ressources vocab and adds follow_up_status + priority; (2) new POST /api/tickets/demo endpoint (routers/tickets.py) plus DemoCaseCreate model lets a demo helper create empty dossiers without any Discord dependency; (3) new UI surfaces: quick-demo-case-button on DashboardPage + DemoCaseForm on /new; (4) TicketUpdate model + workspace UI now save/load follow_up_status alongside notes/vocal_summary. All eight review-request checks pass; the only remaining niggle is cosmetic (status pill wording overlap and pagination) — reported but not blocking."
+}
