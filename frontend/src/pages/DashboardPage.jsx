@@ -57,7 +57,7 @@ export default function DashboardPage({ stats, tickets, isDemo, onQuickCreate })
             </div>
           ) : (
             <div className="ticket-table">
-              {tickets.slice(0, 8).map((ticket) => (
+              {tickets.map((ticket) => (
                 <Link to={`/tickets/${ticket.id}`} className="ticket-table-row" key={ticket.id} data-testid={`ticket-row-${ticket.id}`}>
                   <span className="ticket-table-person">
                     {ticket.member.avatar_url && <img src={ticket.member.avatar_url} alt="" />}
@@ -65,7 +65,7 @@ export default function DashboardPage({ stats, tickets, isDemo, onQuickCreate })
                   </span>
                   <span>{ticket.follow_up_status}</span>
                   <span>{ticket.message_count} échanges</span>
-                  <span className={`status-dot ${ticket.status}`}>{ticket.status === "active" ? "EN SUIVI" : "STABLE"}</span>
+                  <span className={`status-dot ${ticket.status}`}>{ticket.status === "active" ? "ACTIF" : "ARCHIVÉ"}</span>
                 </Link>
               ))}
             </div>

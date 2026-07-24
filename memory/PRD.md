@@ -35,6 +35,11 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 - Trois dossiers de démonstration réalistes préchargés : historique de discussion, note interne, synthèse vocale, archivage et synchronisation locale.
 - Correction validée par contrôle indépendant : les réponses helper de la transcription s’affichent désormais à largeur normale sur desktop ; aucun débordement mobile détecté.
 
+## Réorientation santé mentale — 2026-07-24
+- Refonte complète en interface claire, calme et professionnelle, centrée sur l’écoute et la continuité de suivi.
+- Ajout de la création instantanée de suivi test et d’un formulaire complet pour les dossiers démo.
+- Les dossiers proposent désormais Écoute, Notes privées, Compte-rendu vocal et Statut de suivi persistant.
+
 ## Backlog priorisé
 ### P0 — configuration nécessaire
 - Ajouter un nouveau `DISCORD_BOT_TOKEN` après réinitialisation.
