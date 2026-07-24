@@ -28,7 +28,7 @@ services:
       - DISCORD_BOT_TOKEN=XXXXXX
       - DISCORD_CLIENT_ID=1530303803008749750
       - DISCORD_CLIENT_SECRET=HSs1jdRWg5fKYMDnIAL3nc0TAkSoqMNr
-      - DISCORD_REDIRECT_URI=http://iris.loasis.app/api/auth/discord/callback
+      - DISCORD_REDIRECT_URI=http://api.loasis.app/api/auth/discord/callback
       - APP_SESSION_SECRET=topsecret
       - DISCORD_HELPER_ROLE_ID=1499491909750755570
       - DISCORD_ADMIN_ROLE_ID=1503100661728936046
