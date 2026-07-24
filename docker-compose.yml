@@ -15,6 +15,8 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: secretpassword
+    networks:
+      - npm_default
 
   # API Backend (FastAPI)
   backend:
@@ -35,6 +37,8 @@ services:
       - EMERGENT_LLM_KEY=000000
     depends_on:
       - mongodb
+    networks:
+      - npm_default
 
   # Application Frontend (React)
   frontend:
@@ -45,6 +49,8 @@ services:
     container_name: emergent-frontend
     depends_on:
       - backend
+    networks:
+      - npm_default
 
 volumes:
   mongo-data:
