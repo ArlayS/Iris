@@ -20,18 +20,19 @@ services:
     ports:
       - "8080:8000"
     environment:
-      - DATABASE_URL=mongodb://admin:secretpassword@mongodb:27017/emergent_db?authSource=admin
+      - MONGO_URL=mongodb://admin:secretpassword@mongodb:27017/emergent_db?authSource=admin
     depends_on:
       - mongodb
 
   # Application Frontend (React)
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
+      args:
+        - REACT_APP_BACKEND_URL=http://51.75.126.185:8080
     container_name: emergent-frontend
-    expose:
-      - "8082"
-    environment:
-      - VITE_API_URL=http://localhost:8000
+    ports:
+      - "9098:80"
     depends_on:
       - backend
 
