@@ -27,11 +27,9 @@ function AuthenticatedApp({ helper }) {
 
   const updateTicket = (ticket) => {
     setTickets((current) => [ticket, ...current.filter((item) => item.id !== ticket.id)]);
-    setStats((current) => ({
-      ...current,
-      active_count: tickets.filter((item) => (item.id === ticket.id ? ticket : item).status === "active").length,
-      archived_count: tickets.filter((item) => (item.id === ticket.id ? ticket : item).status === "archived").length,
-    }));
+    api.get("/tickets/stats")
+      .then((response) => setStats(response.data))
+      .catch(() => undefined);
   };
 
   const logout = async () => {

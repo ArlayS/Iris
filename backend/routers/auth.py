@@ -8,7 +8,6 @@ from services.auth_service import (
     create_oauth_url,
     create_session,
     create_state,
-    current_helper,
     exchange_code,
     parse_session,
 )
