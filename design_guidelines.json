@@ -1,131 +1,120 @@
 {
-  "project_context": {
-    "name": "Iris Redesign",
-    "theme_preference": "dark",
-    "archetype": "The Performance Pro / Luxury Command Center",
-    "vibe": "Premium, immersive, highly functional, no-nonsense tactical command center."
-  },
+  "theme": "Light Theme ONLY (Archetype: Organic & Earthy)",
   "typography": {
-    "fonts": [
-      {
-        "role": "Headings & Display",
-        "family": "Outfit",
-        "fallback": "sans-serif",
-        "weights": ["300", "500", "700"],
-        "usage": "Use for high-level numbers, dashboard titles, and the Iris branding."
-      },
-      {
-        "role": "Body & UI Elements",
-        "family": "IBM Plex Sans",
-        "fallback": "sans-serif",
-        "weights": ["400", "500"],
-        "usage": "Use for all standard text, transcript messages, and notes."
-      },
-      {
-        "role": "Data & Timestamps",
-        "family": "JetBrains Mono",
-        "fallback": "monospace",
-        "weights": ["400"],
-        "usage": "Use for ticket IDs, time tags, status labels, and metadata."
-      }
-    ],
-    "scale_rules": "H1 max text-4xl tracking-tight. Use uppercase wide-tracking (tracking-[0.2em]) for section overlines (e.g., 'TICKET QUEUE', 'INTELLIGENCE')."
-  },
-  "colors": {
-    "palette": {
-      "background_base": "#0A0A0A",
-      "surface_level_1": "#121212",
-      "surface_level_2": "#1A1A1A",
-      "border_dim": "rgba(255, 255, 255, 0.08)",
-      "border_bright": "rgba(255, 255, 255, 0.2)",
-      "text_primary": "#FFFFFF",
-      "text_secondary": "#A1A1AA",
-      "text_muted": "#52525B",
-      "brand_discord": "#5865F2",
-      "brand_discord_dim": "rgba(88, 101, 242, 0.15)",
-      "accent_vocal": "#22D3EE",
-      "status_urgent": "#EF4444",
-      "status_resolved": "#10B981"
-    },
-    "instructions_to_main_agent": "Never use pure black or pure white except for text. Rely on true grey surfaces for elevation. Discord Blurple is used for connection states and the demo helper. The neon cyan (#22D3EE) is reserved exclusively for the AI Vocal Summary audio player."
-  },
-  "visual_enhancers": {
-    "surfaces": "Grid Borders: Expose the skeleton of the UI. Use 'border-r border-b border-border_dim' on panes. The command center should look like a cohesive glass/metal control panel.",
-    "active_states": "For the active ticket in the queue, use a 1px solid left-border of Discord Blurple and change background to surface_level_2.",
-    "glassmorphism": "Use sparingly. For sticky headers or the 'Demo Mode' overlay, use bg-black/60 with backdrop-blur-xl and a delicate top border."
-  },
-  "layouts": {
-    "architecture": "3-Column Tactical Split: \n1. Nano-Sidebar (64px wide) for navigation icons & Discord connection status.\n2. Ticket Queue (320px wide) - dense vertical list of 3 preloaded tickets.\n3. Ticket Workspace (Fluid remainder) - The main stage containing transcripts, notes, and vocal summaries.",
-    "spacing_strategy": "Dense layout for the queue (gap-2, p-3). Generous layout for the Workspace (p-8, max-w-4xl). No standard centered containers; full-screen flex/grid taking 100vh.",
-    "ticket_workspace_grid": "Within the workspace, use a 2-column bento layout: Left column (col-span-8) for Chat Transcript. Right column (col-span-4) for AI Intelligence (Vocal Summary widget + Notes)."
-  },
-  "component_instructions": {
-    "demo_access_mode": {
-      "type": "overlay_or_empty_state_button",
-      "design": "A massive, immersive center-screen interaction before the dashboard loads, or a prominent button in the sidebar. Text: 'Accéder au mode démo'. Include a small fictional helper avatar next to it.",
-      "action": "Clicking populates the dashboard with the 3 realistic tickets."
-    },
-    "vocal_summary_widget": {
-      "type": "custom_ui",
-      "design": "A card in the Intelligence panel. Contains a 'Play' button, a timestamp (e.g., '01:24'), and a mocked waveform built with framer-motion or simple CSS flex bars. Accentuated with accent_vocal color.",
-      "feel": "Feels like an advanced AI listening tool."
-    },
-    "discord_connection": {
-      "type": "status_badge",
-      "design": "Located at bottom of the nano-sidebar. Uses the Discord brand color. Shows a pulsing green status dot indicating 'Connected'."
-    },
-    "chat_transcript": {
-      "type": "message_feed",
-      "design": "Distinct styling for User vs Helper. User: surface_level_2 bubble. Helper (Discord): brand_discord_dim bubble with 1px border. Use monospace for metadata (time, IDs) above each bubble."
+    "font_families": ["Manrope (Headings)", "IBM Plex Sans (Body)"],
+    "rules": "Never use Inter for headings. Use Manrope for its soft, humanistic geometry. Use IBM Plex Sans for readable notes and body text. Tight letter spacing for headings (>32px). Labels should be uppercase with wide tracking.",
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl tracking-tight leading-tight",
+      "h2": "text-2xl sm:text-3xl tracking-tight",
+      "h3": "text-xl font-medium",
+      "body": "text-base leading-relaxed text-slate-700",
+      "labels": "text-xs tracking-[0.1em] uppercase text-sage-600 font-semibold"
     }
   },
-  "mock_data_requirements": {
-    "tickets": [
-      {
-        "id": "TKT-0891",
-        "user": "Alexandre D.",
-        "issue": "Problème de synchronisation API",
-        "status": "urgent",
-        "vocal_summary_length": "01:12"
-      },
-      {
-        "id": "TKT-0890",
-        "user": "Sarah M.",
-        "issue": "Accès refusé au serveur vocal",
-        "status": "open",
-        "vocal_summary_length": "00:45"
-      },
-      {
-        "id": "TKT-0888",
-        "user": "Marc T.",
-        "issue": "Question sur la facturation premium",
-        "status": "resolved",
-        "vocal_summary_length": "02:03"
-      }
-    ]
+  "colors": {
+    "background": "#F9F9F7",
+    "surface": "#FFFFFF",
+    "primary": "#4A675C",
+    "secondary": "#DCE2DD",
+    "accent": "#C27D65",
+    "text": "#1C2622",
+    "borders": "#E5E7E5"
+  },
+  "visual enhancers": {
+    "shadows": "Very soft, ambient shadow (`shadow-sm` or `shadow-[0_4px_20px_rgba(0,0,0,0.03)]`). Do not use harsh shadows.",
+    "borders": "1px solid borders (`border-slate-200`) on cards.",
+    "radius": "Subtle roundness (`rounded-xl` or `rounded-2xl`). Avoid sharp brutalist edges."
+  },
+  "component name": [
+    {
+      "name": "Demo Case Creation Button",
+      "style": "pill-shaped (`rounded-full`), soft background (`bg-accent/10`), text (`text-accent`), subtle hover lift.",
+      "usage": "Instant demo case creation. Distinct from the primary 'Complete Form' button."
+    },
+    {
+      "name": "Complete Form Dialog",
+      "style": "Shadcn Dialog. White background, generous padding (`p-8`). Progressive disclosure.",
+      "usage": "Detailed case creation form with patient history."
+    },
+    {
+      "name": "Listening Workspace (Écoute)",
+      "style": "Minimalist panel, generous whitespace (`p-12`). Contains a subtle audio waveform visualizer.",
+      "usage": "Calm environment while the helper is actively listening or recording."
+    },
+    {
+      "name": "Voice Session Summary (Compte-rendu vocal)",
+      "style": "Flat card, `bg-white`, `border-l-4 border-primary` to indicate AI-generated summary.",
+      "usage": "Displays transcribed/summarized notes."
+    },
+    {
+      "name": "Follow-up Status (Statut de suivi)",
+      "style": "Shadcn Badge components. Colors mapping to state (Green for 'Stable', Amber for 'Monitor', Grey for 'Archived').",
+      "usage": "At-a-glance status in the dashboard and case header."
+    }
+  ],
+  "grids": {
+    "dashboard_mode": "High Density Grid (Mode B), but with generous padding. `grid-cols-1 md:grid-cols-12 gap-6`.",
+    "workspace_layout": "Sidebar (col-span-3) + Main Workspace (col-span-9). Inside Main: Split notes (col-span-6) and summary (col-span-6)."
+  },
+  "layouts": {
+    "overall": "Sidebar-based navigation (predictable, low cognitive load). Mobile: bottom nav or hamburger.",
+    "private_notes_area": "Distraction-free, large text area (Notion style). Left-aligned text, high line-height (`leading-loose`)."
   },
   "motion": {
-    "transitions": "Fast, mechanical transitions. duration-150 ease-out.",
-    "audio_waveform": "When 'playing' a vocal summary, animate the flex bars changing height randomly."
+    "transitions": "Micro-interactions only. 300ms ease-in-out for hover states. Fade-in for content switching.",
+    "page_load": "Staggered fade-up (Y-axis 10px, opacity 0 to 1 over 0.5s) to feel gentle."
   },
   "accessibility": {
-    "contrast": "Maintain 4.5:1 ratio for transcript text.",
-    "testing": "All interactive elements MUST include data-testid attributes (e.g., data-testid='demo-access-btn', data-testid='ticket-item-TKT-0891')."
+    "contrast": "Text must meet APCA standards. Deep slate on off-white.",
+    "focus_states": "High contrast ring (`focus:ring-primary/50`) for all inputs.",
+    "reduced_motion": "Respect `prefers-reduced-motion`. Add `data-testid` to all interactive elements."
   },
   "media": {
-    "image_urls": {
-      "helper_avatar": "https://images.pexels.com/photos/31869537/pexels-photo-31869537.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=150&w=150",
-      "user_alexandre": "https://images.pexels.com/photos/33605541/pexels-photo-33605541.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=150&w=150"
-    },
-    "instructions": "Use these precise image URLs for the user avatars in the ticket queue and transcript to make the fake data feel extremely realistic and high-end."
+    "avatars": "Use round (`rounded-full`) professional headshots. 1px border ring.",
+    "icons": "Use `lucide-react`. Stroke width 1.5 for a lighter feel."
   },
+  "3d libraries": {
+    "status": "NOT REQUIRED. 3D models or heavy animations would detract from the calm, professional, and serious nature of a mental health dashboard."
+  },
+  "image urls": [
+    {
+      "category": "Patient Avatar 1",
+      "url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwzfHxjYWxtJTIwcHJvZmVzc2lvbmFsJTIwaGVhZHNob3QlMjBhdmF0YXJ8ZW58MHx8fHwxNzg0ODc0OTMxfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Man wearing Henley top portrait"
+    },
+    {
+      "category": "Patient Avatar 2",
+      "url": "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHw0fHxjYWxtJTIwcHJvZmVzc2lvbmFsJTIwaGVhZHNob3QlMjBhdmF0YXJ8ZW58MHx8fHwxNzg0ODc0OTMxfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Woman in white crew neck shirt smiling"
+    },
+    {
+      "category": "Patient Avatar 3",
+      "url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwxfHxjYWxtJTIwcHJvZmVzc2lvbmFsJTIwaGVhZHNob3QlMjBhdmF0YXJ8ZW58MHx8fHwxNzg0ODc0OTMxfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Man in black button-up shirt"
+    }
+  ],
+  "instructions_to_main_agent": [
+    "CRITICAL: Replace the existing 'Performance Pro' hacker theme in App.css and index.css with the 'Organic & Earthy' Light Theme.",
+    "Remove all dark mode gradients and neon borders.",
+    "Implement two distinct case creation actions: A 'Quick Demo' button that instantly populates a mocked case (use the provided avatars), and a 'Complete Form' button that opens a Shadcn Dialog with extensive patient detail fields.",
+    "For the 'Écoute' (Listening) section, design a calm visualizer (using standard CSS or Framer Motion bars, NOT a complex 3D library) centered in a large white card.",
+    "Place 'Notes privées' and 'Compte-rendu vocal' side-by-side or stacked in the workspace. Notes should look like a clean document, and the summary should clearly look AI-generated but reassuring.",
+    "Use Shadcn UI components extensively: Dialog, Button, Input, Textarea, Select, Badge, Card, Avatar.",
+    "Include 'data-testid' on all buttons, forms, and interactive elements."
+  ],
   "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
-    "The project uses .js/.jsx files. Do not generate TypeScript (.ts/.tsx) code.",
-    "NEVER use boilerplate Vercel/Stripe styles. Break the generic 'AI slop' pattern by utilizing strict borders, monospace typography for metadata, and extreme contrast between the black background and grey surfaces.",
-    "DO NOT center the dashboard container. It must span 100vw and 100vh with overflow-hidden on the body, managing scroll inside the individual panes.",
-    "Avoid generic emojis. Use lucide-react icons for system actions.",
-    "Do NOT use HTML <audio> controls for the vocal summary; build a custom UI mock to maintain the premium command center aesthetic.",
-    "Use standard HTML/Tailwind for the layout structure, but use Shadcn for dropdowns, tooltips, or complex interactive overlays if needed.",
-    "DO NOT use completely transparent backgrounds for surfaces containing content."
+    "Do not use generic centered layouts or uniform styling. Prioritize progressive disclosure: hide secondary information until requested.",
+    "Never apply `transition: all`. Target specific properties.",
+    "Use 2-3x more spacing (`p-6` to `p-12`) than typical density. Cramped designs cause cognitive overload, especially in healthcare.",
+    "Never use AI assistant emoji characters. Use Lucide icons.",
+    "Use `sonner` for toast notifications.",
+    "Prioritize pre-existing components from `src/components/ui`."
+  ],
+  "GENERAL UI UX DESIGN GUIDELINES": [
+    "Context First: Design is for a mental health helper (therapist/counselor). It must be a 'Calm, reassuring, and professional' environment.",
+    "Emotion First: Every design decision maps to trust and calm. Soft tones, clear hierarchy, no aggressive borders.",
+    "Alignment: Left-align paragraphs, inputs, and dense content for readability. Center-align only major empty states.",
+    "Surface Strategy: Flat Solid surfaces. DO NOT use Glassmorphism for health apps—it feels cold and refracts data readability.",
+    "Grid Protocol: Use Grid Mode B (High Density) but soften it with wider gaps (`gap-6`) and larger padding."
   ]
 }
