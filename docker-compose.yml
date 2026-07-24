@@ -34,6 +34,7 @@ services:
       - APP_SESSION_SECRET=topsecret
       - DISCORD_HELPER_ROLE_ID=1499491909750755570
       - DISCORD_ADMIN_ROLE_ID=1503100661728936046
+      - FRONTEND_URL=https://iris.loasis.app
       - EMERGENT_LLM_KEY=000000
     depends_on:
       - mongodb
