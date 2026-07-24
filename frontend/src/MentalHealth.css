@@ -721,6 +721,279 @@ body {
   line-height: 1.75;
 }
 
+.ticket-tools-band {
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 12px 28px;
+}
+
+.assignment-widget,
+.ai-notice {
+  align-items: center;
+  color: #56675b;
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+}
+
+.assignment-widget > span {
+  align-items: center;
+  color: var(--sage);
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: 600;
+  gap: 6px;
+  letter-spacing: 0.08em;
+}
+
+.assignment-widget select {
+  background: #f8faf8;
+  border: 1px solid #d7e1d9;
+  border-radius: 8px;
+  color: #395443;
+  font: 500 12px "IBM Plex Sans", sans-serif;
+  max-width: 300px;
+  padding: 7px 28px 7px 10px;
+}
+
+.assignment-widget b {
+  color: #4b5f51;
+  font-weight: 500;
+}
+
+.ai-notice {
+  color: #66756c;
+}
+
+.ai-notice svg {
+  color: #7a956c;
+}
+
+.ai-summary-widget {
+  background: #eef2e6;
+  border-bottom: 1px solid #dbe4cf;
+  padding: 19px 20px;
+}
+
+.summary-content {
+  display: grid;
+  gap: 11px;
+  margin: 14px 0;
+}
+
+.summary-content > div {
+  border-left: 2px solid #a3b18a;
+  padding-left: 10px;
+}
+
+.summary-content strong {
+  color: #304c36;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.summary-content p,
+.summary-empty {
+  color: #4e6252;
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 3px 0 0;
+}
+
+.summary-empty {
+  margin: 14px 0;
+}
+
+.gemini-summary-button {
+  align-items: center;
+  background: #3a5a40;
+  border: 1px solid #3a5a40;
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font: 600 12px "IBM Plex Sans", sans-serif;
+  gap: 7px;
+  justify-content: center;
+  min-height: 37px;
+  padding: 8px 13px;
+  transition: background-color 180ms ease, transform 180ms ease;
+  width: 100%;
+}
+
+.gemini-summary-button:hover {
+  background: #2b4330;
+  transform: translateY(-1px);
+}
+
+.gemini-summary-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.admin-page {
+  max-width: 1360px;
+}
+
+.admin-protection {
+  align-items: center;
+  background: #eef4ef;
+  border: 1px solid #d2e0d5;
+  border-radius: 999px;
+  color: #42604b;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 7px;
+  padding: 10px 13px;
+}
+
+.admin-metrics {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 24px;
+}
+
+.admin-metrics > div {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: #6b7c70;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  min-height: 130px;
+  padding: 20px;
+}
+
+.admin-metrics svg {
+  color: var(--sage);
+}
+
+.admin-metrics strong {
+  color: var(--ink);
+  font: 600 37px "Manrope", sans-serif;
+  grid-column: 1 / -1;
+  margin-top: auto;
+}
+
+.admin-helper-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+}
+
+.admin-helper-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 19px;
+}
+
+.admin-helper-card > header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.admin-avatar {
+  background: var(--sage-soft);
+  border-radius: 50%;
+  color: var(--sage);
+  display: grid;
+  font-weight: 600;
+  height: 38px;
+  overflow: hidden;
+  place-items: center;
+  width: 38px;
+}
+
+.admin-avatar img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.admin-helper-card h2 {
+  color: var(--ink);
+  font: 600 15px "Manrope", sans-serif;
+  margin: 0;
+}
+
+.admin-helper-card header p {
+  color: #738178;
+  font: 11px "IBM Plex Sans", sans-serif;
+  margin: 3px 0 0;
+}
+
+.admin-helper-counts {
+  border-bottom: 1px solid #edf1ed;
+  color: #6e7d73;
+  display: flex;
+  font-size: 12px;
+  justify-content: space-between;
+  margin: 17px 0 12px;
+  padding-bottom: 12px;
+}
+
+.admin-helper-counts b {
+  color: var(--sage);
+  font-weight: 600;
+}
+
+.admin-helper-card summary {
+  color: #466451;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-helper-card details a {
+  background: #f7faf7;
+  border-radius: 7px;
+  color: #3f5545;
+  display: flex;
+  font-size: 12px;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 9px;
+}
+
+.admin-helper-card details a span {
+  color: #75877a;
+}
+
+.admin-empty,
+.admin-error {
+  color: #6d7e72;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .ticket-tools-band {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 13px 18px;
+  }
+
+  .assignment-widget {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .assignment-widget select {
+    max-width: 100%;
+  }
+
+  .admin-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
 .editor-foot {
   background: #fafbfa;
   border-top-color: var(--line);

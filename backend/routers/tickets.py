@@ -1,7 +1,10 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 
 from database import db
 from models.ticket import (
@@ -13,6 +16,7 @@ from models.ticket import (
     TicketUpdate,
 )
 from services.auth_service import current_helper
+from services.ai_summary_service import ensure_ai_configuration, stream_summary
 from services.discord_service import DiscordService
 
 
@@ -102,6 +106,35 @@ async def get_ticket(
     _: AuthenticatedHelper = Depends(current_helper),
 ) -> TicketDetail:
     return await ticket_or_404(ticket_id, _)
+
+
+@router.post("/{ticket_id}/ai-summary/stream")
+async def generate_ai_summary(
+    ticket_id: str,
+    helper: AuthenticatedHelper = Depends(current_helper),
+) -> StreamingResponse:
+    ensure_ai_configuration()
+    ticket = await ticket_or_404(ticket_id, helper)
+
+    async def event_generator():
+        try:
+            async for event_type, payload in stream_summary(ticket, helper.id):
+                if event_type == "progress":
+                    yield f"event: progress\ndata: {json.dumps({'message': payload})}\n\n"
+                    continue
+                await db.tickets.update_one(
+                    {"id": ticket_id, "demo_ticket": {"$ne": True}},
+                    {"$set": {"ai_summary": payload.model_dump()}},
+                )
+                yield f"event: complete\ndata: {json.dumps(payload.model_dump())}\n\n"
+        except Exception as error:
+            yield f"event: error\ndata: {json.dumps({'message': str(error)})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.patch("/{ticket_id}", response_model=TicketDetail)

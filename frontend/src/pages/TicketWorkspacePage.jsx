@@ -1,4 +1,4 @@
-import { Archive, Check, ChevronLeft, FileText, HeartHandshake, LoaderCircle, Pause, Play, RefreshCw, Save, ShieldCheck, Volume2 } from "lucide-react";
+import { Archive, Bot, Check, ChevronLeft, FileText, HeartHandshake, LoaderCircle, Pause, Play, RefreshCw, Save, ShieldCheck, UserRoundCheck, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { api, getErrorMessage } from "../api/client";
 const formatTime = (timestamp) => new Date(timestamp).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
 
-export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
+export default function TicketWorkspacePage({ onTicketUpdate, isAdmin }) {
   const { ticketId } = useParams();
   const [ticket, setTicket] = useState(null);
   const [notes, setNotes] = useState("");
@@ -20,6 +20,9 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
   const [error, setError] = useState("");
   const [playing, setPlaying] = useState(false);
   const [followUpStatus, setFollowUpStatus] = useState("à écouter");
+  const [helpers, setHelpers] = useState([]);
+  const [summaryProgress, setSummaryProgress] = useState("");
+  const [generatingSummary, setGeneratingSummary] = useState(false);
 
   useEffect(() => {
     const loadTicket = async () => {
@@ -39,6 +42,11 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
     };
     loadTicket();
   }, [ticketId]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.get("/admin/helpers").then((response) => setHelpers(response.data)).catch(() => undefined);
+  }, [isAdmin]);
 
   const save = async () => {
     setSaving(true);
@@ -83,6 +91,54 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
     }
   };
 
+  const assignHelper = async (helperId) => {
+    try {
+      const response = await api.patch(`/admin/tickets/${ticketId}/assignment`, { helper_id: helperId || null });
+      setTicket(response.data);
+      onTicketUpdate(response.data);
+      toast.success("Helper principal mis à jour.");
+    } catch (requestError) {
+      toast.error(getErrorMessage(requestError));
+    }
+  };
+
+  const generateSummary = async () => {
+    setGeneratingSummary(true);
+    setSummaryProgress("Connexion à Gemini…");
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/tickets/${ticketId}/ai-summary/stream`, { method: "POST", credentials: "include" });
+      if (!response.ok || !response.body) throw new Error("La génération du résumé est indisponible.");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || "";
+        events.forEach((eventBlock) => {
+          const eventType = eventBlock.match(/^event: (.+)$/m)?.[1];
+          const data = eventBlock.match(/^data: (.+)$/m)?.[1];
+          if (!data) return;
+          const payload = JSON.parse(data);
+          if (eventType === "progress") setSummaryProgress(payload.message);
+          if (eventType === "complete") {
+            setTicket((current) => ({ ...current, ai_summary: payload }));
+            setSummaryProgress("");
+            toast.success("Résumé Gemini enregistré.");
+          }
+          if (eventType === "error") throw new Error(payload.message);
+        });
+      }
+    } catch (requestError) {
+      toast.error(requestError.message || "La génération Gemini a échoué.");
+    } finally {
+      setGeneratingSummary(false);
+      setSummaryProgress("");
+    }
+  };
+
   if (loading) return <div className="loading-page" data-testid="ticket-loading"><LoaderCircle className="spin" size={26} /> Chargement du dossier…</div>;
   if (error || !ticket) return <div className="loading-page error-page" data-testid="ticket-load-error">{error || "Ticket introuvable."}</div>;
 
@@ -122,6 +178,14 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
         </label>
       </div>
 
+      <section className="ticket-tools-band" data-testid="ticket-tools-band">
+        <div className="assignment-widget" data-testid="helper-assignment-panel">
+          <span><UserRoundCheck size={16} /> AIDÉ PAR</span>
+          {isAdmin ? <select value={ticket.assigned_helper?.id || ""} onChange={(event) => assignHelper(event.target.value)} data-testid="helper-assignment-select"><option value="">Non attribué</option>{helpers.map((helper) => <option value={helper.id} key={helper.id}>{helper.display_name || helper.username} · {helper.id}</option>)}</select> : <b data-testid="assigned-helper-readonly">{ticket.assigned_helper ? `${ticket.assigned_helper.display_name || ticket.assigned_helper.username} · ${ticket.assigned_helper.id}` : "Non attribué"}</b>}
+        </div>
+        <div className="ai-notice" data-testid="gemini-privacy-notice"><Bot size={16} /> Gemini synthétise uniquement le contenu de ce dossier, sans diagnostic.</div>
+      </section>
+
       <div className="workspace-grid">
         <section className="workspace-column transcript-column" data-testid="transcript-panel">
           <div className="column-header"><span><HeartHandshake size={16} /> ÉCOUTE</span><b>{ticket.message_count}</b></div>
@@ -140,6 +204,11 @@ export default function TicketWorkspacePage({ onTicketUpdate, isDemo }) {
           </div>
         </section>
         <aside className="intelligence-panel" data-testid="vocal-panel">
+          <section className="ai-summary-widget" data-testid="ai-summary-panel">
+            <div className="intelligence-label"><span><Bot size={15} /> RÉSUMÉ GEMINI</span><b>CONFIDENTIEL</b></div>
+            {ticket.ai_summary ? <div className="summary-content" data-testid="ai-summary-content"><div><strong>Contexte</strong><p>{ticket.ai_summary.context}</p></div><div><strong>Besoins exprimés</strong><p>{ticket.ai_summary.expressed_needs}</p></div><div><strong>Actions</strong><p>{ticket.ai_summary.actions}</p></div><div><strong>Prochain suivi</strong><p>{ticket.ai_summary.next_follow_up}</p></div></div> : <p className="summary-empty" data-testid="ai-summary-empty">Aucune synthèse générée pour le moment.</p>}
+            <button className="gemini-summary-button" type="button" onClick={generateSummary} disabled={generatingSummary} data-testid="generate-ai-summary-button"><Bot size={16} /> {generatingSummary ? summaryProgress || "Génération…" : "Générer le résumé"}</button>
+          </section>
           <div className="vocal-widget">
             <div className="intelligence-label"><span><Volume2 size={15} /> COMPTE-RENDU VOCAL</span><b>PRIVÉ</b></div>
             <p className="vocal-title">Repères de l’échange</p>

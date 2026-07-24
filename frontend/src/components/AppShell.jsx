@@ -1,8 +1,8 @@
-import { Archive, Grid2X2, LogOut, RadioTower } from "lucide-react";
+import { Archive, Grid2X2, LayoutDashboard, LogOut, RadioTower } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 
 
-export default function AppShell({ children, helper, tickets, onLogout }) {
+export default function AppShell({ children, helper, tickets, onLogout, isAdmin }) {
   return (
     <div className="app-shell" data-testid="iris-application">
       <aside className="sidebar nano-sidebar" data-testid="main-navigation">
@@ -11,6 +11,7 @@ export default function AppShell({ children, helper, tickets, onLogout }) {
         <nav className="sidebar-nav" aria-label="Navigation principale">
           <NavLink end className="nav-link" to="/" data-testid="active-tickets-link" title="Dossiers actifs"><Grid2X2 size={18} /></NavLink>
           <NavLink className="nav-link" to="/archives" data-testid="archives-link" title="Archives"><Archive size={18} /></NavLink>
+          {isAdmin && <NavLink className="nav-link" to="/admin" data-testid="admin-panel-link" title="Vue administrateur"><LayoutDashboard size={18} /></NavLink>}
         </nav>
 
         <div className="sidebar-bottom">

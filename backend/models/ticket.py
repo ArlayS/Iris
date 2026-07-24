@@ -34,6 +34,22 @@ class DiscordMember(BaseModel):
     joined_at: str | None = None
 
 
+class HelperIdentity(BaseModel):
+    id: str
+    username: str
+    display_name: str | None = None
+    avatar_url: str | None = None
+
+
+class AiSummary(BaseModel):
+    context: str
+    expressed_needs: str
+    actions: str
+    next_follow_up: str
+    generated_at: str
+    generated_by: str
+
+
 class TicketCreate(BaseModel):
     member_id: str = Field(pattern=r"^\d{15,22}$")
     channel_id: str = Field(pattern=r"^\d{15,22}$")
@@ -45,6 +61,10 @@ class TicketUpdate(BaseModel):
     vocal_summary: str | None = Field(default=None, max_length=25000)
     status: Literal["active", "archived"] | None = None
     follow_up_status: Literal["à écouter", "en suivi", "stable"] | None = None
+
+
+class TicketAssignmentUpdate(BaseModel):
+    helper_id: str | None = Field(default=None, pattern=r"^\d{15,22}$")
 
 
 class TicketSummary(BaseModel):
@@ -59,6 +79,7 @@ class TicketSummary(BaseModel):
     created_at: str
     priority: Literal["routine", "prioritaire", "urgent"] = "routine"
     follow_up_status: Literal["à écouter", "en suivi", "stable"] = "à écouter"
+    assigned_helper: HelperIdentity | None = None
 
 
 class TicketDetail(TicketSummary):
@@ -68,6 +89,7 @@ class TicketDetail(TicketSummary):
     last_synced_at: str | None = None
     created_by: str
     is_demo: bool = False
+    ai_summary: AiSummary | None = None
 
 
 class TicketStats(BaseModel):
@@ -87,3 +109,18 @@ class AuthenticatedHelper(BaseModel):
 class AuthSession(BaseModel):
     authenticated: bool
     helper: AuthenticatedHelper | None = None
+    is_admin: bool = False
+
+
+class AdminHelperOverview(BaseModel):
+    helper: HelperIdentity
+    assigned_count: int
+    active_count: int
+    tickets: list[TicketSummary] = Field(default_factory=list)
+
+
+class AdminOverview(BaseModel):
+    total_helpers: int
+    active_tickets: int
+    unassigned_tickets: int
+    helpers: list[AdminHelperOverview] = Field(default_factory=list)

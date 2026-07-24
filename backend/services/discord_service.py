@@ -5,7 +5,7 @@ import httpx
 from fastapi import HTTPException, status
 
 from config import DISCORD_BOT_TOKEN, DISCORD_GUILD_ID, missing_discord_bot_settings
-from models.ticket import DiscordAttachment, DiscordAuthor, DiscordMember, TranscriptMessage
+from models.ticket import DiscordAttachment, DiscordAuthor, DiscordMember, HelperIdentity, TranscriptMessage
 
 
 DISCORD_API_BASE = "https://discord.com/api/v10"
@@ -76,6 +76,33 @@ class DiscordService:
     async def member_has_role(self, member_id: str, role_id: str) -> bool:
         payload = await self._get(f"/guilds/{DISCORD_GUILD_ID}/members/{member_id}")
         return role_id in payload.get("roles", [])
+
+    async def fetch_helpers(self, role_id: str) -> list[HelperIdentity]:
+        helpers: list[HelperIdentity] = []
+        after: str | None = None
+        while True:
+            params: dict[str, str | int] = {"limit": 1000}
+            if after:
+                params["after"] = after
+            page = await self._get(f"/guilds/{DISCORD_GUILD_ID}/members", params)
+            if not page:
+                break
+            for member in page:
+                if role_id not in member.get("roles", []):
+                    continue
+                user = member["user"]
+                helpers.append(
+                    HelperIdentity(
+                        id=user["id"],
+                        username=user["username"],
+                        display_name=member.get("nick") or user.get("global_name"),
+                        avatar_url=avatar_url(user),
+                    )
+                )
+            if len(page) < 1000:
+                break
+            after = page[-1]["user"]["id"]
+        return helpers
 
     async def fetch_text_channel(self, channel_id: str) -> dict[str, Any]:
         channel = await self._get(f"/channels/{channel_id}")

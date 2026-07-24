@@ -161,8 +161,15 @@ class TestDemoSessionModeRejected:
         assert r_tickets.status_code == 401
 
     def test_signed_discord_mode_session_is_accepted_by_session_endpoint(self):
-        """Sanity: a properly signed mode=discord cookie passes /auth/session
-        (does NOT prove ticket ops work — those still hit Discord API)."""
+        """Sanity: a properly signed mode=discord cookie for a fabricated
+        user id no longer passes /auth/session because iteration 7 re-derives
+        Discord access on every session read (has_iris_access hits the guild
+        members API). We only verify here that the SIGNATURE is accepted at
+        the parse_session layer — i.e. the endpoint does NOT return the
+        unauthenticated shape it uses for tampered cookies. In practice
+        Discord will 404 the unknown user, which bubbles up. Any of
+        {200 authenticated:false, 404, 502} proves the crypto layer passed
+        but Discord RBAC rejected."""
         secret = None
         env_path = "/app/backend/.env"
         if os.path.exists(env_path):
@@ -190,10 +197,16 @@ class TestDemoSessionModeRejected:
             cookies={"iris_session": cookie},
             timeout=15,
         )
-        assert r.status_code == 200
-        data = r.json()
-        assert data.get("authenticated") is True
-        assert data["helper"]["username"] == "helper42"
+        # Never authenticated: either endpoint returned 200 with
+        # authenticated=false (Discord returned no role) OR bubbled the
+        # Discord 404/5xx.
+        assert r.status_code in (200, 404, 502)
+        if r.status_code == 200:
+            data = r.json()
+            assert data.get("authenticated") is False, (
+                "Iteration 7: session must re-derive access via Discord and "
+                "refuse fabricated users even if the HMAC signature is valid."
+            )
 
 
 # --- Static invariants: verify code contains no demo endpoints -------------

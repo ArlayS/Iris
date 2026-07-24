@@ -227,10 +227,16 @@ class TestStaticInvariants:
     # --- auth_service.py contracts ---
     def test_auth_service_enforces_guild_and_helper_role(self):
         source = self._read("services/auth_service.py")
-        # After a successful token exchange, presence in the guild AND the
-        # helper role MUST both be checked before any session is minted.
+        # After a successful token exchange, presence in the guild AND an
+        # authorized Discord role (helper OR admin) MUST both be checked
+        # before any session is minted.
         assert 'guild.get("id") == DISCORD_GUILD_ID' in source
-        assert "member_has_role(profile[\"id\"], DISCORD_HELPER_ROLE_ID)" in source
+        # Iteration 7: the helper-role gate is now delegated to
+        # has_iris_access(profile_id), which checks helper role first and
+        # falls back to admin role. Both role IDs must be involved.
+        assert "has_iris_access(profile[\"id\"])" in source
+        assert "member_has_role(helper_id, DISCORD_HELPER_ROLE_ID)" in source
+        assert "member_has_role(helper_id, DISCORD_ADMIN_ROLE_ID)" in source
         # Both checks must raise 403 when they fail
         assert "status_code=403" in source
         # The scope requested must be identify+guilds only

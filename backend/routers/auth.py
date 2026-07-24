@@ -9,6 +9,8 @@ from services.auth_service import (
     create_session,
     create_state,
     exchange_code,
+    has_iris_access,
+    is_admin_helper,
     parse_session,
 )
 
@@ -55,11 +57,15 @@ async def session(request: Request, response: Response) -> AuthSession:
     helper = parse_session(raw_session)
     if raw_session and not helper:
         response.delete_cookie(SESSION_COOKIE)
-        return AuthSession(authenticated=False, helper=None)
-    return AuthSession(authenticated=helper is not None, helper=helper)
+        return AuthSession(authenticated=False, helper=None, is_admin=False)
+    if helper and not await has_iris_access(helper.id):
+        response.delete_cookie(SESSION_COOKIE)
+        return AuthSession(authenticated=False, helper=None, is_admin=False)
+    is_admin = await is_admin_helper(helper.id) if helper else False
+    return AuthSession(authenticated=helper is not None, helper=helper, is_admin=is_admin)
 
 
 @router.post("/logout", response_model=AuthSession)
 async def logout(response: Response) -> AuthSession:
     response.delete_cookie(SESSION_COOKIE)
-    return AuthSession(authenticated=False, helper=None)
+    return AuthSession(authenticated=False, helper=None, is_admin=False)

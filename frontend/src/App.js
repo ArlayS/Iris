@@ -6,13 +6,14 @@ import { Toaster } from "sonner";
 
 import { api } from "./api/client";
 import AppShell from "./components/AppShell";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import NewTicketPage from "./pages/NewTicketPage";
 import TicketWorkspacePage from "./pages/TicketWorkspacePage";
 
 
-function AuthenticatedApp({ helper }) {
+function AuthenticatedApp({ helper, isAdmin }) {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ active_count: 0, archived_count: 0, total_messages: 0 });
 
@@ -39,12 +40,13 @@ function AuthenticatedApp({ helper }) {
   };
 
   return (
-    <AppShell helper={helper} tickets={tickets} onLogout={logout}>
+    <AppShell helper={helper} tickets={tickets} onLogout={logout} isAdmin={isAdmin}>
       <Routes>
         <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} />} />
         <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
-        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} />} />
+        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} isAdmin={isAdmin} />} />
         <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
+        <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
@@ -67,7 +69,7 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        {session.authenticated ? <AuthenticatedApp helper={session.helper} /> : <LoginPage />}
+        {session.authenticated ? <AuthenticatedApp helper={session.helper} isAdmin={session.is_admin} /> : <LoginPage />}
         <Toaster theme="light" position="bottom-right" />
       </BrowserRouter>
     </div>

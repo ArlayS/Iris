@@ -3,7 +3,7 @@ from starlette.middleware.cors import CORSMiddleware
 import logging
 from config import CORS_ORIGINS
 from database import client, initialize_indexes
-from routers import auth, members, tickets
+from routers import admin, auth, members, tickets
 
 
 app = FastAPI(title="Iris API")
@@ -15,6 +15,7 @@ async def root() -> dict[str, str]:
 
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 app.include_router(members.router, prefix="/api")
 app.include_router(tickets.router, prefix="/api")
 

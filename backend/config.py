@@ -18,6 +18,8 @@ DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET")
 DISCORD_REDIRECT_URI = os.environ.get("DISCORD_REDIRECT_URI")
 APP_SESSION_SECRET = os.environ.get("APP_SESSION_SECRET")
 DISCORD_HELPER_ROLE_ID = os.environ.get("DISCORD_HELPER_ROLE_ID")
+DISCORD_ADMIN_ROLE_ID = os.environ.get("DISCORD_ADMIN_ROLE_ID")
+EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
 
 
 def missing_discord_bot_settings() -> list[str]:
@@ -25,6 +27,7 @@ def missing_discord_bot_settings() -> list[str]:
         "DISCORD_GUILD_ID": DISCORD_GUILD_ID,
         "DISCORD_BOT_TOKEN": DISCORD_BOT_TOKEN,
         "DISCORD_HELPER_ROLE_ID": DISCORD_HELPER_ROLE_ID,
+        "DISCORD_ADMIN_ROLE_ID": DISCORD_ADMIN_ROLE_ID,
     }
     return [name for name, value in required.items() if not value]
 
@@ -36,5 +39,6 @@ def missing_oauth_settings() -> list[str]:
         "DISCORD_REDIRECT_URI": DISCORD_REDIRECT_URI,
         "APP_SESSION_SECRET": APP_SESSION_SECRET,
         "DISCORD_HELPER_ROLE_ID": DISCORD_HELPER_ROLE_ID,
+        "DISCORD_ADMIN_ROLE_ID": DISCORD_ADMIN_ROLE_ID,
     }
     return [name for name, value in required.items() if not value]

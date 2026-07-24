@@ -14,6 +14,7 @@ from config import (
     DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET,
     DISCORD_GUILD_ID,
+    DISCORD_ADMIN_ROLE_ID,
     DISCORD_HELPER_ROLE_ID,
     DISCORD_REDIRECT_URI,
     missing_oauth_settings,
@@ -88,10 +89,10 @@ async def exchange_code(code: str) -> AuthenticatedHelper:
             status_code=403,
             detail="Votre compte Discord ne fait pas partie du serveur Iris.",
         )
-    if not await DiscordService().member_has_role(profile["id"], DISCORD_HELPER_ROLE_ID):
+    if not await has_iris_access(profile["id"]):
         raise HTTPException(
             status_code=403,
-            detail="Votre compte Discord ne possède pas le rôle helper requis pour Iris.",
+            detail="Votre compte Discord ne possède pas un rôle autorisé pour Iris.",
         )
     avatar = profile.get("avatar")
     avatar_url = (
@@ -159,10 +160,31 @@ def parse_session(raw_session: str | None) -> AuthenticatedHelper | None:
         return None
 
 
-def current_helper(request: Request) -> AuthenticatedHelper:
+async def has_iris_access(helper_id: str) -> bool:
+    discord = DiscordService()
+    has_helper_role = await discord.member_has_role(helper_id, DISCORD_HELPER_ROLE_ID)
+    if has_helper_role:
+        return True
+    return await discord.member_has_role(helper_id, DISCORD_ADMIN_ROLE_ID)
+
+
+async def is_admin_helper(helper_id: str) -> bool:
+    return await DiscordService().member_has_role(helper_id, DISCORD_ADMIN_ROLE_ID)
+
+
+async def current_helper(request: Request) -> AuthenticatedHelper:
     helper = parse_session(request.cookies.get(SESSION_COOKIE))
     if not helper or helper.mode != "discord":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Connexion requise.")
+    if not await has_iris_access(helper.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Votre rôle Discord ne permet plus d’accéder à Iris.")
+    return helper
+
+
+async def current_admin(request: Request) -> AuthenticatedHelper:
+    helper = await current_helper(request)
+    if not await is_admin_helper(helper.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle administrateur requis.")
     return helper
 
 

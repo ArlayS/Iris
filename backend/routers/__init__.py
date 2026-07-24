@@ -1,3 +1,3 @@
-from . import auth, members, tickets
+from . import admin, auth, members, tickets
 
-__all__ = ["auth", "members", "tickets"]
+__all__ = ["admin", "auth", "members", "tickets"]
