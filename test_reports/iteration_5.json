@@ -1,0 +1,50 @@
+{
+  "summary": "Iteration 5 — validated the switch to a fully configured Discord OAuth + bot pipeline (guild 1081957992188088391, helper role 1499491909750755570). Backend: updated /app/backend/tests/test_iris_api.py (previous iteration expected 503; now expects the OAuth flow to be live), added 12 new static + live assertions covering: (a) GET /api/auth/discord/login -> 302 to https://discord.com/oauth2/authorize with response_type=code, scope='identify guilds', prompt=consent, HttpOnly+Secure iris_oauth_state cookie set, no client_secret/bot-token leakage in body or Location; (b) /api/auth/discord/callback with a mismatched state -> 302 /?auth=failed and NO iris_session cookie set; (c) all tickets/members endpoints still 401 without a session and reject a forged HMAC cookie; (d) source-code invariants — exchange_code enforces both DISCORD_GUILD_ID membership AND DiscordService.member_has_role(DISCORD_HELPER_ROLE_ID) before minting a session; DiscordService.fetch_member/member_has_role are guild-scoped via /guilds/{DISCORD_GUILD_ID}/members/{member_id}; fetch_text_channel validates guild_id + type in {0,5,15}; fetch_channel_history paginates with limit=100 + before until page < 100; DISCORD_BOT_TOKEN is used only with the `Bot <token>` scheme server-side; .env pins the expected guild/role; POST /api/tickets is gated on current_helper and calls DiscordService's three guild-scoped fetchers. Full run against the public preview URL: 53/53 pytest tests pass. Frontend: automated Playwright pass on https://iris-logs.preview.emergentagent.com — login page renders, discord-login-button href resolves to <REACT_APP_BACKEND_URL>/api/auth/discord/login, demo-access-btn logs into the dashboard, the demo-mode CTA reads 'Formulaire complet' (the 'Importer un salon Discord' wording is confirmed via static source inspection since it only renders for a Discord-authenticated helper), /new page shows demo-mode wording, browser-context fetch of /api/auth/discord/login returns 302 to discord.com with scope=identify+guilds. Live OAuth completion and real import were intentionally NOT executed (no human helper Discord account available, and creating a ticket in the real server would materially affect production data).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "LoginPage",
+        "issues": [
+          "Very low contrast between text and background (light grey on pale beige) for the h1 'Chaque demande mérite un poste de commande', the specs row (DISCORD SYNC / ACCÈS HELPERS) and the 'Continuer avec Discord' button label — screenshot at /app/test_reports/login_state.png. Fails WCAG AA on a quick eyeball check. Consider tightening the palette or adding an accent for the primary CTA.",
+          "Wording drift: LoginPage still uses ops-console vocabulary ('poste de commande', 'HELPER OPERATIONS · SYSTÈME INTERNE', 'DISCORD SYNC') that clashes with the softer mental-health vocabulary used everywhere after login (Écoute active / Notes privées / CONFIDENTIEL). Minor consistency polish."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iris_api.py",
+    "/app/backend/tests/test_demo_mode.py",
+    "/app/backend/tests/test_demo_case_creation.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "FIRST HUMAN HELPER LOGIN NEEDED: automate cannot complete the OAuth handshake — a real Discord account that (a) is a member of guild 1081957992188088391 and (b) carries role 1499491909750755570 must click 'Continuer avec Discord' once and confirm they land on the dashboard with helper.mode='discord'. Only that pass exercises the live exchange_code / member_has_role / avatar_url branches.",
+    "SECOND HUMAN CHECK (import path): once logged in, that same helper must open /new, paste a REAL member_id + channel_id from the guild, and confirm the POST /api/tickets returns 201 with a populated transcript. This is the only path that exercises fetch_member + fetch_text_channel + fetch_channel_history against the live Discord API — the testing agent intentionally did NOT create a ticket in the real server.",
+    "NEGATIVE PATH (still human): a Discord account that IS on the guild but does NOT have the Helper role must attempt OAuth login and confirm the callback returns 403 ('Votre compte Discord ne possède pas le rôle helper requis') and no iris_session cookie is issued.",
+    "LOW-PRIORITY UI POLISH: improve LoginPage contrast (WCAG) and unify the ops-console wording with the mental-health tone used post-login."
+  ],
+  "critical_code_review_comments": [
+    "services/auth_service.py:exchange_code — order of checks is correct: token exchange, /users/@me, /users/@me/guilds membership on DISCORD_GUILD_ID (403 if not), then bot-side DiscordService.member_has_role(DISCORD_HELPER_ROLE_ID) (403 if not). Only then create_session is called. Good defence in depth.",
+    "services/discord_service.py — all Discord API calls are made with the bot's `Bot <token>` header; the user's OAuth access_token is discarded after the identify+guilds probe. Correct: it means the import path cannot be tricked into using a lower-privileged user token.",
+    "services/discord_service.py:fetch_text_channel — validates BOTH channel.guild_id == DISCORD_GUILD_ID (403) and channel.type in {0=GUILD_TEXT,5=ANNOUNCEMENT,15=FORUM} (422). This is what stops a helper from importing a DM or a channel from another guild.",
+    "services/discord_service.py:fetch_channel_history — pagination is done with params=limit=100 + before=last_id until page length < 100, then messages are reversed to return chronological order. Simple and correct; no cursor race conditions.",
+    "routers/tickets.py:create_ticket — depends on current_helper (Discord-scoped helper), checks for an existing (channel_id, non-demo scope) ticket (409), then calls fetch_member/fetch_text_channel/fetch_channel_history. Good. A demo helper hitting this endpoint fails on the DiscordService side (verified by test_create_ticket_denied_for_demo_helper), so demo/real isolation is preserved.",
+    "routers/auth.py:discord_login — sets iris_oauth_state HttpOnly + Secure + SameSite=lax with a 10-min TTL. discord_callback compares against the cookie in a state-mismatch branch that returns /?auth=failed WITHOUT minting any session. Correct.",
+    "config.py — DISCORD_BOT_TOKEN, DISCORD_CLIENT_SECRET, APP_SESSION_SECRET, DISCORD_HELPER_ROLE_ID are all read from env at import time; no default is baked in. missing_oauth_settings() gates every OAuth entry point with a 503 with a French message that mentions only the missing KEY NAMES (never their values). Good.",
+    "MINOR: services/discord_service.py:fetch_channel_history reverses the entire list at the end (list(reversed(messages))). For very large channels (10k+ messages) this is fine but the API cost is O(N). Not a bug, worth noting.",
+    "MINOR: services/auth_service.py:exchange_code uses only user['username'] and profile.get('global_name') — no email or 2FA state check. Fine given the guild+role gates already gate access, but any future MFA policy should be enforced Discord-side."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iris_api.py"
+  ],
+  "success_rate": { "backend": "100% (53/53 pytest, run against the public preview URL)", "frontend": "100% of the automatable surface (login page, demo login, demo dashboard/new page, non-demo wording verified statically). Live OAuth callback + real Discord import intentionally not automated." },
+  "test_credentials": "None. /app/memory/test_credentials.md is empty (as expected — Discord OAuth uses live human accounts). Demo mode is accessible via POST /api/auth/demo-session (button data-testid='demo-access-btn').",
+  "seed_data_creation": "No new seed data. Demo scope still contains TKT-0888/0890/0891 plus SUIVI-* dossiers accumulated in prior iterations.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The regression suite is now three files: test_iris_api.py (guards + live OAuth 302 + static invariants + .env pinning), test_demo_mode.py (demo lifecycle + isolation + notes/vocal persistence), test_demo_case_creation.py (POST /api/tickets/demo). Run with `REACT_APP_BACKEND_URL=<preview> pytest /app/backend/tests/ -v`. If the OAuth or bot config is torn down again, TestAuth::test_discord_login_returns_302_to_discord_authorize and TestStaticInvariants::test_env_has_oauth_and_bot_configured will be the first to fail and pinpoint the missing key. The real Discord import path (POST /api/tickets on a Discord-authenticated helper) cannot be automated from this container — it requires a human helper OAuth login and a real member_id + channel_id from the pinned guild.",
+  "rca of the issue": "Not a bug fix. Iteration 5 audit of the security/flow contracts around the newly enabled Discord OAuth + bot integration. Findings: (1) the previously-configured 503 gate for /api/auth/discord/login is now correctly replaced by a live 302 to Discord's authorize endpoint with the right scope, cookie flags and no secret leakage; (2) both the guild membership check (via user access-token on /users/@me/guilds) AND the helper-role check (via BOT token on /guilds/{GUILD}/members/{id}) are enforced server-side before any iris_session is minted, so a non-Helper account gets a 403 with no cookie; (3) the whole Discord import surface (fetch_member, fetch_text_channel, fetch_channel_history) is guild-scoped through DISCORD_GUILD_ID and channel-type-validated, and paginates with limit=100 + before; (4) POST /api/tickets remains gated on current_helper and, on a demo session, fails at the DiscordService layer, so demo helpers cannot leak into the real import. The only remaining verification requires a human Helper login that this agent cannot perform."
+}

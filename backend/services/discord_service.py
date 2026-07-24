@@ -73,6 +73,10 @@ class DiscordService:
             joined_at=payload.get("joined_at"),
         )
 
+    async def member_has_role(self, member_id: str, role_id: str) -> bool:
+        payload = await self._get(f"/guilds/{DISCORD_GUILD_ID}/members/{member_id}")
+        return role_id in payload.get("roles", [])
+
     async def fetch_text_channel(self, channel_id: str) -> dict[str, Any]:
         channel = await self._get(f"/channels/{channel_id}")
         if channel.get("guild_id") != DISCORD_GUILD_ID:

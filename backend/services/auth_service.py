@@ -14,11 +14,13 @@ from config import (
     DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET,
     DISCORD_GUILD_ID,
+    DISCORD_HELPER_ROLE_ID,
     DISCORD_REDIRECT_URI,
     missing_oauth_settings,
 )
 from models.ticket import AuthenticatedHelper
 from services.demo_data import DEMO_AVATARS, DEMO_HELPER_ID
+from services.discord_service import DiscordService
 
 
 DISCORD_AUTHORIZE_URL = "https://discord.com/oauth2/authorize"
@@ -79,6 +81,7 @@ async def exchange_code(code: str) -> AuthenticatedHelper:
         )
     if profile_response.is_error:
         raise HTTPException(status_code=401, detail="Profil Discord inaccessible.")
+    profile = profile_response.json()
     if guilds_response.is_error or not any(
         guild.get("id") == DISCORD_GUILD_ID for guild in guilds_response.json()
     ):
@@ -86,7 +89,11 @@ async def exchange_code(code: str) -> AuthenticatedHelper:
             status_code=403,
             detail="Votre compte Discord ne fait pas partie du serveur Iris.",
         )
-    profile = profile_response.json()
+    if not await DiscordService().member_has_role(profile["id"], DISCORD_HELPER_ROLE_ID):
+        raise HTTPException(
+            status_code=403,
+            detail="Votre compte Discord ne possède pas le rôle helper requis pour Iris.",
+        )
     avatar = profile.get("avatar")
     avatar_url = (
         f"https://cdn.discordapp.com/avatars/{profile['id']}/{avatar}.png?size=128"

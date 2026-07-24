@@ -27,11 +27,13 @@ export default function DashboardPage({ stats, tickets, isDemo, onQuickCreate })
           <h1>Un suivi attentif, à votre rythme.</h1>
         </div>
         <div className="dashboard-actions">
-          <button className="quick-case-button" type="button" onClick={createQuickCase} disabled={!isDemo || creating} data-testid="quick-demo-case-button">
-            {creating ? <LoaderCircle className="spin" size={17} /> : <HeartHandshake size={17} />}
-            Créer un suivi test
-          </button>
-          <Link className="calm-primary-button" to="/new" data-testid="complete-case-form-button"><Plus size={17} /> Formulaire complet</Link>
+          {isDemo && (
+            <button className="quick-case-button" type="button" onClick={createQuickCase} disabled={creating} data-testid="quick-demo-case-button">
+              {creating ? <LoaderCircle className="spin" size={17} /> : <HeartHandshake size={17} />}
+              Créer un suivi test
+            </button>
+          )}
+          <Link className="calm-primary-button" to="/new" data-testid="complete-case-form-button"><Plus size={17} /> {isDemo ? "Formulaire complet" : "Importer un salon Discord"}</Link>
         </div>
       </header>
 
