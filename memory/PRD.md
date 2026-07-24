@@ -50,6 +50,11 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 - Iris ouvre uniquement la connexion Discord, réservée aux membres vérifiés portant le rôle Helper.
 - Les actions de navigation non fonctionnelles ont été retirées de l’interface.
 
+## Affectation, synthèse IA et administration — 2026-07-24
+- Un administrateur Discord peut attribuer chaque dossier à un helper autorisé ; son nom et son ID Discord sont enregistrés côté serveur.
+- Gemini génère à la demande une synthèse française structurée : contexte, besoins exprimés, actions et prochain suivi, sans diagnostic ni recommandation médicale.
+- Le panneau administrateur, réservé au rôle Administrateur Discord, affiche la charge de chaque helper, ses dossiers attribués et les suivis non attribués.
+
 ## Backlog priorisé
 ### P0 — configuration nécessaire
 - Ajouter un nouveau `DISCORD_BOT_TOKEN` après réinitialisation.

@@ -62,11 +62,14 @@ def parse_summary(raw_text: str, helper_id: str) -> AiSummary:
     }
     normalized: dict[str, str] = {}
     for key, choices in aliases.items():
-        value = next(
-            (payload.get(choice) for choice in choices if isinstance(payload.get(choice), str) and payload.get(choice).strip()),
-            "Non précisé dans le dossier.",
-        )
-        normalized[key] = value.strip()
+        value = next((payload.get(choice) for choice in choices if payload.get(choice) is not None), None)
+        if isinstance(value, str) and value.strip():
+            normalized[key] = value.strip()
+        elif isinstance(value, list):
+            bullet_points = [str(item).strip() for item in value if str(item).strip()]
+            normalized[key] = " · ".join(bullet_points) or "Non précisé dans le dossier."
+        else:
+            normalized[key] = "Non précisé dans le dossier."
     return AiSummary(
         context=normalized["context"],
         expressed_needs=normalized["expressed_needs"],

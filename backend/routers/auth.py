@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
 from models.ticket import AuthSession
@@ -58,10 +58,17 @@ async def session(request: Request, response: Response) -> AuthSession:
     if raw_session and not helper:
         response.delete_cookie(SESSION_COOKIE)
         return AuthSession(authenticated=False, helper=None, is_admin=False)
-    if helper and not await has_iris_access(helper.id):
-        response.delete_cookie(SESSION_COOKIE)
-        return AuthSession(authenticated=False, helper=None, is_admin=False)
-    is_admin = await is_admin_helper(helper.id) if helper else False
+    if helper:
+        try:
+            if not await has_iris_access(helper.id):
+                response.delete_cookie(SESSION_COOKIE)
+                return AuthSession(authenticated=False, helper=None, is_admin=False)
+            is_admin = await is_admin_helper(helper.id)
+        except HTTPException:
+            response.delete_cookie(SESSION_COOKIE)
+            return AuthSession(authenticated=False, helper=None, is_admin=False)
+    else:
+        is_admin = False
     return AuthSession(authenticated=helper is not None, helper=helper, is_admin=is_admin)
 
 
