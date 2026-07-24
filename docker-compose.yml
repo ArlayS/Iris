@@ -21,6 +21,17 @@ services:
       - "8080:8000"
     environment:
       - MONGO_URL=mongodb://admin:secretpassword@mongodb:27017/emergent_db?authSource=admin
+      - DB_NAME=irisdb
+      - CORS_ORIGINS=https://51.75.126.185:9098
+      - DISCORD_GUILD_ID=XXXXXXX
+      - DISCORD_BOT_TOKEN=MTUyOTgxNDQ2MzI3NDgxMTQxMg.GeEyFT.-ka2YKshGMYfMHh26CRa4GGgN48ywsL2M2d5Co
+      - DISCORD_CLIENT_ID=1529814463274811412
+      - DISCORD_CLIENT_SECRET=B5if6vmTIMtKoiV5ZNz5lQcVy-ghuQ-T
+      - DISCORD_REDIRECT_URI=https://51.75.126.185:8080
+      - APP_SESSION_SECRET=XXXX
+      - DISCORD_HELPER_ROLE_ID=1499491909750755570
+      - DISCORD_ADMIN_ROLE_ID=1503100661728936046
+      - EMERGENT_LLM_KEY=000000
     depends_on:
       - mongodb
 
