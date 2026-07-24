@@ -29,6 +29,12 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 - OAuth2 Discord prêt à être activé, session sécurisée et garde d’accès sur toutes les routes métier.
 - Tests : 18/18 vérifications API réussies et rendu desktop/mobile validé.
 
+## Extension démo premium — 2026-07-24
+- Refonte « Performance Pro » : file de tickets tactique, dashboard immersif, panneau d’intelligence vocale et rendu mobile adapté.
+- Mode démo local explicite : session helper fictive séparée du flux OAuth Discord réel, sans appel à Discord.
+- Trois dossiers de démonstration réalistes préchargés : historique de discussion, note interne, synthèse vocale, archivage et synchronisation locale.
+- Correction validée par contrôle indépendant : les réponses helper de la transcription s’affichent désormais à largeur normale sur desktop ; aucun débordement mobile détecté.
+
 ## Backlog priorisé
 ### P0 — configuration nécessaire
 - Ajouter un nouveau `DISCORD_BOT_TOKEN` après réinitialisation.
@@ -38,6 +44,7 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 ### P1
 - Tester en direct le parcours OAuth et l’import/synchronisation Discord avec les identifiants configurés.
 - Ajouter une liste explicite de rôles Discord autorisés à accéder à Iris.
+- Remplacer ou compléter le mode démo par des scénarios de formation supplémentaires pour les helpers.
 
 ### P2
 - Ajouter recherche plein texte, filtres avancés, export de dossier et journal d’activité.
