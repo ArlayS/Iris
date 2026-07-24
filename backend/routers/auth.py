@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
@@ -14,6 +16,7 @@ from services.auth_service import (
     parse_session,
 )
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://iris.loasis.app")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -36,9 +39,9 @@ async def discord_login() -> RedirectResponse:
 @router.get("/discord/callback")
 async def discord_callback(code: str, state: str, request: Request) -> RedirectResponse:
     if state != request.cookies.get(STATE_COOKIE):
-        return RedirectResponse("/?auth=failed", status_code=302)
+        return RedirectResponse(f"{FRONTEND_URL}/?auth=failed", status_code=302)
     helper = await exchange_code(code)
-    response = RedirectResponse("FRONTEND_URL", status_code=302)
+    response = RedirectResponse(FRONTEND_URL, status_code=302)
     response.set_cookie(
         SESSION_COOKIE,
         create_session(helper),
