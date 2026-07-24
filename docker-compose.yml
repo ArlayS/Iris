@@ -27,7 +27,7 @@ services:
       - DB_NAME=irisdb
       - CORS_ORIGINS=https://iris.loasis.app
       - DISCORD_GUILD_ID=1081957992188088391
-      - DISCORD_BOT_TOKEN=XXXXXX
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
       - DISCORD_CLIENT_ID=1530303803008749750
       - DISCORD_CLIENT_SECRET=HSs1jdRWg5fKYMDnIAL3nc0TAkSoqMNr
       - DISCORD_REDIRECT_URI=https://api.loasis.app/api/auth/discord/callback
