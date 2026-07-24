@@ -1,0 +1,125 @@
+{
+  "theme": "dark_only",
+  "style_archetype": "Retro-Futurism / Swiss Tech (Discord Moderation Vibe)",
+  "concept": "Iris: The command center for Discord helpers. A highly technical, brutalist, and dense workspace that feels like a developer tool rather than a generic SaaS.",
+  "typography": {
+    "headings": {
+      "family": "IBM Plex Mono",
+      "weights": ["400", "500", "700"],
+      "usage": "Used for all headings, ticket IDs, logs, and data points to emphasize the technical nature of the app."
+    },
+    "body": {
+      "family": "IBM Plex Sans",
+      "weights": ["300", "400", "500"],
+      "usage": "Used for long-form text, notes, and conversational transcriptions."
+    },
+    "rules": [
+      "Use tracking-tight for large text and tracking-widest for overlines.",
+      "Never use Inter or generic sans for headings."
+    ]
+  },
+  "colors": {
+    "background": {
+      "base": "#050505",
+      "surface": "#121212",
+      "panel": "#1A1A1A"
+    },
+    "border": {
+      "default": "rgba(255, 255, 255, 0.1)",
+      "active": "rgba(255, 255, 255, 0.2)"
+    },
+    "text": {
+      "primary": "#F3F4F6",
+      "secondary": "#9CA3AF",
+      "muted": "#6B7280"
+    },
+    "accents": {
+      "primary": "#5865F2",
+      "success": "#22C55E",
+      "warning": "#EAB308",
+      "error": "#EF4444"
+    },
+    "rules": [
+      "No full-screen gradients. Texture over gloss.",
+      "Do not use pure #000000. Base is #050505 (deepest void).",
+      "Primary CTA uses the #5865F2 (Discord homage) but keep it limited."
+    ]
+  },
+  "visual_enhancers": {
+    "surfaces": "Grid Borders (The Technical Look). Expose the skeleton. Container uses border-collapse style layout. Items have border-r border-b border-border/40.",
+    "shadows": "Minimal to none in dark mode. Rely on surface lightness (e.g. #050505 vs #121212) and 1px crisp borders to separate elements.",
+    "textures": "Subtle noise overlay (opacity 0.03) over the main background to prevent digital flatness.",
+    "hover_states": "Crisp border color shifts (border-white/10 to border-white/40). No muddy hover shadows."
+  },
+  "component_customizations": {
+    "buttons": "Sharp edges or extremely subtle rounding (max rounded-sm). High contrast focus states. Use 1px inner borders for depth.",
+    "inputs": "Flat, background #121212, border-white/10. Focus: border-primary ring-1 ring-primary/30.",
+    "cards": "DO NOT use standard floating cards. Use 'Cardless' / Border-collapse technical grids.",
+    "scrollbars": "Custom thin scrollbars. Track: transparent. Thumb: white/10, hover: white/20."
+  },
+  "layouts": {
+    "strategy": "High Density Grid (For Dashboards/Analytics)",
+    "rules": [
+      "Base Grid: grid-cols-1 md:grid-cols-3 lg:grid-cols-4. Gap Strategy: Tight (gap-4 or gap-0 for border-collapse).",
+      "Every pixel must be utilized. Use h-full on children to ensure they stretch. No jagged bottoms.",
+      "Modified F-Pattern: Most critical command (Search Discord ID) at top-left."
+    ],
+    "app_structure": {
+      "sidebar": "Collapsible left sidebar for Navigation (Active Tickets, Archives, Helper Settings).",
+      "header": "Sticky top, solid background (not transparent). Contains User Profile (Discord Auth) and global search.",
+      "workspace": "Main area divided into 3 equal or resizable columns: Transcription (Left), Notes (Center), Vocal Summary (Right)."
+    }
+  },
+  "motion": {
+    "philosophy": "Snappy, precise, technical.",
+    "rules": [
+      "Avoid long easing curves. Use quick transitions (150ms-200ms ease-out).",
+      "Stagger entrance for list items (e.g., Discord chat history logs loading in).",
+      "Micro-animations on buttons: scale 0.98 on active."
+    ]
+  },
+  "accessibility": {
+    "contrast": "Text must pass APCA / WCAG AA. Secondary text must not fall below 4.5:1 against the dark background.",
+    "focus": "All interactive elements must have visible focus rings (focus-visible:ring-2).",
+    "motion": "Respect prefers-reduced-motion."
+  },
+  "media": {
+    "strategy": "Minimal imagery. Focus on typography, data, and user avatars.",
+    "image_urls": {
+      "avatar_1": {
+        "url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwxfHxjeWJlcnB1bmslMjBhdmF0YXIlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODQ4NzE5MTR8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Helper Avatar 1"
+      },
+      "avatar_2": {
+        "url": "https://images.unsplash.com/photo-1580046939256-c377c5b099f1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwyfHxjeWJlcnB1bmslMjBhdmF0YXIlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODQ4NzE5MTR8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Helper Avatar 2"
+      },
+      "placeholder_command": {
+        "url": "https://images.pexels.com/photos/32026177/pexels-photo-32026177.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Dashboard blank state / command center tech visual"
+      }
+    }
+  },
+  "3d_libraries": {
+    "usage": "Not recommended for this data-heavy internal admin panel to ensure maximum performance and clarity."
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: Do not center-align the app container. Use a left-aligned, full-width technical layout.",
+    "Use Shadcn UI for inputs, buttons, and dropdowns, but heavily override the styles to match the 'Grid Borders / Technical' aesthetic (remove border-radius, enforce sharp borders).",
+    "For the 3-section workspace (Transcription, Note, Vocal), implement a dense, grid-based layout where columns are clearly delineated by vertical borders.",
+    "Ensure all interactive elements have a `data-testid` attribute (e.g., `data-testid=\"new-ticket-button\"`).",
+    "The UI is native JS/React (as requested: 'Je veux du code natif'). Ensure clean, modular components.",
+    "Implement the 'New Ticket' component as a command palette or an always-visible top-left widget where the helper enters a Discord ID or Channel ID.",
+    "Use Lucide-react or Phosphor Icons for precise, technical iconography.",
+    "For toasts/notifications (e.g., 'Discord data synced'), use Sonner with dark mode overrides.",
+    "Ensure the transcription area resembles a technical log viewer (monospace timestamps, clear visual separation of messages) rather than a bouncy chat app."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. Avoid 'AI slop'. Make it distinct and technical.",
+    "Do not use dark colors as gradients. Stick to solid dark grays and blacks with 1px borders.",
+    "Never apply `transition: all`. Target specific properties.",
+    "Do not use emojis for icons. Use proper SVG icon libraries (Phosphor or Lucide).",
+    "Never use placeholder URLs (like via.placeholder.com). Use the provided image URLs.",
+    "Prioritize optical alignment over geometric alignment."
+  ]
+}
