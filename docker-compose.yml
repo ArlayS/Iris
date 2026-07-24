@@ -23,12 +23,12 @@ services:
     environment:
       - MONGO_URL=mongodb://admin:secretpassword@mongodb:27017/emergent_db?authSource=admin
       - DB_NAME=irisdb
-      - CORS_ORIGINS=https://51.75.126.185:9098
+      - CORS_ORIGINS=https://iris.loasis.app
       - DISCORD_GUILD_ID=1081957992188088391
       - DISCORD_BOT_TOKEN=XXXXXX
       - DISCORD_CLIENT_ID=1530303803008749750
       - DISCORD_CLIENT_SECRET=HSs1jdRWg5fKYMDnIAL3nc0TAkSoqMNr
-      - DISCORD_REDIRECT_URI=http://51.75.126.185:8080/api/auth/discord/callback
+      - DISCORD_REDIRECT_URI=http://iris.loasis.app/api/auth/discord/callback
       - APP_SESSION_SECRET=topsecret
       - DISCORD_HELPER_ROLE_ID=1499491909750755570
       - DISCORD_ADMIN_ROLE_ID=1503100661728936046
@@ -41,7 +41,7 @@ services:
     build: 
       context: ./frontend
       args:
-        - REACT_APP_BACKEND_URL=http://51.75.126.185:8080
+        - REACT_APP_BACKEND_URL=http://api.loasis.app
     container_name: emergent-frontend
     depends_on:
       - backend
