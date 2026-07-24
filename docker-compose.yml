@@ -29,7 +29,7 @@ services:
     build: ./frontend
     container_name: emergent-frontend
     expose:
-      - "80"
+      - "8082:80"
     environment:
       - VITE_API_URL=http://localhost:8000
     depends_on:
