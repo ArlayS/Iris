@@ -1,125 +1,131 @@
 {
-  "theme": "dark_only",
-  "style_archetype": "Retro-Futurism / Swiss Tech (Discord Moderation Vibe)",
-  "concept": "Iris: The command center for Discord helpers. A highly technical, brutalist, and dense workspace that feels like a developer tool rather than a generic SaaS.",
+  "project_context": {
+    "name": "Iris Redesign",
+    "theme_preference": "dark",
+    "archetype": "The Performance Pro / Luxury Command Center",
+    "vibe": "Premium, immersive, highly functional, no-nonsense tactical command center."
+  },
   "typography": {
-    "headings": {
-      "family": "IBM Plex Mono",
-      "weights": ["400", "500", "700"],
-      "usage": "Used for all headings, ticket IDs, logs, and data points to emphasize the technical nature of the app."
-    },
-    "body": {
-      "family": "IBM Plex Sans",
-      "weights": ["300", "400", "500"],
-      "usage": "Used for long-form text, notes, and conversational transcriptions."
-    },
-    "rules": [
-      "Use tracking-tight for large text and tracking-widest for overlines.",
-      "Never use Inter or generic sans for headings."
-    ]
+    "fonts": [
+      {
+        "role": "Headings & Display",
+        "family": "Outfit",
+        "fallback": "sans-serif",
+        "weights": ["300", "500", "700"],
+        "usage": "Use for high-level numbers, dashboard titles, and the Iris branding."
+      },
+      {
+        "role": "Body & UI Elements",
+        "family": "IBM Plex Sans",
+        "fallback": "sans-serif",
+        "weights": ["400", "500"],
+        "usage": "Use for all standard text, transcript messages, and notes."
+      },
+      {
+        "role": "Data & Timestamps",
+        "family": "JetBrains Mono",
+        "fallback": "monospace",
+        "weights": ["400"],
+        "usage": "Use for ticket IDs, time tags, status labels, and metadata."
+      }
+    ],
+    "scale_rules": "H1 max text-4xl tracking-tight. Use uppercase wide-tracking (tracking-[0.2em]) for section overlines (e.g., 'TICKET QUEUE', 'INTELLIGENCE')."
   },
   "colors": {
-    "background": {
-      "base": "#050505",
-      "surface": "#121212",
-      "panel": "#1A1A1A"
+    "palette": {
+      "background_base": "#0A0A0A",
+      "surface_level_1": "#121212",
+      "surface_level_2": "#1A1A1A",
+      "border_dim": "rgba(255, 255, 255, 0.08)",
+      "border_bright": "rgba(255, 255, 255, 0.2)",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#A1A1AA",
+      "text_muted": "#52525B",
+      "brand_discord": "#5865F2",
+      "brand_discord_dim": "rgba(88, 101, 242, 0.15)",
+      "accent_vocal": "#22D3EE",
+      "status_urgent": "#EF4444",
+      "status_resolved": "#10B981"
     },
-    "border": {
-      "default": "rgba(255, 255, 255, 0.1)",
-      "active": "rgba(255, 255, 255, 0.2)"
-    },
-    "text": {
-      "primary": "#F3F4F6",
-      "secondary": "#9CA3AF",
-      "muted": "#6B7280"
-    },
-    "accents": {
-      "primary": "#5865F2",
-      "success": "#22C55E",
-      "warning": "#EAB308",
-      "error": "#EF4444"
-    },
-    "rules": [
-      "No full-screen gradients. Texture over gloss.",
-      "Do not use pure #000000. Base is #050505 (deepest void).",
-      "Primary CTA uses the #5865F2 (Discord homage) but keep it limited."
-    ]
+    "instructions_to_main_agent": "Never use pure black or pure white except for text. Rely on true grey surfaces for elevation. Discord Blurple is used for connection states and the demo helper. The neon cyan (#22D3EE) is reserved exclusively for the AI Vocal Summary audio player."
   },
   "visual_enhancers": {
-    "surfaces": "Grid Borders (The Technical Look). Expose the skeleton. Container uses border-collapse style layout. Items have border-r border-b border-border/40.",
-    "shadows": "Minimal to none in dark mode. Rely on surface lightness (e.g. #050505 vs #121212) and 1px crisp borders to separate elements.",
-    "textures": "Subtle noise overlay (opacity 0.03) over the main background to prevent digital flatness.",
-    "hover_states": "Crisp border color shifts (border-white/10 to border-white/40). No muddy hover shadows."
-  },
-  "component_customizations": {
-    "buttons": "Sharp edges or extremely subtle rounding (max rounded-sm). High contrast focus states. Use 1px inner borders for depth.",
-    "inputs": "Flat, background #121212, border-white/10. Focus: border-primary ring-1 ring-primary/30.",
-    "cards": "DO NOT use standard floating cards. Use 'Cardless' / Border-collapse technical grids.",
-    "scrollbars": "Custom thin scrollbars. Track: transparent. Thumb: white/10, hover: white/20."
+    "surfaces": "Grid Borders: Expose the skeleton of the UI. Use 'border-r border-b border-border_dim' on panes. The command center should look like a cohesive glass/metal control panel.",
+    "active_states": "For the active ticket in the queue, use a 1px solid left-border of Discord Blurple and change background to surface_level_2.",
+    "glassmorphism": "Use sparingly. For sticky headers or the 'Demo Mode' overlay, use bg-black/60 with backdrop-blur-xl and a delicate top border."
   },
   "layouts": {
-    "strategy": "High Density Grid (For Dashboards/Analytics)",
-    "rules": [
-      "Base Grid: grid-cols-1 md:grid-cols-3 lg:grid-cols-4. Gap Strategy: Tight (gap-4 or gap-0 for border-collapse).",
-      "Every pixel must be utilized. Use h-full on children to ensure they stretch. No jagged bottoms.",
-      "Modified F-Pattern: Most critical command (Search Discord ID) at top-left."
-    ],
-    "app_structure": {
-      "sidebar": "Collapsible left sidebar for Navigation (Active Tickets, Archives, Helper Settings).",
-      "header": "Sticky top, solid background (not transparent). Contains User Profile (Discord Auth) and global search.",
-      "workspace": "Main area divided into 3 equal or resizable columns: Transcription (Left), Notes (Center), Vocal Summary (Right)."
+    "architecture": "3-Column Tactical Split: \n1. Nano-Sidebar (64px wide) for navigation icons & Discord connection status.\n2. Ticket Queue (320px wide) - dense vertical list of 3 preloaded tickets.\n3. Ticket Workspace (Fluid remainder) - The main stage containing transcripts, notes, and vocal summaries.",
+    "spacing_strategy": "Dense layout for the queue (gap-2, p-3). Generous layout for the Workspace (p-8, max-w-4xl). No standard centered containers; full-screen flex/grid taking 100vh.",
+    "ticket_workspace_grid": "Within the workspace, use a 2-column bento layout: Left column (col-span-8) for Chat Transcript. Right column (col-span-4) for AI Intelligence (Vocal Summary widget + Notes)."
+  },
+  "component_instructions": {
+    "demo_access_mode": {
+      "type": "overlay_or_empty_state_button",
+      "design": "A massive, immersive center-screen interaction before the dashboard loads, or a prominent button in the sidebar. Text: 'Accéder au mode démo'. Include a small fictional helper avatar next to it.",
+      "action": "Clicking populates the dashboard with the 3 realistic tickets."
+    },
+    "vocal_summary_widget": {
+      "type": "custom_ui",
+      "design": "A card in the Intelligence panel. Contains a 'Play' button, a timestamp (e.g., '01:24'), and a mocked waveform built with framer-motion or simple CSS flex bars. Accentuated with accent_vocal color.",
+      "feel": "Feels like an advanced AI listening tool."
+    },
+    "discord_connection": {
+      "type": "status_badge",
+      "design": "Located at bottom of the nano-sidebar. Uses the Discord brand color. Shows a pulsing green status dot indicating 'Connected'."
+    },
+    "chat_transcript": {
+      "type": "message_feed",
+      "design": "Distinct styling for User vs Helper. User: surface_level_2 bubble. Helper (Discord): brand_discord_dim bubble with 1px border. Use monospace for metadata (time, IDs) above each bubble."
     }
   },
-  "motion": {
-    "philosophy": "Snappy, precise, technical.",
-    "rules": [
-      "Avoid long easing curves. Use quick transitions (150ms-200ms ease-out).",
-      "Stagger entrance for list items (e.g., Discord chat history logs loading in).",
-      "Micro-animations on buttons: scale 0.98 on active."
+  "mock_data_requirements": {
+    "tickets": [
+      {
+        "id": "TKT-0891",
+        "user": "Alexandre D.",
+        "issue": "Problème de synchronisation API",
+        "status": "urgent",
+        "vocal_summary_length": "01:12"
+      },
+      {
+        "id": "TKT-0890",
+        "user": "Sarah M.",
+        "issue": "Accès refusé au serveur vocal",
+        "status": "open",
+        "vocal_summary_length": "00:45"
+      },
+      {
+        "id": "TKT-0888",
+        "user": "Marc T.",
+        "issue": "Question sur la facturation premium",
+        "status": "resolved",
+        "vocal_summary_length": "02:03"
+      }
     ]
   },
+  "motion": {
+    "transitions": "Fast, mechanical transitions. duration-150 ease-out.",
+    "audio_waveform": "When 'playing' a vocal summary, animate the flex bars changing height randomly."
+  },
   "accessibility": {
-    "contrast": "Text must pass APCA / WCAG AA. Secondary text must not fall below 4.5:1 against the dark background.",
-    "focus": "All interactive elements must have visible focus rings (focus-visible:ring-2).",
-    "motion": "Respect prefers-reduced-motion."
+    "contrast": "Maintain 4.5:1 ratio for transcript text.",
+    "testing": "All interactive elements MUST include data-testid attributes (e.g., data-testid='demo-access-btn', data-testid='ticket-item-TKT-0891')."
   },
   "media": {
-    "strategy": "Minimal imagery. Focus on typography, data, and user avatars.",
     "image_urls": {
-      "avatar_1": {
-        "url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwxfHxjeWJlcnB1bmslMjBhdmF0YXIlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODQ4NzE5MTR8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Helper Avatar 1"
-      },
-      "avatar_2": {
-        "url": "https://images.unsplash.com/photo-1580046939256-c377c5b099f1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwyfHxjeWJlcnB1bmslMjBhdmF0YXIlMjBwb3J0cmFpdHxlbnwwfHx8fDE3ODQ4NzE5MTR8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Helper Avatar 2"
-      },
-      "placeholder_command": {
-        "url": "https://images.pexels.com/photos/32026177/pexels-photo-32026177.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-        "description": "Dashboard blank state / command center tech visual"
-      }
-    }
+      "helper_avatar": "https://images.pexels.com/photos/31869537/pexels-photo-31869537.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=150&w=150",
+      "user_alexandre": "https://images.pexels.com/photos/33605541/pexels-photo-33605541.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=150&w=150"
+    },
+    "instructions": "Use these precise image URLs for the user avatars in the ticket queue and transcript to make the fake data feel extremely realistic and high-end."
   },
-  "3d_libraries": {
-    "usage": "Not recommended for this data-heavy internal admin panel to ensure maximum performance and clarity."
-  },
-  "instructions_to_main_agent": [
-    "CRITICAL: Do not center-align the app container. Use a left-aligned, full-width technical layout.",
-    "Use Shadcn UI for inputs, buttons, and dropdowns, but heavily override the styles to match the 'Grid Borders / Technical' aesthetic (remove border-radius, enforce sharp borders).",
-    "For the 3-section workspace (Transcription, Note, Vocal), implement a dense, grid-based layout where columns are clearly delineated by vertical borders.",
-    "Ensure all interactive elements have a `data-testid` attribute (e.g., `data-testid=\"new-ticket-button\"`).",
-    "The UI is native JS/React (as requested: 'Je veux du code natif'). Ensure clean, modular components.",
-    "Implement the 'New Ticket' component as a command palette or an always-visible top-left widget where the helper enters a Discord ID or Channel ID.",
-    "Use Lucide-react or Phosphor Icons for precise, technical iconography.",
-    "For toasts/notifications (e.g., 'Discord data synced'), use Sonner with dark mode overrides.",
-    "Ensure the transcription area resembles a technical log viewer (monospace timestamps, clear visual separation of messages) rather than a bouncy chat app."
-  ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "You tend to converge toward generic, 'on distribution' outputs. Avoid 'AI slop'. Make it distinct and technical.",
-    "Do not use dark colors as gradients. Stick to solid dark grays and blacks with 1px borders.",
-    "Never apply `transition: all`. Target specific properties.",
-    "Do not use emojis for icons. Use proper SVG icon libraries (Phosphor or Lucide).",
-    "Never use placeholder URLs (like via.placeholder.com). Use the provided image URLs.",
-    "Prioritize optical alignment over geometric alignment."
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "The project uses .js/.jsx files. Do not generate TypeScript (.ts/.tsx) code.",
+    "NEVER use boilerplate Vercel/Stripe styles. Break the generic 'AI slop' pattern by utilizing strict borders, monospace typography for metadata, and extreme contrast between the black background and grey surfaces.",
+    "DO NOT center the dashboard container. It must span 100vw and 100vh with overflow-hidden on the body, managing scroll inside the individual panes.",
+    "Avoid generic emojis. Use lucide-react icons for system actions.",
+    "Do NOT use HTML <audio> controls for the vocal summary; build a custom UI mock to maintain the premium command center aesthetic.",
+    "Use standard HTML/Tailwind for the layout structure, but use Shadcn for dropdowns, tooltips, or complex interactive overlays if needed.",
+    "DO NOT use completely transparent backgrounds for surfaces containing content."
   ]
 }
