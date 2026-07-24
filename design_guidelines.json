@@ -1,120 +1,112 @@
 {
-  "theme": "Light Theme ONLY (Archetype: Organic & Earthy)",
+  "theme": "light",
   "typography": {
-    "font_families": ["Manrope (Headings)", "IBM Plex Sans (Body)"],
-    "rules": "Never use Inter for headings. Use Manrope for its soft, humanistic geometry. Use IBM Plex Sans for readable notes and body text. Tight letter spacing for headings (>32px). Labels should be uppercase with wide tracking.",
-    "hierarchy": {
-      "h1": "text-4xl sm:text-5xl tracking-tight leading-tight",
-      "h2": "text-2xl sm:text-3xl tracking-tight",
-      "h3": "text-xl font-medium",
-      "body": "text-base leading-relaxed text-slate-700",
-      "labels": "text-xs tracking-[0.1em] uppercase text-sage-600 font-semibold"
+    "headings": {
+      "font_family": "Manrope",
+      "weights": ["300", "500", "700"],
+      "tracking": "tracking-tight",
+      "usage": "Use Manrope for all headers to convey a friendly, humanistic tone suitable for mental health."
+    },
+    "body": {
+      "font_family": "IBM Plex Sans",
+      "weights": ["400", "500"],
+      "leading": "leading-relaxed",
+      "usage": "Use IBM Plex Sans for long form text, ticket summaries, and data tables."
+    },
+    "scale_rules": {
+      "h1": "text-3xl sm:text-4xl lg:text-5xl",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl",
+      "h3": "text-xl sm:text-2xl",
+      "body": "text-base sm:text-lg text-gray-800"
     }
   },
   "colors": {
-    "background": "#F9F9F7",
-    "surface": "#FFFFFF",
-    "primary": "#4A675C",
-    "secondary": "#DCE2DD",
-    "accent": "#C27D65",
-    "text": "#1C2622",
-    "borders": "#E5E7E5"
+    "archetype": "Organic & Earthy (Mental Health & Trust)",
+    "palette": {
+      "background": "#FDFCF8",
+      "surface": "#FFFFFF",
+      "primary": "#3A5A40",
+      "primary_hover": "#2B4330",
+      "text_main": "#1A202C",
+      "text_muted": "#4A5568",
+      "border": "#E2E8F0",
+      "ai_highlight_bg": "#EEF2E6",
+      "ai_highlight_text": "#2C402E",
+      "accent_gentle": "#A3B18A"
+    },
+    "rules": "Never use pure black (#000000) or pure grey (#808080). Tint greys with green or warm sand to maintain the organic feel. High contrast for readability without harsh neon."
   },
-  "visual enhancers": {
-    "shadows": "Very soft, ambient shadow (`shadow-sm` or `shadow-[0_4px_20px_rgba(0,0,0,0.03)]`). Do not use harsh shadows.",
-    "borders": "1px solid borders (`border-slate-200`) on cards.",
-    "radius": "Subtle roundness (`rounded-xl` or `rounded-2xl`). Avoid sharp brutalist edges."
-  },
-  "component name": [
-    {
-      "name": "Demo Case Creation Button",
-      "style": "pill-shaped (`rounded-full`), soft background (`bg-accent/10`), text (`text-accent`), subtle hover lift.",
-      "usage": "Instant demo case creation. Distinct from the primary 'Complete Form' button."
-    },
-    {
-      "name": "Complete Form Dialog",
-      "style": "Shadcn Dialog. White background, generous padding (`p-8`). Progressive disclosure.",
-      "usage": "Detailed case creation form with patient history."
-    },
-    {
-      "name": "Listening Workspace (Écoute)",
-      "style": "Minimalist panel, generous whitespace (`p-12`). Contains a subtle audio waveform visualizer.",
-      "usage": "Calm environment while the helper is actively listening or recording."
-    },
-    {
-      "name": "Voice Session Summary (Compte-rendu vocal)",
-      "style": "Flat card, `bg-white`, `border-l-4 border-primary` to indicate AI-generated summary.",
-      "usage": "Displays transcribed/summarized notes."
-    },
-    {
-      "name": "Follow-up Status (Statut de suivi)",
-      "style": "Shadcn Badge components. Colors mapping to state (Green for 'Stable', Amber for 'Monitor', Grey for 'Archived').",
-      "usage": "At-a-glance status in the dashboard and case header."
-    }
-  ],
-  "grids": {
-    "dashboard_mode": "High Density Grid (Mode B), but with generous padding. `grid-cols-1 md:grid-cols-12 gap-6`.",
-    "workspace_layout": "Sidebar (col-span-3) + Main Workspace (col-span-9). Inside Main: Split notes (col-span-6) and summary (col-span-6)."
+  "visual_enhancers": {
+    "shadows": "Use very soft, ambient shadows. Example: shadow-[0_8px_30px_rgba(58,90,64,0.06)] for elevated cards.",
+    "borders": "1px solid border-border on cards and widgets. Soft 12px (rounded-xl) to 16px (rounded-2xl) radius for a safe, friendly feel.",
+    "textures": "Apply a very subtle noise texture overlay to the main background to break digital flatness and create a grounded, organic environment.",
+    "glassmorphism": "Avoid on clinical data. For modals or sticky navs, use high opacity with blur (e.g., bg-white/80 backdrop-blur-xl border border-white/40)."
   },
   "layouts": {
-    "overall": "Sidebar-based navigation (predictable, low cognitive load). Mobile: bottom nav or hamburger.",
-    "private_notes_area": "Distraction-free, large text area (Notion style). Left-aligned text, high line-height (`leading-loose`)."
+    "dashboard": "Collapsible left sidebar for navigation + spacious modular widgets area. Prioritize progressive disclosure for ticket data to prevent cognitive overload.",
+    "spacing": "Generous spacing. Use p-8 or p-12 for main sections, gap-6 to gap-8 in grids. Content must breathe."
+  },
+  "grids": {
+    "admin_overview": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
+    "widget_ratios": "Summary stats span 1 col, main tables span 2 or 3 cols. Maintain rigid optical alignment.",
+    "general": "Never fill 100% perfectly without breathing room. Use subgrid when nesting."
+  },
+  "components": {
+    "ticket_card": "Cardless or very flat rectangular shapes with 1px border. Displays Helper avatar, Name, and Discord ID tag.",
+    "ai_summary_panel": "Inside the ticket detail, housed in a distinct but muted container (bg-ai_highlight_bg). Structured cleanly: Context, Needs, Actions, Next Follow-up.",
+    "helper_assignment": "Use a Shadcn Select/Dropdown customized with avatar previews, Name, and Discord ID inline.",
+    "role_gate": "Admin View must be strictly visible only to Discord Role ID 1503100661728936046.",
+    "general_rules": "DO NOT use HTML-based components for advanced interactions. Use Shadcn components for Select, Tabs, Dialogs, Tables. Customize border-radii and spacing."
   },
   "motion": {
-    "transitions": "Micro-interactions only. 300ms ease-in-out for hover states. Fade-in for content switching.",
-    "page_load": "Staggered fade-up (Y-axis 10px, opacity 0 to 1 over 0.5s) to feel gentle."
+    "transitions": "Gentle microinteractions. transition: transform 0.2s ease, opacity 0.2s ease. NO universal transitions.",
+    "loading": "Subtle skeleton loaders in earthy tones. Avoid jarring spinners.",
+    "hover": "Explicitly set hover colors. Lighter hue of the active state. E.g., hover:bg-[#2B4330] hover:text-white"
   },
   "accessibility": {
-    "contrast": "Text must meet APCA standards. Deep slate on off-white.",
-    "focus_states": "High contrast ring (`focus:ring-primary/50`) for all inputs.",
-    "reduced_motion": "Respect `prefers-reduced-motion`. Add `data-testid` to all interactive elements."
+    "contrast": "APCA minimums required. Minimum 4.5:1 for normal text against backgrounds.",
+    "focus_states": "Focus states must have HIGHER contrast, ring-2 ring-[#3A5A40].",
+    "testing": "All interactive elements MUST include a data-testid attribute in kebab-case."
   },
   "media": {
-    "avatars": "Use round (`rounded-full`) professional headshots. 1px border ring.",
-    "icons": "Use `lucide-react`. Stroke width 1.5 for a lighter feel."
+    "image_urls": [
+      {
+        "url": "https://images.unsplash.com/photo-1527980965255-d3b416303d12?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxmcmllbmRseSUyMHBvcnRyYWl0JTIwcHJvZmVzc2lvbmFsJTIwYXZhdGFyfGVufDB8fHx8MTc4NDg4MTQzOXww&ixlib=rb-4.1.0&q=85",
+        "description": "Friendly male professional portrait for helper avatar",
+        "category": "avatars"
+      },
+      {
+        "url": "https://images.pexels.com/photos/3778603/pexels-photo-3778603.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Friendly businessman portrait for helper avatar",
+        "category": "avatars"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1681445019831-1c22cd19c9eb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHw0fHxjYWxtJTIwYWJzdHJhY3QlMjBzYWdlJTIwZ3JlZW4lMjB0ZXh0dXJlfGVufDB8fHx8MTc4NDg4MTQzM3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Calm organic green texture for header backgrounds or accent banners",
+        "category": "backgrounds"
+      }
+    ]
   },
-  "3d libraries": {
-    "status": "NOT REQUIRED. 3D models or heavy animations would detract from the calm, professional, and serious nature of a mental health dashboard."
-  },
-  "image urls": [
-    {
-      "category": "Patient Avatar 1",
-      "url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwzfHxjYWxtJTIwcHJvZmVzc2lvbmFsJTIwaGVhZHNob3QlMjBhdmF0YXJ8ZW58MHx8fHwxNzg0ODc0OTMxfDA&ixlib=rb-4.1.0&q=85",
-      "description": "Man wearing Henley top portrait"
-    },
-    {
-      "category": "Patient Avatar 2",
-      "url": "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHw0fHxjYWxtJTIwcHJvZmVzc2lvbmFsJTIwaGVhZHNob3QlMjBhdmF0YXJ8ZW58MHx8fHwxNzg0ODc0OTMxfDA&ixlib=rb-4.1.0&q=85",
-      "description": "Woman in white crew neck shirt smiling"
-    },
-    {
-      "category": "Patient Avatar 3",
-      "url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwxfHxjYWxtJTIwcHJvZmVzc2lvbmFsJTIwaGVhZHNob3QlMjBhdmF0YXJ8ZW58MHx8fHwxNzg0ODc0OTMxfDA&ixlib=rb-4.1.0&q=85",
-      "description": "Man in black button-up shirt"
-    }
-  ],
   "instructions_to_main_agent": [
-    "CRITICAL: Replace the existing 'Performance Pro' hacker theme in App.css and index.css with the 'Organic & Earthy' Light Theme.",
-    "Remove all dark mode gradients and neon borders.",
-    "Implement two distinct case creation actions: A 'Quick Demo' button that instantly populates a mocked case (use the provided avatars), and a 'Complete Form' button that opens a Shadcn Dialog with extensive patient detail fields.",
-    "For the 'Écoute' (Listening) section, design a calm visualizer (using standard CSS or Framer Motion bars, NOT a complex 3D library) centered in a large white card.",
-    "Place 'Notes privées' and 'Compte-rendu vocal' side-by-side or stacked in the workspace. Notes should look like a clean document, and the summary should clearly look AI-generated but reassuring.",
-    "Use Shadcn UI components extensively: Dialog, Button, Input, Textarea, Select, Badge, Card, Avatar.",
-    "Include 'data-testid' on all buttons, forms, and interactive elements."
+    "Build the UI in React (.js) using Tailwind CSS and shadcn/ui primitives.",
+    "Implement the Ticket Detail page. Include an 'Assisted by...' section that displays a selected main helper's Name and Discord ID, using a styled Select component.",
+    "Integrate an AI summary section on each ticket made with Gemini (using Emergent Universal Key) that formats strictly into: Context, Expressed Needs, Actions, and Next Follow-up.",
+    "Build a protected Admin Panel Dashboard restricted to users with Discord Role ID '1503100661728936046'.",
+    "The admin dashboard must display an overview of all helpers and their assigned tickets, using progressive disclosure (collapsible lists or modals) to maintain a calm UI.",
+    "Adhere closely to the 'Organic & Earthy' mental-health color palette and generous spacing guidelines.",
+    "Use Phosphor Icons or Lucide React for UI iconography. Do NOT use emojis."
   ],
-  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
-    "Do not use generic centered layouts or uniform styling. Prioritize progressive disclosure: hide secondary information until requested.",
-    "Never apply `transition: all`. Target specific properties.",
-    "Use 2-3x more spacing (`p-6` to `p-12`) than typical density. Cramped designs cause cognitive overload, especially in healthcare.",
-    "Never use AI assistant emoji characters. Use Lucide icons.",
-    "Use `sonner` for toast notifications.",
-    "Prioritize pre-existing components from `src/components/ui`."
-  ],
-  "GENERAL UI UX DESIGN GUIDELINES": [
-    "Context First: Design is for a mental health helper (therapist/counselor). It must be a 'Calm, reassuring, and professional' environment.",
-    "Emotion First: Every design decision maps to trust and calm. Soft tones, clear hierarchy, no aggressive borders.",
-    "Alignment: Left-align paragraphs, inputs, and dense content for readability. Center-align only major empty states.",
-    "Surface Strategy: Flat Solid surfaces. DO NOT use Glassmorphism for health apps—it feels cold and refracts data readability.",
-    "Grid Protocol: Use Grid Mode B (High Density) but soften it with wider gaps (`gap-6`) and larger padding."
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not converge toward generic, on-distribution outputs.",
+    "Avoid generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "NEVER use a completely transparent background in header or surfaces overlaying content.",
+    "MUST NOT apply universal transition (e.g. transition: all). Add transitions for specific properties only.",
+    "MUST NOT center align the app container (.App { text-align: center; }).",
+    "Always use modern button styles with relevant animations.",
+    "NEVER use emojis for icons. Use proper icon libraries.",
+    "Use 2-3x more spacing than typical to create a premium, calm feel.",
+    "Implement toasts using 'sonner' for notifications.",
+    "Ensure all interactive and key informational elements MUST include a data-testid attribute for robust testing."
   ]
 }
