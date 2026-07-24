@@ -1,4 +1,7 @@
 version: '3.8'
+networks:
+  npm_default:
+    external: true
 
 services:
   # Base de données MongoDB
@@ -17,8 +20,6 @@ services:
   backend:
     build: ./backend
     container_name: emergent-backend
-    ports:
-      - "8080:8000"
     environment:
       - MONGO_URL=mongodb://admin:secretpassword@mongodb:27017/emergent_db?authSource=admin
       - DB_NAME=irisdb
@@ -42,8 +43,6 @@ services:
       args:
         - REACT_APP_BACKEND_URL=http://51.75.126.185:8080
     container_name: emergent-frontend
-    ports:
-      - "9098:80"
     depends_on:
       - backend
 
