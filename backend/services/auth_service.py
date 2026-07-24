@@ -1,0 +1,155 @@
+import base64
+import hashlib
+import hmac
+import json
+import secrets
+import time
+from urllib.parse import urlencode
+
+import httpx
+from fastapi import HTTPException, Request, status
+
+from config import (
+    APP_SESSION_SECRET,
+    DISCORD_CLIENT_ID,
+    DISCORD_CLIENT_SECRET,
+    DISCORD_GUILD_ID,
+    DISCORD_REDIRECT_URI,
+    missing_oauth_settings,
+)
+from models.ticket import AuthenticatedHelper
+
+
+DISCORD_AUTHORIZE_URL = "https://discord.com/oauth2/authorize"
+DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
+DISCORD_ME_URL = "https://discord.com/api/users/@me"
+SESSION_COOKIE = "iris_session"
+STATE_COOKIE = "iris_oauth_state"
+
+
+def ensure_oauth_configuration() -> None:
+    missing = missing_oauth_settings()
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Connexion Discord à configurer : " + ", ".join(missing) + ".",
+        )
+
+
+def create_oauth_url(state: str) -> str:
+    ensure_oauth_configuration()
+    query = urlencode(
+        {
+            "client_id": DISCORD_CLIENT_ID,
+            "redirect_uri": DISCORD_REDIRECT_URI,
+            "response_type": "code",
+            "scope": "identify guilds",
+            "state": state,
+            "prompt": "consent",
+        }
+    )
+    return f"{DISCORD_AUTHORIZE_URL}?{query}"
+
+
+async def exchange_code(code: str) -> AuthenticatedHelper:
+    ensure_oauth_configuration()
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        token_response = await client.post(
+            DISCORD_TOKEN_URL,
+            data={
+                "client_id": DISCORD_CLIENT_ID,
+                "client_secret": DISCORD_CLIENT_SECRET,
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": DISCORD_REDIRECT_URI,
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        if token_response.is_error:
+            raise HTTPException(status_code=401, detail="Échange OAuth Discord refusé.")
+        access_token = token_response.json()["access_token"]
+        profile_response = await client.get(
+            DISCORD_ME_URL,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        guilds_response = await client.get(
+            "https://discord.com/api/users/@me/guilds",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    if profile_response.is_error:
+        raise HTTPException(status_code=401, detail="Profil Discord inaccessible.")
+    if guilds_response.is_error or not any(
+        guild.get("id") == DISCORD_GUILD_ID for guild in guilds_response.json()
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Votre compte Discord ne fait pas partie du serveur Iris.",
+        )
+    profile = profile_response.json()
+    avatar = profile.get("avatar")
+    avatar_url = (
+        f"https://cdn.discordapp.com/avatars/{profile['id']}/{avatar}.png?size=128"
+        if avatar
+        else None
+    )
+    return AuthenticatedHelper(
+        id=profile["id"],
+        username=profile["username"],
+        global_name=profile.get("global_name"),
+        avatar_url=avatar_url,
+    )
+
+
+def create_session(helper: AuthenticatedHelper) -> str:
+    ensure_oauth_configuration()
+    payload = {
+        "sub": helper.id,
+        "username": helper.username,
+        "global_name": helper.global_name,
+        "avatar_url": helper.avatar_url,
+        "exp": int(time.time()) + 60 * 60 * 12,
+    }
+    encoded = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+    signature = hmac.new(
+        APP_SESSION_SECRET.encode(),
+        encoded.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"{encoded}.{signature}"
+
+
+def parse_session(raw_session: str | None) -> AuthenticatedHelper | None:
+    if not raw_session or not APP_SESSION_SECRET:
+        return None
+    try:
+        encoded, received_signature = raw_session.split(".", maxsplit=1)
+        expected_signature = hmac.new(
+            APP_SESSION_SECRET.encode(),
+            encoded.encode(),
+            hashlib.sha256,
+        ).hexdigest()
+        if not hmac.compare_digest(received_signature, expected_signature):
+            return None
+        decoded = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
+        payload = json.loads(decoded)
+        if payload["exp"] < int(time.time()):
+            return None
+        return AuthenticatedHelper(
+            id=payload["sub"],
+            username=payload["username"],
+            global_name=payload.get("global_name"),
+            avatar_url=payload.get("avatar_url"),
+        )
+    except (KeyError, ValueError, json.JSONDecodeError):
+        return None
+
+
+def current_helper(request: Request) -> AuthenticatedHelper:
+    helper = parse_session(request.cookies.get(SESSION_COOKIE))
+    if not helper:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Connexion requise.")
+    return helper
+
+
+def create_state() -> str:
+    return secrets.token_urlsafe(32)

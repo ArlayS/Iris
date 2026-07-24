@@ -1,53 +1,75 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-import { HOME } from "@/constants/testIds";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "sonner";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { api } from "./api/client";
+import AppShell from "./components/AppShell";
+import DashboardPage from "./pages/DashboardPage";
+import LoginPage from "./pages/LoginPage";
+import NewTicketPage from "./pages/NewTicketPage";
+import TicketWorkspacePage from "./pages/TicketWorkspacePage";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
+
+function AuthenticatedApp({ helper }) {
+  const [tickets, setTickets] = useState([]);
+  const [stats, setStats] = useState({ active_count: 0, archived_count: 0, total_messages: 0 });
+
+  const refreshDashboard = async () => {
+    const [ticketsResponse, statsResponse] = await Promise.all([api.get("/tickets"), api.get("/tickets/stats")]);
+    setTickets(ticketsResponse.data);
+    setStats(statsResponse.data);
   };
 
   useEffect(() => {
-    helloWorldApi();
+    refreshDashboard().catch(() => undefined);
   }, []);
 
+  const updateTicket = (ticket) => {
+    setTickets((current) => [ticket, ...current.filter((item) => item.id !== ticket.id)]);
+    setStats((current) => ({
+      ...current,
+      active_count: tickets.filter((item) => (item.id === ticket.id ? ticket : item).status === "active").length,
+      archived_count: tickets.filter((item) => (item.id === ticket.id ? ticket : item).status === "archived").length,
+    }));
+  };
+
+  const logout = async () => {
+    await api.post("/auth/logout");
+    window.location.assign("/");
+  };
+
   return (
-    <div>
-      <header className="App-header">
-        <a
-          data-testid={HOME.emergentLink}
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
+    <AppShell helper={helper} tickets={tickets} onLogout={logout}>
+      <Routes>
+        <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} />} />
+        <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
+        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} />} />
+        <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AppShell>
   );
-};
+}
 
 function App() {
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    api.get("/auth/session")
+      .then((response) => setSession(response.data))
+      .catch(() => setSession({ authenticated: false }));
+  }, []);
+
+  if (!session) {
+    return <div className="app-loading" data-testid="application-loading">Initialisation d’Iris…</div>;
+  }
+
   return (
     <div className="App">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
+        {session.authenticated ? <AuthenticatedApp helper={session.helper} /> : <LoginPage />}
+        <Toaster theme="dark" position="bottom-right" />
       </BrowserRouter>
     </div>
   );

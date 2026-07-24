@@ -1,0 +1,42 @@
+{
+  "summary": "Iris backend + frontend tested end-to-end within the constraints of the missing OAuth credentials. 18/18 pytest cases pass against the public URL, covering root health, /api/auth/session (authenticated=false), /api/auth/discord/login returning explicit 503 with missing-vars message and no secret leakage, /api/auth/logout, and 401 enforcement on every members/tickets route (list, stats, create, get, patch, sync). Static invariants confirmed in source: Discord API calls are pinned to guild 1081957992188088391 (member lookup path, channel guild_id check), history pagination uses limit=100 + before with page[-1]['id'], Mongo queries project out _id, .env pins the correct guild and does not expose a bot token. UI: LoginPage renders on desktop (1920x1080) and mobile (390x844), Discord button href correct, footer present, clicking the button surfaces the exact 503 message ('Connexion Discord à configurer : DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, APP_SESSION_SECRET.') without leaking any secret. Direct navigation to /new correctly falls back to the login page because AuthenticatedApp only mounts when authenticated. The Transcription / Note / Vocal panels and save/sync buttons cannot be exercised live without an OAuth session, but the required data-testids (new-ticket-form, create-ticket-button, ticket-notes-input, ticket-vocal-input, save-ticket-button, sync-ticket-button, discord-login-button, transcript-panel, notes-panel, vocal-panel, archive-ticket-button) are all present in the source.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "backend/routers/auth.py", "issue": "Unused import `current_helper` in routers/auth.py — dead import, no functional impact."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iris_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Provide DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, and APP_SESSION_SECRET (and DISCORD_BOT_TOKEN for Discord API calls) so authenticated flows (member fetch, ticket import, transcript sync, notes/vocal save) can be validated live.",
+    "Minor: In frontend/src/App.js `updateTicket`, the stats recomputation uses the stale `tickets` closure — safe today because stats are refetched from /tickets/stats on mount, but consider recomputing from the merged list instead.",
+    "Minor: Remove unused `current_helper` import in backend/routers/auth.py."
+  ],
+  "critical_code_review_comments": [
+    "Auth guard is enforced consistently on every members/tickets endpoint via Depends(current_helper). Verified with 7 live 401 responses and a forged-cookie negative test.",
+    "Discord scoping is defense-in-depth: member lookup uses /guilds/{DISCORD_GUILD_ID}/members/{id} AND fetch_text_channel verifies channel.guild_id == DISCORD_GUILD_ID before any history call. Good.",
+    "Pagination in fetch_channel_history is correct: limit=100, before=page[-1]['id'], stops when page < 100. Rate-limit 429 handled with retry_after sleep.",
+    "MongoDB _id is projected out in every tickets query (list, find_one via ticket_or_404, find_one for duplicate channel check). Ticket model correctly stores id as a UUID string.",
+    "Session cookies use HttpOnly + Secure + SameSite=Lax, and are HMAC-SHA256 signed with APP_SESSION_SECRET; forged cookies are rejected. Good.",
+    "OAuth config is validated lazily with a 503 message that lists ONLY the missing env var names — no secret values are ever echoed. Good.",
+    "CORS_ORIGINS defaults to '*' with allow_credentials=True — this is technically ineffective (browsers ignore * when credentials=true) but harmless in this environment. Recommend setting CORS_ORIGINS to the frontend origin once deployed."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iris_api.py"
+  ],
+  "success_rate": {"backend": "100% (18/18)", "frontend": "100% of testable flows (login + 503 surface + route guard) — authenticated workspace flows not testable without OAuth credentials"},
+  "test_credentials": "None available. OAuth Client ID/Secret intentionally not configured; the bot token must not be used in tests.",
+  "seed_data_creation": "None. No writes performed on Mongo during testing.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Once DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, APP_SESSION_SECRET (and DISCORD_BOT_TOKEN) are provided, extend /app/backend/tests/test_iris_api.py with an authenticated_client fixture that mints a valid HMAC-signed iris_session cookie using APP_SESSION_SECRET (see services/auth_service.create_session). Then add CRUD tests for /api/tickets with Create→GET→PATCH→GET→sync→archive verification. For the frontend, run the workspace flow: fill new-ticket-form -> create-ticket-button -> ticket-workspace-page -> ticket-notes-input/ticket-vocal-input -> save-ticket-button -> sync-ticket-button -> archive-ticket-button. All required data-testids are already in place.",
+  "rca of the issue": "N/A — no bugs blocking the requested test scope. The 503 on /api/auth/discord/login is expected behaviour by design because OAuth credentials are intentionally not configured."
+}
