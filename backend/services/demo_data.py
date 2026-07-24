@@ -1,3 +1,5 @@
+"""Legacy module no longer imported by Iris after demo removal."""
+
 from database import db
 
 

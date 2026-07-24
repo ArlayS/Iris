@@ -45,6 +45,11 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 - OAuth Discord vérifie d’abord l’appartenance au serveur, puis le rôle Helper avant de créer une session Iris.
 - Import de salons prêt : validation du serveur, contrôle du type de salon et historique paginé par lots de 100 messages.
 
+## Accès réel uniquement — 2026-07-24
+- Le mode démo, ses sessions et ses actions de création fictives ont été retirés du produit.
+- Iris ouvre uniquement la connexion Discord, réservée aux membres vérifiés portant le rôle Helper.
+- Les actions de navigation non fonctionnelles ont été retirées de l’interface.
+
 ## Backlog priorisé
 ### P0 — configuration nécessaire
 - Ajouter un nouveau `DISCORD_BOT_TOKEN` après réinitialisation.

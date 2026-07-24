@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from database import db
 from models.ticket import (
     AuthenticatedHelper,
-    DemoCaseCreate,
     TicketCreate,
     TicketDetail,
     TicketStats,
@@ -14,7 +13,6 @@ from models.ticket import (
     TicketUpdate,
 )
 from services.auth_service import current_helper
-from services.demo_data import is_demo_helper
 from services.discord_service import DiscordService
 
 
@@ -26,8 +24,6 @@ def now_iso() -> str:
 
 
 def ticket_scope(helper: AuthenticatedHelper) -> dict:
-    if is_demo_helper(helper.id, helper.mode):
-        return {"demo_ticket": True}
     return {"$or": [{"demo_ticket": {"$exists": False}}, {"demo_ticket": False}]}
 
 
@@ -100,64 +96,6 @@ async def create_ticket(
     return ticket
 
 
-@router.post("/demo", response_model=TicketDetail, status_code=201)
-async def create_demo_case(
-    input_data: DemoCaseCreate,
-    helper: AuthenticatedHelper = Depends(current_helper),
-) -> TicketDetail:
-    if not is_demo_helper(helper.id, helper.mode):
-        raise HTTPException(
-            status_code=403,
-            detail="La création de dossier test est réservée au mode démo.",
-        )
-    timestamp = now_iso()
-    case_id = f"SUIVI-{uuid4().hex[:6].upper()}"
-    member_id = f"demo-{uuid4().hex[:10]}"
-    ticket = TicketDetail(
-        id=case_id,
-        title=input_data.reason,
-        member={
-            "id": member_id,
-            "username": input_data.name.lower().replace(" ", "."),
-            "display_name": input_data.name,
-            "avatar_url": None,
-            "joined_at": timestamp,
-        },
-        channel_id=f"case-{case_id.lower()}",
-        channel_name="écoute-confidentielle",
-        status="active",
-        priority=input_data.priority,
-        follow_up_status=input_data.follow_up_status,
-        message_count=1,
-        transcript=[
-            {
-                "id": f"{case_id}-welcome",
-                "content": "Dossier créé. Prenez le temps d’accueillir la demande et d’ajouter vos notes privées.",
-                "timestamp": timestamp,
-                "author": {
-                    "id": helper.id,
-                    "username": helper.username,
-                    "display_name": helper.global_name or helper.username,
-                    "avatar_url": helper.avatar_url,
-                },
-                "attachments": [],
-            }
-        ],
-        notes="",
-        vocal_summary="",
-        last_synced_at=timestamp,
-        created_by=helper.id,
-        created_at=timestamp,
-        updated_at=timestamp,
-        is_demo=True,
-    )
-    document = ticket.model_dump()
-    document["demo_ticket"] = True
-    document["demo_schema_version"] = 2
-    await db.tickets.insert_one(document)
-    return ticket
-
-
 @router.get("/{ticket_id}", response_model=TicketDetail)
 async def get_ticket(
     ticket_id: str,
@@ -190,12 +128,6 @@ async def sync_ticket(
     _: AuthenticatedHelper = Depends(current_helper),
 ) -> TicketDetail:
     ticket = await ticket_or_404(ticket_id, _)
-    if ticket.get("is_demo"):
-        await db.tickets.update_one(
-            {"id": ticket_id, "demo_ticket": True},
-            {"$set": {"last_synced_at": now_iso()}},
-        )
-        return await ticket_or_404(ticket_id, _)
     transcript = await DiscordService().fetch_channel_history(ticket["channel_id"])
     timestamp = now_iso()
     await db.tickets.update_one(

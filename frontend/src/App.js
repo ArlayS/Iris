@@ -33,29 +33,18 @@ function AuthenticatedApp({ helper }) {
       .catch(() => undefined);
   };
 
-  const createQuickCase = async () => {
-    const response = await api.post("/tickets/demo", {
-      name: "Nouvelle personne",
-      reason: "Demande d’écoute à préciser",
-      priority: "routine",
-      follow_up_status: "à écouter",
-    });
-    updateTicket(response.data);
-    return response.data;
-  };
-
   const logout = async () => {
     await api.post("/auth/logout");
     window.location.assign("/");
   };
 
   return (
-    <AppShell helper={helper} tickets={tickets} onLogout={logout} isDemo={helper.mode === "demo"}>
+    <AppShell helper={helper} tickets={tickets} onLogout={logout}>
       <Routes>
-        <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} isDemo={helper.mode === "demo"} onQuickCreate={createQuickCase} />} />
-        <Route path="/new" element={<NewTicketPage onCreated={updateTicket} isDemo={helper.mode === "demo"} />} />
-        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} isDemo={helper.mode === "demo"} />} />
-        <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} isDemo={helper.mode === "demo"} onQuickCreate={createQuickCase} />} />
+        <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} />} />
+        <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
+        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} />} />
+        <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>

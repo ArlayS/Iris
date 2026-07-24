@@ -19,7 +19,6 @@ from config import (
     missing_oauth_settings,
 )
 from models.ticket import AuthenticatedHelper
-from services.demo_data import DEMO_AVATARS, DEMO_HELPER_ID
 from services.discord_service import DiscordService
 
 
@@ -147,6 +146,8 @@ def parse_session(raw_session: str | None) -> AuthenticatedHelper | None:
         payload = json.loads(decoded)
         if payload["exp"] < int(time.time()):
             return None
+        if payload.get("mode", "discord") != "discord":
+            return None
         return AuthenticatedHelper(
             id=payload["sub"],
             username=payload["username"],
@@ -160,7 +161,7 @@ def parse_session(raw_session: str | None) -> AuthenticatedHelper | None:
 
 def current_helper(request: Request) -> AuthenticatedHelper:
     helper = parse_session(request.cookies.get(SESSION_COOKIE))
-    if not helper:
+    if not helper or helper.mode != "discord":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Connexion requise.")
     return helper
 
@@ -168,12 +169,3 @@ def current_helper(request: Request) -> AuthenticatedHelper:
 def create_state() -> str:
     return secrets.token_urlsafe(32)
 
-
-def demo_helper() -> AuthenticatedHelper:
-    return AuthenticatedHelper(
-        id=DEMO_HELPER_ID,
-        username="iris.demo",
-        global_name="Lina · Helper",
-        avatar_url=DEMO_AVATARS["helper"],
-        mode="demo",
-    )

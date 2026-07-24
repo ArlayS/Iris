@@ -47,13 +47,6 @@ class TicketUpdate(BaseModel):
     follow_up_status: Literal["à écouter", "en suivi", "stable"] | None = None
 
 
-class DemoCaseCreate(BaseModel):
-    name: str = Field(min_length=2, max_length=80)
-    reason: str = Field(min_length=3, max_length=500)
-    priority: Literal["routine", "prioritaire", "urgent"] = "routine"
-    follow_up_status: Literal["à écouter", "en suivi", "stable"] = "à écouter"
-
-
 class TicketSummary(BaseModel):
     id: str
     title: str
@@ -88,7 +81,7 @@ class AuthenticatedHelper(BaseModel):
     username: str
     global_name: str | None = None
     avatar_url: str | None = None
-    mode: Literal["discord", "demo"] = "discord"
+    mode: Literal["discord"] = "discord"
 
 
 class AuthSession(BaseModel):

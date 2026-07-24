@@ -1,26 +1,8 @@
-import { ArrowUpRight, LoaderCircle, Play, RadioTower, ShieldCheck, Sparkles } from "lucide-react";
-import { useState } from "react";
-
-import { api, getErrorMessage } from "../api/client";
+import { ArrowUpRight, RadioTower, ShieldCheck } from "lucide-react";
 
 
 export default function LoginPage() {
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
-  const [loadingDemo, setLoadingDemo] = useState(false);
-  const [demoError, setDemoError] = useState("");
-
-  const openDemo = async () => {
-    setLoadingDemo(true);
-    setDemoError("");
-    try {
-      await api.post("/auth/demo-session");
-      window.location.assign("/");
-    } catch (error) {
-      setDemoError(getErrorMessage(error));
-      setLoadingDemo(false);
-    }
-  };
-
   return (
     <main className="login-page" data-testid="login-page">
       <section className="login-grid">
@@ -47,14 +29,7 @@ export default function LoginPage() {
           >
             Continuer avec Discord <ArrowUpRight size={18} />
           </a>
-          <div className="demo-divider"><span>OU EXPLORER</span></div>
-          <button className="demo-access-button" type="button" onClick={openDemo} disabled={loadingDemo} data-testid="demo-access-btn">
-            {loadingDemo ? <LoaderCircle className="spin" size={18} /> : <Play size={18} fill="currentColor" />}
-            {loadingDemo ? "Ouverture du poste…" : "Accéder au mode démo"}
-            <Sparkles size={16} />
-          </button>
-          {demoError && <p className="form-error" role="alert" data-testid="demo-access-error">{demoError}</p>}
-          <small>3 dossiers fictifs, sans connexion à Discord réel.</small>
+          <small>Une autorisation Discord et le rôle Helper sont requis.</small>
         </div>
       </section>
       <footer data-testid="login-footer">IRIS · ESPACE CONFIDENTIEL · ÉQUIPE HELPERS</footer>

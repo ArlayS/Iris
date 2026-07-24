@@ -1,24 +1,9 @@
-import { ArrowRight, BookHeart, HeartHandshake, LoaderCircle, Plus, Radio, ShieldCheck, Users } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { toast } from "sonner";
+import { ArrowRight, BookHeart, HeartHandshake, Plus, Radio, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
 
 
-export default function DashboardPage({ stats, tickets, isDemo, onQuickCreate }) {
+export default function DashboardPage({ stats, tickets }) {
   const latest = tickets[0];
-  const navigate = useNavigate();
-  const [creating, setCreating] = useState(false);
-
-  const createQuickCase = async () => {
-    setCreating(true);
-    try {
-      const ticket = await onQuickCreate();
-      navigate(`/tickets/${ticket.id}`);
-    } catch (error) {
-      toast.error("Impossible de créer le dossier de démonstration.");
-      setCreating(false);
-    }
-  };
   return (
     <section className="page-content dashboard-page" data-testid="dashboard-page">
       <header className="page-header">
@@ -27,13 +12,7 @@ export default function DashboardPage({ stats, tickets, isDemo, onQuickCreate })
           <h1>Un suivi attentif, à votre rythme.</h1>
         </div>
         <div className="dashboard-actions">
-          {isDemo && (
-            <button className="quick-case-button" type="button" onClick={createQuickCase} disabled={creating} data-testid="quick-demo-case-button">
-              {creating ? <LoaderCircle className="spin" size={17} /> : <HeartHandshake size={17} />}
-              Créer un suivi test
-            </button>
-          )}
-          <Link className="calm-primary-button" to="/new" data-testid="complete-case-form-button"><Plus size={17} /> {isDemo ? "Formulaire complet" : "Importer un salon Discord"}</Link>
+          <Link className="calm-primary-button" to="/new" data-testid="import-discord-channel-button"><Plus size={17} /> Importer un salon Discord</Link>
         </div>
       </header>
 
@@ -75,7 +54,7 @@ export default function DashboardPage({ stats, tickets, isDemo, onQuickCreate })
         </section>
         <aside className="system-pane" data-testid="system-status-panel">
           <p className="eyebrow">REPÈRES</p>
-          <div><span><HeartHandshake size={15} /> Écoute active</span><b>{isDemo ? "DÉMO" : "PRÊT"}</b></div>
+        <div><span><HeartHandshake size={15} /> Écoute active</span><b>PRÊT</b></div>
           <div><span><BookHeart size={15} /> Notes privées</span><b>{tickets.length}</b></div>
           <div><span>Dernier suivi</span><strong>{latest ? latest.member.display_name || latest.member.username : "—"}</strong></div>
         </aside>

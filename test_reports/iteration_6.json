@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 6 - Verified TOTAL removal of demo mode. Added /app/backend/tests/test_demo_removed.py (19 focused tests) and deleted the now-obsolete test_demo_mode.py / test_demo_case_creation.py which pointed at removed endpoints. Full pytest run against public preview URL: 46/46 pass. Playwright pass against https://iris-logs.preview.emergentagent.com: 13/13 checks pass on desktop AND mobile (390x800). Confirmed: (1) LoginPage exposes only data-testid=discord-login-button, no demo-access-btn anywhere in DOM; (2) GET /api/auth/session with no cookie -> {authenticated:false}; (3) POST /api/auth/demo-session -> 404; (4) POST /api/tickets/demo -> 405 (route gone, only POST /api/tickets matches); (5) GET /api/auth/discord/login -> 302 to https://discord.com/oauth2/authorize with response_type=code, scope=identify guilds, and sets HttpOnly+Secure iris_oauth_state cookie; (6) all /api/tickets endpoints return 401 without a session AND reject a forged random cookie; (7) an HMAC-VALID session cookie with mode='demo' is refused by /api/auth/session (returns authenticated:false) and by /api/tickets (401) - this proves parse_session enforces mode=='discord' at the crypto layer, not just at endpoint level; (8) DashboardPage still has data-testid=import-discord-channel-button; (9) NewTicketForm still POSTs member_id + channel_id to /api/tickets; (10) AppShell contains no data-testid=notifications-button and no data-testid=settings-button; (11) mobile 390x800 has zero horizontal overflow (docWidth==viewWidth==390). Live OAuth callback and real Discord import were intentionally NOT executed (no human Helper account available, and creating a ticket would touch production Discord data).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_demo_removed.py",
+    "/app/backend/tests/test_iris_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "HUMAN VERIFICATION (unchanged from prior iteration): a real Discord account holding role 1499491909750755570 on guild 1081957992188088391 must complete the OAuth handshake once to confirm exchange_code + member_has_role + avatar_url paths, then paste a real member_id + channel_id at /new to confirm live fetch_member/fetch_text_channel/fetch_channel_history. Automation cannot cover this without touching production Discord."
+  ],
+  "critical_code_review_comments": [
+    "services/auth_service.py:parse_session - correctly enforces payload.get('mode','discord') == 'discord' AND current_helper adds a second helper.mode != 'discord' check. Defense in depth is good; the double-check means a demo-mode cookie is rejected even before hitting the endpoint's own guards.",
+    "routers/auth.py - clean surface: only /discord/login, /discord/callback, /session, /logout. No demo endpoint remains.",
+    "routers/tickets.py - clean: only /tickets, /tickets/stats, /tickets/{id}, /tickets/{id}/sync. No /tickets/demo. ticket_scope() explicitly excludes any lingering demo_ticket=true doc, so even orphaned demo docs (if any survived the MongoDB purge) cannot leak into list/stats.",
+    "components/DemoCaseForm.jsx still exists on disk but is no longer imported anywhere in App.js or DashboardPage.jsx. Dead code - safe to delete in a follow-up cleanup, not blocking.",
+    "MentalHealth.css and App.css still contain .demo-access-button / .demo-divider / .demo-ribbon rules. Dead CSS - low priority polish, does not affect behavior.",
+    "LoginPage contrast has improved since iteration 5 (dark-green primary CTA on cream background is now readable). Wording has also been softened to mental-health tone ('espace d'ecoute', 'ACCES HELPERS'). Both prior iteration 5 design flags are effectively resolved."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_demo_removed.py (new)",
+    "/app/backend/tests/test_demo_mode.py (deleted - obsolete)",
+    "/app/backend/tests/test_demo_case_creation.py (deleted - obsolete)"
+  ],
+  "success_rate": { "backend": "100% (46/46 pytest against public preview URL)", "frontend": "100% (13/13 Playwright checks on desktop 1920x1080 + mobile 390x800). Live OAuth callback intentionally not automated." },
+  "test_credentials": "None. /app/memory/test_credentials.md remains empty as expected (Discord OAuth requires live human accounts).",
+  "seed_data_creation": "None. No demo data created (endpoints removed). Prior demo docs in MongoDB, per user report, were purged separately; ticket_scope() also filters them out defensively.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression suite is now 2 files: test_iris_api.py (34 tests: OAuth 302 + guild/role invariants + Discord service pagination + auth guards + frontend static invariants) and test_demo_removed.py (19 tests: demo endpoint absence + mode!=discord rejection at parse_session + no notifications/settings testids). Run with `REACT_APP_BACKEND_URL=<preview> pytest /app/backend/tests/ -v`. If demo mode is ever reintroduced, TestStaticNoDemoRoutes and TestDemoEndpointsRemoved will fire first. Live human OAuth verification is still the only untested surface.",
+  "rca of the issue": "Not a bug fix - final regression check after removal. The user reported that (a) Notifications/Reglages buttons did nothing and (b) the site was still exposing a demo-session pathway that blocked real Discord login. Iteration 6 confirms all of E1's fixes stick: the demo-session and tickets/demo routers were removed from FastAPI (verified via 404/405 on the public URL), the LoginPage no longer renders demo-access-btn (verified via Playwright and static file inspection), AppShell no longer contains notifications-button/settings-button testids, and - most importantly - the session parser refuses ANY cookie whose payload.mode != 'discord', even when it carries a valid HMAC signature. That last property is what closes the class of attack where a leftover client or forged token could impersonate a demo session and pass current_helper. The real Discord import path (data-testid=import-discord-channel-button + NewTicketForm posting member_id/channel_id) is preserved and verified statically."
+}
