@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 # À modifier dans votre frontend/Dockerfile
-RUN npm install --legacy-peer-deps
+RUN npm install --force
 
 
 COPY . .
