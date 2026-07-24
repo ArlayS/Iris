@@ -38,7 +38,7 @@ async def discord_callback(code: str, state: str, request: Request) -> RedirectR
     if state != request.cookies.get(STATE_COOKIE):
         return RedirectResponse("/?auth=failed", status_code=302)
     helper = await exchange_code(code)
-    response = RedirectResponse("/", status_code=302)
+    response = RedirectResponse("FRONTEND_URL", status_code=302)
     response.set_cookie(
         SESSION_COOKIE,
         create_session(helper),
