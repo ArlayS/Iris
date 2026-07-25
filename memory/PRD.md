@@ -55,6 +55,13 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 - Gemini génère à la demande une synthèse française structurée : contexte, besoins exprimés, actions et prochain suivi, sans diagnostic ni recommandation médicale.
 - Le panneau administrateur, réservé au rôle Administrateur Discord, affiche la charge de chaque helper, ses dossiers attribués et les suivis non attribués.
 
+## Profils helpers, notes et thème — 2026-07-25
+- Les dossiers peuvent maintenant contenir plusieurs notes privées structurées avec titre, contenu, auteur et dates ; seul l’auteur ou un administrateur peut les supprimer.
+- Chaque helper dispose d’un profil personnel pour ses triggers ; eux seuls et les administrateurs peuvent consulter ces informations.
+- Le panneau admin affiche les triggers déclarés, la charge et les dossiers de chaque helper autorisé.
+- Un thème sombre persistant est disponible depuis les interfaces bureau et mobile ; les catégories ont reçu des contrastes renforcés.
+- Le bot Discord a été réauthentifié et le rôle Coordinateur configuré est de nouveau reconnu.
+
 ## Backlog priorisé
 ### P0 — configuration nécessaire
 - Ajouter un nouveau `DISCORD_BOT_TOKEN` après réinitialisation.
