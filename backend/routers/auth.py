@@ -17,6 +17,7 @@ from services.auth_service import (
 )
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://iris.loasis.app")
+COOKIE_DOMAIN = os.environ.get("COOKIE_DOMAIN", ".loasis.app")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -32,6 +33,7 @@ async def discord_login() -> RedirectResponse:
         httponly=True,
         secure=True,
         samesite="lax",
+        domain=COOKIE_DOMAIN,
     )
     return response
 
@@ -49,8 +51,9 @@ async def discord_callback(code: str, state: str, request: Request) -> RedirectR
         httponly=True,
         secure=True,
         samesite="lax",
+        domain=COOKIE_DOMAIN,
     )
-    response.delete_cookie(STATE_COOKIE)
+    response.delete_cookie(STATE_COOKIE, domain=COOKIE_DOMAIN)
     return response
 
 
@@ -59,5 +62,23 @@ async def session(request: Request, response: Response) -> AuthSession:
     raw_session = request.cookies.get(SESSION_COOKIE)
     helper = parse_session(raw_session)
     if raw_session and not helper:
-        response.delete_cookie(SESSION_COOKIE)
+        response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
         return AuthSession(authenticated=False, helper=None, is_admin=False)
+    if helper:
+        try:
+            if not await has_iris_access(helper.id):
+                response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
+                return AuthSession(authenticated=False, helper=None, is_admin=False)
+            is_admin = await is_admin_helper(helper.id)
+        except HTTPException:
+            response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
+            return AuthSession(authenticated=False, helper=None, is_admin=False)
+    else:
+        is_admin = False
+    return AuthSession(authenticated=helper is not None, helper=helper, is_admin=is_admin)
+
+
+@router.post("/logout", response_model=AuthSession)
+async def logout(response: Response) -> AuthSession:
+    response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
+    return AuthSession(authenticated=False, helper=None, is_admin=False)
