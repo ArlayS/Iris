@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
@@ -14,6 +16,7 @@ from services.auth_service import (
     parse_session,
 )
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://iris.loasis.app")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -36,9 +39,9 @@ async def discord_login() -> RedirectResponse:
 @router.get("/discord/callback")
 async def discord_callback(code: str, state: str, request: Request) -> RedirectResponse:
     if state != request.cookies.get(STATE_COOKIE):
-        return RedirectResponse("/?auth=failed", status_code=302)
+        return RedirectResponse(f"{FRONTEND_URL}/?auth=failed", status_code=302)
     helper = await exchange_code(code)
-    response = RedirectResponse("/", status_code=302)
+    response = RedirectResponse(FRONTEND_URL, status_code=302)
     response.set_cookie(
         SESSION_COOKIE,
         create_session(helper),
@@ -58,21 +61,3 @@ async def session(request: Request, response: Response) -> AuthSession:
     if raw_session and not helper:
         response.delete_cookie(SESSION_COOKIE)
         return AuthSession(authenticated=False, helper=None, is_admin=False)
-    if helper:
-        try:
-            if not await has_iris_access(helper.id):
-                response.delete_cookie(SESSION_COOKIE)
-                return AuthSession(authenticated=False, helper=None, is_admin=False)
-            is_admin = await is_admin_helper(helper.id)
-        except HTTPException:
-            response.delete_cookie(SESSION_COOKIE)
-            return AuthSession(authenticated=False, helper=None, is_admin=False)
-    else:
-        is_admin = False
-    return AuthSession(authenticated=helper is not None, helper=helper, is_admin=is_admin)
-
-
-@router.post("/logout", response_model=AuthSession)
-async def logout(response: Response) -> AuthSession:
-    response.delete_cookie(SESSION_COOKIE)
-    return AuthSession(authenticated=False, helper=None, is_admin=False)
