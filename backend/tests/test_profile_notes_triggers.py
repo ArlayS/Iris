@@ -52,9 +52,12 @@ class TestContrastFix:
         assert "color: #ffffff" in body or "color:#ffffff" in body or "color: #fff" in body
 
     def test_dark_mode_overrides_column_header_text(self):
-        # In dark mode, column-header must be overridden (not left white on white).
-        assert '.App[data-theme="dark"] .column-header' in self.css
-        assert '.App[data-theme="dark"] .category-badge' in self.css
+        # Iteration 9: dark mode was removed. This test now enforces that
+        # the runtime never sets a data-theme=dark attribute (App.js clears it),
+        # so the CSS override is not required to be present anymore.
+        src = self.read("App.js") if False else (FRONTEND_SRC / "App.js").read_text(encoding="utf-8")
+        assert 'removeAttribute("data-theme")' in src
+        assert 'removeItem("iris-theme")' in src
 
 
 # -------- 2. Profile RBAC --------
@@ -174,8 +177,9 @@ class TestFrontendStatic:
     def test_app_shell_has_profile_link_and_two_theme_toggles(self):
         src = self.read("components/AppShell.jsx")
         assert 'data-testid="helper-profile-link"' in src
-        assert 'data-testid="theme-toggle-button"' in src
-        assert 'data-testid="mobile-theme-toggle-button"' in src
+        # Iteration 9: dark-mode toggles have been removed.
+        assert 'data-testid="theme-toggle-button"' not in src
+        assert 'data-testid="mobile-theme-toggle-button"' not in src
         assert 'to="/profile"' in src
 
     def test_ticket_workspace_has_multi_note_form_and_cards(self):
@@ -198,10 +202,11 @@ class TestFrontendStatic:
 
     def test_app_persists_theme_in_localStorage_and_data_theme(self):
         src = self.read("App.js")
-        assert 'localStorage.getItem("iris-theme")' in src
-        assert 'localStorage.setItem("iris-theme"' in src
-        assert 'document.documentElement.dataset.theme = theme' in src
-        assert 'data-theme={theme}' in src
+        # Iteration 9: theme persistence has been removed. App must actively
+        # clear any leftover data-theme attribute and iris-theme localStorage key.
+        assert 'removeAttribute("data-theme")' in src
+        assert 'removeItem("iris-theme")' in src
+        assert 'localStorage.setItem("iris-theme"' not in src
 
 
 # -------- 7. Discord admin role id --------

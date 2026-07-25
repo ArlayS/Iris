@@ -15,7 +15,7 @@ import ResourcesPage from "./pages/ResourcesPage";
 import TicketWorkspacePage from "./pages/TicketWorkspacePage";
 
 
-function AuthenticatedApp({ helper, isAdmin, theme, toggleTheme }) {
+function AuthenticatedApp({ helper, isAdmin }) {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ active_count: 0, archived_count: 0, total_messages: 0 });
 
@@ -42,7 +42,7 @@ function AuthenticatedApp({ helper, isAdmin, theme, toggleTheme }) {
   };
 
   return (
-    <AppShell helper={helper} tickets={tickets} onLogout={logout} isAdmin={isAdmin} theme={theme} onToggleTheme={toggleTheme}>
+    <AppShell helper={helper} tickets={tickets} onLogout={logout} isAdmin={isAdmin}>
       <Routes>
         <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} />} />
         <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
@@ -59,12 +59,10 @@ function AuthenticatedApp({ helper, isAdmin, theme, toggleTheme }) {
 
 function App() {
   const [session, setSession] = useState(null);
-  const [theme, setTheme] = useState(() => localStorage.getItem("iris-theme") || "light");
-
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem("iris-theme", theme);
-  }, [theme]);
+    document.documentElement.removeAttribute("data-theme");
+    localStorage.removeItem("iris-theme");
+  }, []);
 
   useEffect(() => {
     api.get("/auth/session")
@@ -77,9 +75,9 @@ function App() {
   }
 
   return (
-    <div className="App" data-testid="iris-app" data-theme={theme}>
+    <div className="App" data-testid="iris-app">
       <BrowserRouter>
-        {session.authenticated ? <AuthenticatedApp helper={session.helper} isAdmin={session.is_admin} theme={theme} toggleTheme={() => setTheme((current) => current === "light" ? "dark" : "light")} /> : <LoginPage />}
+        {session.authenticated ? <AuthenticatedApp helper={session.helper} isAdmin={session.is_admin} /> : <LoginPage />}
         <Toaster theme="light" position="bottom-right" />
       </BrowserRouter>
     </div>

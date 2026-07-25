@@ -1,5 +1,5 @@
-import { ClipboardCheck, HeartHandshake, LoaderCircle, ShieldCheck, UsersRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ClipboardCheck, HeartHandshake, LoaderCircle, RefreshCw, ShieldCheck, UsersRound } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api, getErrorMessage } from "../api/client";
@@ -9,14 +9,19 @@ export default function AdminDashboardPage() {
   const [overview, setOverview] = useState(null);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const loadOverview = useCallback(() => {
+    setError("");
     api.get("/admin/overview")
       .then((response) => setOverview(response.data))
       .catch((requestError) => setError(getErrorMessage(requestError)));
   }, []);
 
+  useEffect(() => {
+    loadOverview();
+  }, [loadOverview]);
+
   if (error) {
-    return <section className="page-content admin-page" data-testid="admin-access-error"><p className="admin-error">{error}</p><p className="admin-error-help">Vérifiez que votre compte Discord porte bien le rôle Administrateur, puis reconnectez-vous.</p></section>;
+    return <section className="page-content admin-page" data-testid="admin-access-error"><p className="admin-error">{error}</p><p className="admin-error-help">Iris vérifie le rôle Discord Coordinateur à chaque accès. Si le rôle vient d’être ajouté, reconnectez-vous puis relancez cette vérification.</p><button className="calm-primary-button" type="button" onClick={loadOverview} data-testid="retry-admin-access-button"><RefreshCw size={16} /> Vérifier mes autorisations</button></section>;
   }
 
   if (!overview) {

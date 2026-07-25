@@ -377,9 +377,12 @@ class TestFrontendStaticInvariants:
 
     def test_admin_panel_link_conditional_on_isadmin(self):
         source = _read_frontend("src/components/AppShell.jsx")
-        # NavLink to /admin only rendered when isAdmin is truthy
-        assert "isAdmin &&" in source
+        # Iteration 9: admin link is now rendered unconditionally
+        # (backend still guards /api/admin/* with current_admin).
         assert 'data-testid="admin-panel-link"' in source
+        idx = source.index('data-testid="admin-panel-link"')
+        preceding = source[max(0, idx - 400):idx]
+        assert "isAdmin &&" not in preceding
 
     def test_app_routes_admin_and_passes_is_admin_to_workspace(self):
         source = _read_frontend("src/App.js")
