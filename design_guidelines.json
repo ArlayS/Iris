@@ -1,5 +1,6 @@
 {
-  "theme": "light",
+  "theme": "light_and_dark",
+  "theme_rules": "Persistent dark mode switch ('Clair/Sombre') must be implemented. User preference must be saved.",
   "typography": {
     "headings": {
       "font_family": "Manrope",
@@ -17,12 +18,12 @@
       "h1": "text-3xl sm:text-4xl lg:text-5xl",
       "h2": "text-2xl sm:text-3xl lg:text-4xl",
       "h3": "text-xl sm:text-2xl",
-      "body": "text-base sm:text-lg text-gray-800"
+      "body": "text-base sm:text-lg"
     }
   },
   "colors": {
     "archetype": "Organic & Earthy (Mental Health & Trust)",
-    "palette": {
+    "light_mode": {
       "background": "#FDFCF8",
       "surface": "#FFFFFF",
       "primary": "#3A5A40",
@@ -32,40 +33,61 @@
       "border": "#E2E8F0",
       "ai_highlight_bg": "#EEF2E6",
       "ai_highlight_text": "#2C402E",
-      "accent_gentle": "#A3B18A"
+      "accent_gentle": "#A3B18A",
+      "category_bg": "#3A5A40",
+      "category_text": "#FFFFFF"
     },
-    "rules": "Never use pure black (#000000) or pure grey (#808080). Tint greys with green or warm sand to maintain the organic feel. High contrast for readability without harsh neon."
+    "dark_mode": {
+      "background": "#0F1410",
+      "surface": "#1A221C",
+      "primary": "#82A389",
+      "primary_hover": "#97B89E",
+      "text_main": "#E8ECE9",
+      "text_muted": "#9AABA0",
+      "border": "#2C3B30",
+      "ai_highlight_bg": "#212E24",
+      "ai_highlight_text": "#B3D1B9",
+      "accent_gentle": "#4F6E56",
+      "category_bg": "#82A389",
+      "category_text": "#0F1410"
+    },
+    "rules": "High contrast is CRITICAL. Specifically, category labels must NEVER be white-on-white. Ensure category text contrasts sharply with its background. Never use pure black (#000000) or pure grey (#808080). Tint greys with green or warm sand to maintain the organic feel."
   },
   "visual_enhancers": {
-    "shadows": "Use very soft, ambient shadows. Example: shadow-[0_8px_30px_rgba(58,90,64,0.06)] for elevated cards.",
+    "shadows": "Use very soft, ambient shadows in light mode (e.g., shadow-[0_8px_30px_rgba(58,90,64,0.06)]). In dark mode, rely more on 1px borders and subtle background lightening rather than shadows.",
     "borders": "1px solid border-border on cards and widgets. Soft 12px (rounded-xl) to 16px (rounded-2xl) radius for a safe, friendly feel.",
     "textures": "Apply a very subtle noise texture overlay to the main background to break digital flatness and create a grounded, organic environment.",
-    "glassmorphism": "Avoid on clinical data. For modals or sticky navs, use high opacity with blur (e.g., bg-white/80 backdrop-blur-xl border border-white/40)."
+    "glassmorphism": "Avoid on clinical data. For modals or sticky navs, use high opacity with blur (e.g., bg-white/80 or bg-black/60 backdrop-blur-xl border)."
   },
   "layouts": {
-    "dashboard": "Collapsible left sidebar for navigation + spacious modular widgets area. Prioritize progressive disclosure for ticket data to prevent cognitive overload.",
+    "dashboard": "Fixed and protected Admin Dashboard. Collapsible left sidebar for navigation + spacious modular widgets area. Admin views helper profiles, triggers, and tickets.",
+    "ticket_workspace": "Multi-note workspace inside the helper tool. Divide the screen into a ticket overview (left) and a notes stack/grid (right).",
     "spacing": "Generous spacing. Use p-8 or p-12 for main sections, gap-6 to gap-8 in grids. Content must breathe."
   },
   "grids": {
     "admin_overview": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
-    "widget_ratios": "Summary stats span 1 col, main tables span 2 or 3 cols. Maintain rigid optical alignment.",
+    "notes_grid": "grid-cols-1 xl:grid-cols-2 gap-4 for multiple notes inside a ticket.",
     "general": "Never fill 100% perfectly without breathing room. Use subgrid when nesting."
   },
   "components": {
+    "category_badge": "MUST have high contrast text against the badge background (e.g., white text on dark green bg in light mode, or dark background on light green text in dark mode). Fixes the 'white on white' issue.",
+    "note_card": "Card representing a single note. Must display: Title (bold, text-lg), Author (muted, text-sm), Date (muted, text-sm), and Content (text-base, full width). Use Shadcn Card as base.",
+    "helper_profile": "A dedicated page or modal for the helper. Contains a free-text area specifically for 'Triggers' (what triggers them emotionally).",
+    "theme_toggle": "A persistent 'Clair/Sombre' (Light/Dark) toggle switch or button, usually placed in the header or sidebar.",
     "ticket_card": "Cardless or very flat rectangular shapes with 1px border. Displays Helper avatar, Name, and Discord ID tag.",
-    "ai_summary_panel": "Inside the ticket detail, housed in a distinct but muted container (bg-ai_highlight_bg). Structured cleanly: Context, Needs, Actions, Next Follow-up.",
+    "ai_summary_panel": "Inside the ticket detail, housed in a distinct but muted container. Structured cleanly: Context, Needs, Actions, Next Follow-up.",
     "helper_assignment": "Use a Shadcn Select/Dropdown customized with avatar previews, Name, and Discord ID inline.",
-    "role_gate": "Admin View must be strictly visible only to Discord Role ID 1503100661728936046.",
     "general_rules": "DO NOT use HTML-based components for advanced interactions. Use Shadcn components for Select, Tabs, Dialogs, Tables. Customize border-radii and spacing."
   },
   "motion": {
-    "transitions": "Gentle microinteractions. transition: transform 0.2s ease, opacity 0.2s ease. NO universal transitions.",
+    "transitions": "Gentle microinteractions. transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.3s ease (for dark mode switch). NO universal transitions.",
     "loading": "Subtle skeleton loaders in earthy tones. Avoid jarring spinners.",
-    "hover": "Explicitly set hover colors. Lighter hue of the active state. E.g., hover:bg-[#2B4330] hover:text-white"
+    "hover": "Explicitly set hover colors. Lighter hue of the active state. E.g., hover:bg-primary_hover hover:text-white"
   },
   "accessibility": {
-    "contrast": "APCA minimums required. Minimum 4.5:1 for normal text against backgrounds.",
-    "focus_states": "Focus states must have HIGHER contrast, ring-2 ring-[#3A5A40].",
+    "contrast": "APCA minimums required. Minimum 4.5:1 for normal text against backgrounds. Check specifically for the category texts.",
+    "visibility": "Helper 'Triggers' must be strictly visible ONLY to the specific helper and the admins.",
+    "focus_states": "Focus states must have HIGHER contrast, ring-2 ring-primary.",
     "testing": "All interactive elements MUST include a data-testid attribute in kebab-case."
   },
   "media": {
@@ -88,11 +110,15 @@
     ]
   },
   "instructions_to_main_agent": [
+    "Fix the category text contrast issue: Ensure category labels are readable (not white-on-white). Apply dynamic text colors based on the dark/light mode background.",
+    "Restore and fix the Admin Space: Ensure it functions correctly as a protected dashboard. It must show an overview of all helpers, tickets, and helper profiles (including triggers).",
+    "Implement the Multi-Note Ticket Workspace: In the helper view, allow creating multiple separated notes per ticket. Each note must display a Title, Author, Date, and Content.",
+    "Implement Helper Profile & Triggers: Create a profile section for helpers containing a free-text field for 'Triggers'.",
+    "Enforce Trigger Visibility: The helper triggers must only be visible to the helper who owns them and to administrators in the admin space.",
+    "Implement Dark Mode: Add a persistent theme toggle button (Clair/Sombre) that saves user preference. Apply the dark_mode and light_mode color palettes.",
     "Build the UI in React (.js) using Tailwind CSS and shadcn/ui primitives.",
     "Implement the Ticket Detail page. Include an 'Assisted by...' section that displays a selected main helper's Name and Discord ID, using a styled Select component.",
     "Integrate an AI summary section on each ticket made with Gemini (using Emergent Universal Key) that formats strictly into: Context, Expressed Needs, Actions, and Next Follow-up.",
-    "Build a protected Admin Panel Dashboard restricted to users with Discord Role ID '1503100661728936046'.",
-    "The admin dashboard must display an overview of all helpers and their assigned tickets, using progressive disclosure (collapsible lists or modals) to maintain a calm UI.",
     "Adhere closely to the 'Organic & Earthy' mental-health color palette and generous spacing guidelines.",
     "Use Phosphor Icons or Lucide React for UI iconography. Do NOT use emojis."
   ],

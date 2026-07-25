@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Base de données MongoDB
+  mongodb:
+    image: mongo:latest
+    container_name: emergent-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: secretpassword
+
+  # API Backend (FastAPI)
+  backend:
+    build: ./backend
+    container_name: emergent-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mongodb://admin:secretpassword@mongodb:27017/emergent_db?authSource=admin
+    depends_on:
+      - mongodb
+
+  # Application Frontend (React)
+  frontend:
+    build: ./frontend
+    container_name: emergent-frontend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  mongo-data:
