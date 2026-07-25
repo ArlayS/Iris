@@ -11,11 +11,13 @@ from models.ticket import (
     AuthenticatedHelper,
     TicketCreate,
     TicketDetail,
+    TicketNote,
+    TicketNoteCreate,
     TicketStats,
     TicketSummary,
     TicketUpdate,
 )
-from services.auth_service import current_helper
+from services.auth_service import current_helper, is_admin_helper
 from services.ai_summary_service import ensure_ai_configuration, stream_summary
 from services.discord_service import DiscordService
 
@@ -90,6 +92,7 @@ async def create_ticket(
         transcript=transcript,
         notes="",
         vocal_summary="",
+        notes_entries=[],
         last_synced_at=timestamp,
         created_by=helper.id,
         created_at=timestamp,
@@ -98,6 +101,52 @@ async def create_ticket(
     document = ticket.model_dump()
     await db.tickets.insert_one(document)
     return ticket
+
+
+@router.post("/{ticket_id}/notes", response_model=TicketNote, status_code=201)
+async def create_ticket_note(
+    ticket_id: str,
+    input_data: TicketNoteCreate,
+    helper: AuthenticatedHelper = Depends(current_helper),
+) -> TicketNote:
+    await ticket_or_404(ticket_id, helper)
+    timestamp = now_iso()
+    note = TicketNote(
+        id=str(uuid4()),
+        title=input_data.title.strip(),
+        content=input_data.content.strip(),
+        author={
+            "id": helper.id,
+            "username": helper.username,
+            "display_name": helper.global_name,
+            "avatar_url": helper.avatar_url,
+        },
+        created_at=timestamp,
+        updated_at=timestamp,
+    )
+    await db.tickets.update_one(
+        {"id": ticket_id, "demo_ticket": {"$ne": True}},
+        {"$push": {"notes_entries": note.model_dump()}, "$set": {"updated_at": timestamp}},
+    )
+    return note
+
+
+@router.delete("/{ticket_id}/notes/{note_id}", status_code=204)
+async def delete_ticket_note(
+    ticket_id: str,
+    note_id: str,
+    helper: AuthenticatedHelper = Depends(current_helper),
+) -> None:
+    ticket = await ticket_or_404(ticket_id, helper)
+    note = next((item for item in ticket.get("notes_entries", []) if item.get("id") == note_id), None)
+    if not note:
+        raise HTTPException(status_code=404, detail="Note introuvable.")
+    if note["author"]["id"] != helper.id and not await is_admin_helper(helper.id):
+        raise HTTPException(status_code=403, detail="Seul l’auteur ou un administrateur peut supprimer cette note.")
+    await db.tickets.update_one(
+        {"id": ticket_id, "demo_ticket": {"$ne": True}},
+        {"$pull": {"notes_entries": {"id": note_id}}, "$set": {"updated_at": now_iso()}},
+    )
 
 
 @router.get("/{ticket_id}", response_model=TicketDetail)

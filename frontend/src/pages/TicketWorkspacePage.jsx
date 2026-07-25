@@ -1,4 +1,4 @@
-import { Archive, Bot, Check, ChevronLeft, FileText, HeartHandshake, LoaderCircle, Pause, Play, RefreshCw, Save, ShieldCheck, UserRoundCheck, Volume2 } from "lucide-react";
+import { Archive, Bot, Check, ChevronLeft, FilePlus2, FileText, HeartHandshake, LoaderCircle, Pause, Play, RefreshCw, Save, ShieldCheck, Trash2, UserRoundCheck, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,10 +9,9 @@ import { api, getErrorMessage } from "../api/client";
 const formatTime = (timestamp) => new Date(timestamp).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
 
-export default function TicketWorkspacePage({ onTicketUpdate, isAdmin }) {
+export default function TicketWorkspacePage({ onTicketUpdate, isAdmin, helper }) {
   const { ticketId } = useParams();
   const [ticket, setTicket] = useState(null);
-  const [notes, setNotes] = useState("");
   const [vocalSummary, setVocalSummary] = useState("");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -23,6 +22,9 @@ export default function TicketWorkspacePage({ onTicketUpdate, isAdmin }) {
   const [helpers, setHelpers] = useState([]);
   const [summaryProgress, setSummaryProgress] = useState("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteContent, setNoteContent] = useState("");
+  const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
     const loadTicket = async () => {
@@ -31,7 +33,6 @@ export default function TicketWorkspacePage({ onTicketUpdate, isAdmin }) {
       try {
         const response = await api.get(`/tickets/${ticketId}`);
         setTicket(response.data);
-        setNotes(response.data.notes || "");
         setVocalSummary(response.data.vocal_summary || "");
         setFollowUpStatus(response.data.follow_up_status || "à écouter");
       } catch (requestError) {
@@ -52,7 +53,6 @@ export default function TicketWorkspacePage({ onTicketUpdate, isAdmin }) {
     setSaving(true);
     try {
       const response = await api.patch(`/tickets/${ticketId}`, {
-        notes,
         vocal_summary: vocalSummary,
         follow_up_status: followUpStatus,
       });
@@ -63,6 +63,33 @@ export default function TicketWorkspacePage({ onTicketUpdate, isAdmin }) {
       toast.error(getErrorMessage(requestError));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const addNote = async (event) => {
+    event.preventDefault();
+    if (!noteTitle.trim() || !noteContent.trim()) return;
+    setAddingNote(true);
+    try {
+      const response = await api.post(`/tickets/${ticketId}/notes`, { title: noteTitle, content: noteContent });
+      setTicket((current) => ({ ...current, notes_entries: [...(current.notes_entries || []), response.data] }));
+      setNoteTitle("");
+      setNoteContent("");
+      toast.success("Note ajoutée.");
+    } catch (requestError) {
+      toast.error(getErrorMessage(requestError));
+    } finally {
+      setAddingNote(false);
+    }
+  };
+
+  const deleteNote = async (noteId) => {
+    try {
+      await api.delete(`/tickets/${ticketId}/notes/${noteId}`);
+      setTicket((current) => ({ ...current, notes_entries: current.notes_entries.filter((note) => note.id !== noteId) }));
+      toast.success("Note supprimée.");
+    } catch (requestError) {
+      toast.error(getErrorMessage(requestError));
     }
   };
 
@@ -231,13 +258,11 @@ export default function TicketWorkspacePage({ onTicketUpdate, isAdmin }) {
           </div>
           <section className="notes-widget" data-testid="notes-panel">
             <div className="column-header"><span><FileText size={16} /> NOTES PRIVÉES</span><b><Check size={15} /></b></div>
-            <textarea
-              aria-label="Note interne"
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Laissez une note utile pour l’équipe…"
-              value={notes}
-              data-testid="ticket-notes-input"
-            />
+            <div className="notes-stack" data-testid="ticket-notes-list">
+              {ticket.notes && <article className="ticket-note-card legacy-note" data-testid="legacy-ticket-note"><h3>Note générale</h3><p>{ticket.notes}</p></article>}
+              {(ticket.notes_entries || []).map((note) => <article className="ticket-note-card" key={note.id} data-testid={`ticket-note-${note.id}`}><header><div><h3>{note.title}</h3><p>{note.author.display_name || note.author.username} · {formatTime(note.updated_at)}</p></div>{(isAdmin || note.author.id === helper.id) && <button type="button" onClick={() => deleteNote(note.id)} data-testid={`delete-note-${note.id}`} aria-label="Supprimer la note"><Trash2 size={15} /></button>}</header><p>{note.content}</p></article>)}
+            </div>
+            <form className="new-note-form" onSubmit={addNote} data-testid="new-ticket-note-form"><input value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} placeholder="Titre de la note" maxLength={120} data-testid="ticket-note-title-input" /><textarea value={noteContent} onChange={(event) => setNoteContent(event.target.value)} placeholder="Rédiger une nouvelle note privée…" data-testid="ticket-note-content-input" /><button type="submit" disabled={addingNote} data-testid="add-ticket-note-button"><FilePlus2 size={15} /> {addingNote ? "Ajout…" : "Ajouter la note"}</button></form>
             <p className="editor-foot"><ShieldCheck size={13} /> Visible uniquement dans Iris</p>
           </section>
         </aside>

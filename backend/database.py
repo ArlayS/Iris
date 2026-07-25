@@ -14,3 +14,4 @@ async def initialize_indexes() -> None:
     await db.tickets.create_index("updated_at")
     await db.tickets.create_index("demo_ticket")
     await db.tickets.create_index("assigned_helper.id")
+    await db.helper_profiles.create_index("helper_id", unique=True)

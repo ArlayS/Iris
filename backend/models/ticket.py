@@ -50,6 +50,30 @@ class AiSummary(BaseModel):
     generated_by: str
 
 
+class TicketNote(BaseModel):
+    id: str
+    title: str
+    content: str
+    author: HelperIdentity
+    created_at: str
+    updated_at: str
+
+
+class TicketNoteCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    content: str = Field(min_length=1, max_length=25000)
+
+
+class HelperProfile(BaseModel):
+    helper_id: str
+    triggers: str = ""
+    updated_at: str | None = None
+
+
+class HelperProfileUpdate(BaseModel):
+    triggers: str = Field(max_length=8000)
+
+
 class TicketCreate(BaseModel):
     member_id: str = Field(pattern=r"^\d{15,22}$")
     channel_id: str = Field(pattern=r"^\d{15,22}$")
@@ -90,6 +114,7 @@ class TicketDetail(TicketSummary):
     created_by: str
     is_demo: bool = False
     ai_summary: AiSummary | None = None
+    notes_entries: list[TicketNote] = Field(default_factory=list)
 
 
 class TicketStats(BaseModel):
@@ -117,6 +142,8 @@ class AdminHelperOverview(BaseModel):
     assigned_count: int
     active_count: int
     tickets: list[TicketSummary] = Field(default_factory=list)
+    triggers: str = ""
+    profile_updated_at: str | None = None
 
 
 class AdminOverview(BaseModel):

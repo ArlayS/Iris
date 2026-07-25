@@ -42,6 +42,8 @@ async def admin_overview(
     _: AuthenticatedHelper = Depends(current_admin),
 ) -> AdminOverview:
     helpers = await DiscordService().fetch_helpers(DISCORD_HELPER_ROLE_ID)
+    profiles = await db.helper_profiles.find({}, {"_id": 0}).to_list(1000)
+    profiles_by_helper = {profile["helper_id"]: profile for profile in profiles}
     tickets = await db.tickets.find(
         {"demo_ticket": {"$ne": True}},
         {"_id": 0, "transcript": 0, "notes": 0, "vocal_summary": 0},
@@ -55,6 +57,8 @@ async def admin_overview(
                 assigned_count=len(assigned),
                 active_count=sum(ticket["status"] == "active" for ticket in assigned),
                 tickets=assigned,
+                triggers=profiles_by_helper.get(helper.id, {}).get("triggers", ""),
+                profile_updated_at=profiles_by_helper.get(helper.id, {}).get("updated_at"),
             )
         )
     return AdminOverview(

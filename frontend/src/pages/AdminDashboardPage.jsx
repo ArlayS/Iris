@@ -1,4 +1,4 @@
-import { ClipboardCheck, LoaderCircle, ShieldCheck, UsersRound } from "lucide-react";
+import { ClipboardCheck, HeartHandshake, LoaderCircle, ShieldCheck, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -16,7 +16,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   if (error) {
-    return <section className="page-content admin-page" data-testid="admin-access-error"><p className="admin-error">{error}</p></section>;
+    return <section className="page-content admin-page" data-testid="admin-access-error"><p className="admin-error">{error}</p><p className="admin-error-help">Vérifiez que votre compte Discord porte bien le rôle Administrateur, puis reconnectez-vous.</p></section>;
   }
 
   if (!overview) {
@@ -49,6 +49,7 @@ export default function AdminDashboardPage() {
               <span><h2>{item.helper.display_name || item.helper.username}</h2><p data-testid={`admin-helper-id-${item.helper.id}`}>ID · {item.helper.id}</p></span>
             </header>
             <div className="admin-helper-counts"><span>{item.assigned_count} attribué{item.assigned_count > 1 ? "s" : ""}</span><b>{item.active_count} actif{item.active_count > 1 ? "s" : ""}</b></div>
+            <div className="admin-trigger-preview" data-testid={`admin-helper-triggers-${item.helper.id}`}><HeartHandshake size={14} /><span><b>Triggers</b>{item.triggers || "Non renseignés"}</span></div>
             <details data-testid={`admin-helper-ticket-details-${item.helper.id}`}>
               <summary>Voir les dossiers attribués</summary>
               {item.tickets.length === 0 ? <p className="admin-empty">Aucun dossier attribué.</p> : item.tickets.map((ticket) => <Link key={ticket.id} to={`/tickets/${ticket.id}`} data-testid={`admin-ticket-link-${ticket.id}`}>{ticket.member.display_name || ticket.member.username}<span>{ticket.follow_up_status}</span></Link>)}

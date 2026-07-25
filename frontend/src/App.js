@@ -8,12 +8,13 @@ import { api } from "./api/client";
 import AppShell from "./components/AppShell";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import DashboardPage from "./pages/DashboardPage";
+import HelperProfilePage from "./pages/HelperProfilePage";
 import LoginPage from "./pages/LoginPage";
 import NewTicketPage from "./pages/NewTicketPage";
 import TicketWorkspacePage from "./pages/TicketWorkspacePage";
 
 
-function AuthenticatedApp({ helper, isAdmin }) {
+function AuthenticatedApp({ helper, isAdmin, theme, toggleTheme }) {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ active_count: 0, archived_count: 0, total_messages: 0 });
 
@@ -40,13 +41,14 @@ function AuthenticatedApp({ helper, isAdmin }) {
   };
 
   return (
-    <AppShell helper={helper} tickets={tickets} onLogout={logout} isAdmin={isAdmin}>
+    <AppShell helper={helper} tickets={tickets} onLogout={logout} isAdmin={isAdmin} theme={theme} onToggleTheme={toggleTheme}>
       <Routes>
         <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} />} />
         <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
-        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} isAdmin={isAdmin} />} />
+        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} isAdmin={isAdmin} helper={helper} />} />
         <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
@@ -55,6 +57,12 @@ function AuthenticatedApp({ helper, isAdmin }) {
 
 function App() {
   const [session, setSession] = useState(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem("iris-theme") || "light");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("iris-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     api.get("/auth/session")
@@ -67,9 +75,9 @@ function App() {
   }
 
   return (
-    <div className="App">
+    <div className="App" data-testid="iris-app" data-theme={theme}>
       <BrowserRouter>
-        {session.authenticated ? <AuthenticatedApp helper={session.helper} isAdmin={session.is_admin} /> : <LoginPage />}
+        {session.authenticated ? <AuthenticatedApp helper={session.helper} isAdmin={session.is_admin} theme={theme} toggleTheme={() => setTheme((current) => current === "light" ? "dark" : "light")} /> : <LoginPage />}
         <Toaster theme="light" position="bottom-right" />
       </BrowserRouter>
     </div>
