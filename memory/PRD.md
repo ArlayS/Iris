@@ -74,6 +74,13 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 - Les Coordinateurs peuvent supprimer définitivement un dossier depuis son espace de travail, après confirmation ; les helpers standards ne voient pas cette action.
 - Le thème sombre et ses réglages ont été retirés définitivement à la demande de l’utilisateur.
 
+## Navigation Helper et sécurité d’import — 2026-07-25
+- Toutes les pages sont regroupées dans un menu déroulant Helper : Suivis, Archives, Ressources, Mon profil et Administration.
+- Les libellés statistiques sont maintenant alignés directement avec leurs icônes.
+- Chaque dossier possède un champ privé « Triggers de la personne », renseigné et sauvegardé par l’aidant.
+- L’import Discord est limité aux salons directement placés dans la catégorie ID `1499495158469758976`.
+- Les ressources disposent désormais de boutons Prévisualiser et Télécharger fonctionnels pour tous les helpers connectés.
+
 ## Backlog priorisé
 ### P0 — configuration nécessaire
 - Ajouter un nouveau `DISCORD_BOT_TOKEN` après réinitialisation.
