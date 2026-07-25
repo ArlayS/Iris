@@ -62,6 +62,12 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 - Un thème sombre persistant est disponible depuis les interfaces bureau et mobile ; les catégories ont reçu des contrastes renforcés.
 - Le bot Discord a été réauthentifié et le rôle Coordinateur configuré est de nouveau reconnu.
 
+## Logo et bibliothèque Ressources — 2026-07-25
+- Le logo Iris fourni est affiché sur l’écran de connexion et dans la barre latérale.
+- La navigation affiche désormais des libellés contrastés à côté des icônes : Suivis, Archives, Ressources, Mon profil et Administration.
+- Tous les helpers connectés peuvent consulter et télécharger les ressources partagées.
+- Les administrateurs peuvent publier ou retirer des PDF, Word, images et textes jusqu’à 250 Mo ; les documents sont stockés de manière sécurisée hors de l’interface.
+
 ## Backlog priorisé
 ### P0 — configuration nécessaire
 - Ajouter un nouveau `DISCORD_BOT_TOKEN` après réinitialisation.
