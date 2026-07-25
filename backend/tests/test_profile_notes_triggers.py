@@ -153,8 +153,12 @@ class TestTriggersExposure:
             # leaks triggers.
             if r is profiles_router:
                 continue
-            assert "triggers" not in src.lower(), (
-                f"Non-admin router {r.__name__} references triggers"
+            # person_triggers is a per-ticket private field written by the
+            # helper on the dossier itself — it is not the helper's own
+            # profile triggers that AdminOverview surfaces. Exclude it.
+            leaked = src.lower().replace("person_triggers", "")
+            assert "triggers" not in leaked, (
+                f"Non-admin router {r.__name__} references helper triggers"
             )
 
     def test_admin_helper_overview_model_has_triggers(self):

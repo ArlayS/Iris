@@ -85,6 +85,7 @@ class TicketUpdate(BaseModel):
     vocal_summary: str | None = Field(default=None, max_length=25000)
     status: Literal["active", "archived"] | None = None
     follow_up_status: Literal["à écouter", "en suivi", "stable"] | None = None
+    person_triggers: str | None = Field(default=None, max_length=8000)
 
 
 class TicketAssignmentUpdate(BaseModel):
@@ -115,6 +116,7 @@ class TicketDetail(TicketSummary):
     is_demo: bool = False
     ai_summary: AiSummary | None = None
     notes_entries: list[TicketNote] = Field(default_factory=list)
+    person_triggers: str = ""
 
 
 class TicketStats(BaseModel):

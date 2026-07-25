@@ -93,6 +93,7 @@ async def create_ticket(
         notes="",
         vocal_summary="",
         notes_entries=[],
+        person_triggers="",
         last_synced_at=timestamp,
         created_by=helper.id,
         created_at=timestamp,

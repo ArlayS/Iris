@@ -1,4 +1,4 @@
-import { Download, FileArchive, FileImage, FileText, FileUp, LoaderCircle, Trash2, UploadCloud } from "lucide-react";
+import { Download, Eye, FileArchive, FileImage, FileText, FileUp, LoaderCircle, Trash2, UploadCloud } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -85,8 +85,21 @@ export default function ResourcesPage({ isAdmin }) {
       const link = document.createElement("a");
       link.href = url;
       link.download = resource.original_filename;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const preview = async (resource) => {
+    try {
+      const response = await api.get(`/resources/${resource.id}/download`, { responseType: "blob" });
+      const url = URL.createObjectURL(response.data);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -119,7 +132,7 @@ export default function ResourcesPage({ isAdmin }) {
         </div>
       </form>}
 
-      {loading ? <div className="loading-page" data-testid="resources-loading"><LoaderCircle className="spin" size={25} /> Chargement des ressources…</div> : <div className="resource-grid" data-testid="resource-grid">{resources.length === 0 ? <p className="resources-empty" data-testid="resources-empty">Aucune ressource publiée pour le moment.</p> : resources.map((resource) => <article className="resource-card" key={resource.id} data-testid={`resource-card-${resource.id}`}><div className="resource-type"><ResourceIcon type={resource.content_type} /></div><span className="resource-category">{resource.category}</span><h2>{resource.title}</h2><p>{resource.description || resource.original_filename}</p><div className="resource-meta"><span>{formatSize(resource.size)}</span><span>{formatDate(resource.created_at)}</span></div><div className="resource-actions"><button type="button" onClick={() => download(resource)} data-testid={`download-resource-${resource.id}`}><Download size={15} /> Télécharger</button>{isAdmin && <button className="resource-delete-button" type="button" onClick={() => remove(resource)} data-testid={`delete-resource-${resource.id}`} aria-label="Retirer la ressource"><Trash2 size={15} /></button>}</div></article>)}</div>}
+      {loading ? <div className="loading-page" data-testid="resources-loading"><LoaderCircle className="spin" size={25} /> Chargement des ressources…</div> : <div className="resource-grid" data-testid="resource-grid">{resources.length === 0 ? <p className="resources-empty" data-testid="resources-empty">Aucune ressource publiée pour le moment.</p> : resources.map((resource) => <article className="resource-card" key={resource.id} data-testid={`resource-card-${resource.id}`}><div className="resource-type"><ResourceIcon type={resource.content_type} /></div><span className="resource-category">{resource.category}</span><h2>{resource.title}</h2><p>{resource.description || resource.original_filename}</p><div className="resource-meta"><span>{formatSize(resource.size)}</span><span>{formatDate(resource.created_at)}</span></div><div className="resource-actions"><button type="button" onClick={() => preview(resource)} data-testid={`preview-resource-${resource.id}`}><Eye size={15} /> Prévisualiser</button><button type="button" onClick={() => download(resource)} data-testid={`download-resource-${resource.id}`}><Download size={15} /> Télécharger</button>{isAdmin && <button className="resource-delete-button" type="button" onClick={() => remove(resource)} data-testid={`delete-resource-${resource.id}`} aria-label="Retirer la ressource"><Trash2 size={15} /></button>}</div></article>)}</div>}
     </section>
   );
 }

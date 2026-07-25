@@ -14,6 +14,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, onTicketDeleted, i
   const navigate = useNavigate();
   const [ticket, setTicket] = useState(null);
   const [vocalSummary, setVocalSummary] = useState("");
+  const [personTriggers, setPersonTriggers] = useState("");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -35,6 +36,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, onTicketDeleted, i
         const response = await api.get(`/tickets/${ticketId}`);
         setTicket(response.data);
         setVocalSummary(response.data.vocal_summary || "");
+        setPersonTriggers(response.data.person_triggers || "");
         setFollowUpStatus(response.data.follow_up_status || "à écouter");
       } catch (requestError) {
         setError(getErrorMessage(requestError));
@@ -56,6 +58,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, onTicketDeleted, i
       const response = await api.patch(`/tickets/${ticketId}`, {
         vocal_summary: vocalSummary,
         follow_up_status: followUpStatus,
+        person_triggers: personTriggers,
       });
       setTicket(response.data);
       onTicketUpdate(response.data);
@@ -249,6 +252,11 @@ export default function TicketWorkspacePage({ onTicketUpdate, onTicketDeleted, i
             <div className="intelligence-label"><span><Bot size={15} /> RÉSUMÉ GEMINI</span><b>CONFIDENTIEL</b></div>
             {ticket.ai_summary ? <div className="summary-content" data-testid="ai-summary-content"><div><strong>Contexte</strong><p>{ticket.ai_summary.context}</p></div><div><strong>Besoins exprimés</strong><p>{ticket.ai_summary.expressed_needs}</p></div><div><strong>Actions</strong><p>{ticket.ai_summary.actions}</p></div><div><strong>Prochain suivi</strong><p>{ticket.ai_summary.next_follow_up}</p></div></div> : <p className="summary-empty" data-testid="ai-summary-empty">Aucune synthèse générée pour le moment.</p>}
             <button className="gemini-summary-button" type="button" onClick={generateSummary} disabled={generatingSummary} data-testid="generate-ai-summary-button"><Bot size={16} /> {generatingSummary ? summaryProgress || "Génération…" : "Générer le résumé"}</button>
+          </section>
+          <section className="person-triggers-widget" data-testid="person-triggers-panel">
+            <div className="intelligence-label"><span><HeartHandshake size={15} /> TRIGGERS DE LA PERSONNE</span><b>CONFIDENTIEL</b></div>
+            <p>Repères renseignés par l’aidant pour adapter l’écoute.</p>
+            <textarea value={personTriggers} onChange={(event) => setPersonTriggers(event.target.value)} placeholder="Situations, sujets ou formulations sensibles pour cette personne…" data-testid="person-triggers-input" />
           </section>
           <div className="vocal-widget">
             <div className="intelligence-label"><span><Volume2 size={15} /> COMPTE-RENDU VOCAL</span><b>PRIVÉ</b></div>
