@@ -1539,12 +1539,32 @@ body {
 }
 
 .helper-menu-links {
-  display: none;
+  display: grid;
+  gap: 3px;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-6px);
+  transition: max-height 260ms ease, opacity 180ms ease, transform 220ms ease;
 }
 
 .helper-menu-links.is-open {
-  display: grid;
-  gap: 3px;
+  max-height: 245px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.helper-account-link {
+  align-items: center;
+  color: inherit;
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+}
+
+.helper-account-link:hover strong {
+  color: var(--sage);
 }
 
 .person-triggers-widget {
@@ -1597,6 +1617,10 @@ body {
     flex: 1;
     gap: 0;
     justify-content: space-around;
+    max-height: none;
+    opacity: 1;
+    overflow: visible;
+    transform: none;
   }
 
   .profile-hero {

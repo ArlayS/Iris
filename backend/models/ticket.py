@@ -84,7 +84,7 @@ class TicketUpdate(BaseModel):
     notes: str | None = Field(default=None, max_length=25000)
     vocal_summary: str | None = Field(default=None, max_length=25000)
     status: Literal["active", "archived"] | None = None
-    follow_up_status: Literal["à écouter", "en suivi", "stable"] | None = None
+    follow_up_status: Literal["en attente de réponse", "à conclure"] | None = None
     person_triggers: str | None = Field(default=None, max_length=8000)
 
 
@@ -103,7 +103,7 @@ class TicketSummary(BaseModel):
     updated_at: str
     created_at: str
     priority: Literal["routine", "prioritaire", "urgent"] = "routine"
-    follow_up_status: Literal["à écouter", "en suivi", "stable"] = "à écouter"
+    follow_up_status: Literal["en attente de réponse", "à conclure"] = "en attente de réponse"
     assigned_helper: HelperIdentity | None = None
 
 

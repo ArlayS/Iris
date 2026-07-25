@@ -1,4 +1,4 @@
-import { Archive, BookOpenText, ChevronDown, Grid2X2, LayoutDashboard, LogOut, RadioTower, UserRound } from "lucide-react";
+import { Archive, BookOpenText, ChevronDown, Grid2X2, LayoutDashboard, LogOut, RadioTower } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
@@ -17,20 +17,21 @@ export default function AppShell({ children, helper, tickets, onLogout, isAdmin 
             <NavLink end className="nav-link" to="/" data-testid="active-tickets-link" title="Dossiers actifs"><Grid2X2 size={18} /><span>Suivis</span></NavLink>
             <NavLink className="nav-link" to="/archives" data-testid="archives-link" title="Archives"><Archive size={18} /><span>Archives</span></NavLink>
             <NavLink className="nav-link" to="/resources" data-testid="sidebar-resources-link" title="Ressources"><BookOpenText size={18} /><span>Ressources</span></NavLink>
-            <NavLink className="nav-link" to="/profile" data-testid="helper-profile-link" title="Mon profil"><UserRound size={18} /><span>Mon profil</span></NavLink>
             <NavLink className="nav-link" to="/admin" data-testid="admin-panel-link" title="Vue administrateur"><LayoutDashboard size={18} /><span>Administration</span></NavLink>
           </div>
         </nav>
 
         <div className="sidebar-bottom">
           <div className="helper-identity" data-testid="helper-identity">
-            <span className="helper-avatar">
-              {helper?.avatar_url ? <img src={helper.avatar_url} alt="" /> : <RadioTower size={15} />}
-            </span>
-            <span>
-              <strong>{helper?.global_name || helper?.username}</strong>
-              <small>Helper connecté</small>
-            </span>
+            <Link className="helper-account-link" to="/profile" data-testid="helper-profile-link" title="Ouvrir mon profil">
+              <span className="helper-avatar">
+                {helper?.avatar_url ? <img src={helper.avatar_url} alt="" /> : <RadioTower size={15} />}
+              </span>
+              <span>
+                <strong>{helper?.global_name || helper?.username}</strong>
+                <small>Helper connecté</small>
+              </span>
+            </Link>
             <button
               aria-label="Se déconnecter"
               className="icon-button"

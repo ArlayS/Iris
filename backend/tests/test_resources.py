@@ -112,7 +112,8 @@ class TestFrontendResources:
         assert LOGO_URL in SHELL
 
     def test_sidebar_resources_link_and_labels(self):
-        for label in ["Suivis", "Archives", "Ressources", "Mon profil", "Administration"]:
+        # Iteration 11: "Mon profil" label removed from sidebar links (relocated to profile pic in sidebar-bottom)
+        for label in ["Suivis", "Archives", "Ressources", "Administration"]:
             assert label in SHELL
         assert 'data-testid="sidebar-resources-link"' in SHELL
         assert 'to="/resources"' in SHELL

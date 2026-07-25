@@ -20,7 +20,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, onTicketDeleted, i
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [playing, setPlaying] = useState(false);
-  const [followUpStatus, setFollowUpStatus] = useState("à écouter");
+  const [followUpStatus, setFollowUpStatus] = useState("en attente de réponse");
   const [helpers, setHelpers] = useState([]);
   const [summaryProgress, setSummaryProgress] = useState("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
@@ -37,7 +37,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, onTicketDeleted, i
         setTicket(response.data);
         setVocalSummary(response.data.vocal_summary || "");
         setPersonTriggers(response.data.person_triggers || "");
-        setFollowUpStatus(response.data.follow_up_status || "à écouter");
+        setFollowUpStatus(response.data.follow_up_status || "en attente de réponse");
       } catch (requestError) {
         setError(getErrorMessage(requestError));
       } finally {
@@ -215,9 +215,8 @@ export default function TicketWorkspacePage({ onTicketUpdate, onTicketDeleted, i
         <span>OUVERT LE · {ticket.created_at ? formatTime(ticket.created_at) : "—"}</span>
         <label className="follow-up-control" htmlFor="follow-up-status">STATUT DE SUIVI
           <select id="follow-up-status" value={followUpStatus} onChange={(event) => setFollowUpStatus(event.target.value)} data-testid="follow-up-status-select">
-            <option value="à écouter">À écouter</option>
-            <option value="en suivi">En suivi</option>
-            <option value="stable">Stable</option>
+            <option value="en attente de réponse">En attente de réponse</option>
+            <option value="à conclure">À conclure</option>
           </select>
         </label>
       </div>

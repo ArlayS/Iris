@@ -1,0 +1,33 @@
+{
+  "summary": "Iteration 11 — Validated all six items in the review request. (1) Backend models/ticket.py: TicketUpdate.follow_up_status and TicketSummary.follow_up_status are Literal['en attente de réponse', 'à conclure'] — Pydantic accepts the two new values and rejects legacy ('à écouter', 'en suivi', 'stable') at model construction. Model source contains NO legacy strings. (2) Mongo live query on tickets collection: 5/5 tickets have follow_up_status='en attente de réponse', 0 with 'à conclure', 0 with any legacy value. Migration is clean. (3) TicketWorkspacePage.jsx select#follow-up-status (data-testid='follow-up-status-select') exposes exactly two <option> elements: 'en attente de réponse' and 'à conclure'. save() sends follow_up_status via PATCH /api/tickets/{id}. Live unauthenticated PATCH returns 401 as expected. (4) AppShell.jsx: helper-menu-links block contains ONLY the four NavLinks Suivis / Archives / Ressources / Administration — 'Mon profil' text and '/profile' link are absent from that block. helper-profile-link (Link to='/profile') is now placed in .sidebar-bottom > .helper-identity and wraps the helper-avatar + <strong>{global_name||username}</strong> + <small>Helper connecté</small>. (5) Dropdown animation: .helper-menu-links CSS has max-height:0, opacity:0, transform:translateY(-6px) and transition on all three (max-height 260ms, opacity 180ms, transform 220ms). .helper-menu-links.is-open sets max-height:245px, opacity:1, transform:translateY(0). helper-menu-toggle binds aria-expanded={isHelperMenuOpen} and the ChevronDown SVG receives class 'is-open' which rotates 180deg via CSS. (6) Mobile @media (max-width:760px) overrides helper-menu-links(.is-open) to display:flex, max-height:none, opacity:1, overflow:visible — no invisible click zone, no overflow clipping. Full pytest suite (backend/tests/) 209/209 passing including 18 new iteration-11 tests. Two stale iteration-10 assertions that expected 'Mon profil' inside helper-menu-links were updated to reflect the intentional relocation. Live smoke on public URL: login page renders cleanly, title correct, no data-theme, no JS console errors, IRIS branding present.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iteration11_features.py",
+    "/app/test_reports/pytest/iteration_11.xml",
+    "/app/test_reports/pytest/iteration_11_full.xml"
+  ],
+  "action_items": [
+    "OPTIONAL human verification (requires Discord OAuth login): (a) open Helper sidebar menu — click helper-menu-toggle and observe smooth animated expand/collapse (max-height + opacity + slight translateY, chevron rotates 180°); (b) click the profile avatar/name in the sidebar bottom — should navigate to /profile; (c) open a dossier — follow-up-status dropdown offers ONLY 'En attente de réponse' and 'À conclure', selecting either and clicking Enregistrer persists on refresh; (d) on mobile viewport (≤760px) — helper menu links render inline (no invisible click zone, no overflow clipping)."
+  ],
+  "critical_code_review_comments": [
+    "models/ticket.py:87,106 — Both write paths (TicketUpdate) and read paths (TicketSummary) share the same Literal tuple. Impossible to accidentally accept a legacy value at the API surface.",
+    "AppShell.jsx — helper-profile-link is a semantic <Link> covering avatar+name (not just the avatar); this improves click target and matches the request 'accessible en cliquant sur la photo de profil'.",
+    "MentalHealth.css:1541-1555 — max-height-based collapse animates smoothly but 245px is a hard cap; if a 5th nav link is ever added, adjust or use a JS-measured height. Not a bug today (4 links, fits easily).",
+    "MentalHealth.css mobile block:1609-1624 — Uses display:flex and overflow:visible on BOTH .helper-menu-links and .helper-menu-links.is-open, so the bottom tab bar behaves identically whether the state is 'open' or 'closed' — no invisible zone, matches request #5.",
+    "No Discord API calls, no ticket mutations, no channel imports were triggered during this validation.",
+    "Migration integrity: 5/5 tickets in Mongo are on 'en attente de réponse'; no residual 'à écouter'/'en suivi'/'stable'."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration11_features.py (NEW, 18 tests covering all 6 review-request items)",
+    "/app/backend/tests/test_iteration10_features.py (updated stale assertion: 'Mon profil' relocated out of helper-menu-links)",
+    "/app/backend/tests/test_resources.py (updated stale assertion: same relocation)"
+  ],
+  "success_rate": {"backend": "100% (209/209 pytest incl. 18 new)", "frontend": "100% static assertions + login page live smoke render OK, no data-theme, no JS console errors"},
+  "test_credentials": "None. Live checks only exercised unauthenticated endpoints (PATCH /api/tickets/* → 401 verified). No Discord OAuth, no ticket created/modified, no channel imported.",
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression suite now 8 pytest files under /app/backend/tests/: test_iris_api, test_demo_removed, test_admin_and_ai_summary, test_resources, test_profile_notes_triggers, test_admin_access_and_theme, test_admin_overview_null_helper_fix, test_iteration10_features, test_iteration11_features. Run `pytest /app/backend/tests/ -v`. Iteration 11 locks: follow_up_status = exactly {'en attente de réponse','à conclure'} in Pydantic + Mongo + JSX select, helper-menu-links has only the 4 nav items (no Mon profil), helper-profile-link wraps avatar+identity in sidebar-bottom, .helper-menu-links CSS uses max-height/opacity/transform transitions, mobile media-query keeps menu usable.",
+  "rca of the issue": "N/A — feature verification pass. All requested changes shipped correctly."
+}

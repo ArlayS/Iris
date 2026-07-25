@@ -127,17 +127,20 @@ class TestAppShellHelperMenu:
         m = re.search(r'data-testid="helper-menu-links".*?</div>', src, flags=re.S)
         assert m, "helper-menu-links container not found"
         block = m.group(0)
-        for label in ("Suivis", "Archives", "Ressources", "Mon profil", "Administration"):
+        # Iteration 11: "Mon profil" moved out of helper-menu-links to sidebar-bottom (helper-profile-link)
+        for label in ("Suivis", "Archives", "Ressources", "Administration"):
             assert label in block, f"missing {label!r} inside helper-menu-links"
-        # data-testids for each
+        assert "Mon profil" not in block, "Mon profil should have been relocated out of helper-menu-links"
+        # data-testids for each (helper-profile-link relocated to sidebar-bottom in iteration 11)
         for tid in (
             "active-tickets-link",
             "archives-link",
             "sidebar-resources-link",
-            "helper-profile-link",
             "admin-panel-link",
         ):
             assert tid in block
+        # helper-profile-link exists elsewhere (sidebar bottom)
+        assert 'data-testid="helper-profile-link"' in src
 
     def test_helper_menu_toggle_expands_and_collapses(self):
         src = (FRONTEND_SRC / "components/AppShell.jsx").read_text(encoding="utf-8")
