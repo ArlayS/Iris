@@ -55,7 +55,7 @@ function AuthenticatedApp({ helper, isAdmin }) {
         <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
         <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} onTicketDeleted={deleteTicket} isAdmin={isAdmin} helper={helper} />} />
         <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
-        <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin" element={isAdmin ? <AdminDashboardPage /> : <Navigate to="/" replace />} />
         <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
         <Route path="/resources" element={<ResourcesPage isAdmin={isAdmin} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
