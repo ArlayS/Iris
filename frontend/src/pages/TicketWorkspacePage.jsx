@@ -216,6 +216,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, onTicketDeleted, i
         <label className="follow-up-control" htmlFor="follow-up-status">STATUT DE SUIVI
           <select id="follow-up-status" value={followUpStatus} onChange={(event) => setFollowUpStatus(event.target.value)} data-testid="follow-up-status-select">
             <option value="en attente de réponse">En attente de réponse</option>
+            <option value="en cours">En cours</option>
             <option value="à conclure">À conclure</option>
           </select>
         </label>
