@@ -1,138 +1,75 @@
 {
-  "theme": "light_and_dark",
-  "theme_rules": "Persistent dark mode switch ('Clair/Sombre') must be implemented. User preference must be saved.",
+  "theme": "light",
+  "archetype": "ORGANIC & EARTHY",
+  "emotional_tone": "Calm, empathetic, trustworthy, structured",
   "typography": {
-    "headings": {
-      "font_family": "Manrope",
-      "weights": ["300", "500", "700"],
-      "tracking": "tracking-tight",
-      "usage": "Use Manrope for all headers to convey a friendly, humanistic tone suitable for mental health."
-    },
-    "body": {
-      "font_family": "IBM Plex Sans",
-      "weights": ["400", "500"],
-      "leading": "leading-relaxed",
-      "usage": "Use IBM Plex Sans for long form text, ticket summaries, and data tables."
-    },
-    "scale_rules": {
-      "h1": "text-3xl sm:text-4xl lg:text-5xl",
-      "h2": "text-2xl sm:text-3xl lg:text-4xl",
-      "h3": "text-xl sm:text-2xl",
-      "body": "text-base sm:text-lg"
-    }
+    "headings": "Manrope",
+    "body": "IBM Plex Sans",
+    "rules": "No 'Inter'. Use text-4xl max for hero headings. Tight letter spacing (tracking-tight) for headings. Keep body text highly legible with leading-relaxed."
   },
   "colors": {
-    "archetype": "Organic & Earthy (Mental Health & Trust)",
-    "light_mode": {
-      "background": "#FDFCF8",
-      "surface": "#FFFFFF",
-      "primary": "#3A5A40",
-      "primary_hover": "#2B4330",
-      "text_main": "#1A202C",
-      "text_muted": "#4A5568",
-      "border": "#E2E8F0",
-      "ai_highlight_bg": "#EEF2E6",
-      "ai_highlight_text": "#2C402E",
-      "accent_gentle": "#A3B18A",
-      "category_bg": "#3A5A40",
-      "category_text": "#FFFFFF"
-    },
-    "dark_mode": {
-      "background": "#0F1410",
-      "surface": "#1A221C",
-      "primary": "#82A389",
-      "primary_hover": "#97B89E",
-      "text_main": "#E8ECE9",
-      "text_muted": "#9AABA0",
-      "border": "#2C3B30",
-      "ai_highlight_bg": "#212E24",
-      "ai_highlight_text": "#B3D1B9",
-      "accent_gentle": "#4F6E56",
-      "category_bg": "#82A389",
-      "category_text": "#0F1410"
-    },
-    "rules": "High contrast is CRITICAL. Specifically, category labels must NEVER be white-on-white. Ensure category text contrasts sharply with its background. Never use pure black (#000000) or pure grey (#808080). Tint greys with green or warm sand to maintain the organic feel."
+    "background": "#F9F8F6",
+    "surface": "#FFFFFF",
+    "primary": "#3A4B35",
+    "primary_hover": "#2C3528",
+    "text_primary": "#1A1A1A",
+    "text_secondary": "#5C6657",
+    "sidebar_bg": "#F1EFE9",
+    "sidebar_text": "#1A1A1A",
+    "sidebar_active_bg": "#E2DFD6",
+    "accent": "#C87A65",
+    "border": "#E5E3DB",
+    "danger": "#A63D40"
   },
   "visual_enhancers": {
-    "shadows": "Use very soft, ambient shadows in light mode (e.g., shadow-[0_8px_30px_rgba(58,90,64,0.06)]). In dark mode, rely more on 1px borders and subtle background lightening rather than shadows.",
-    "borders": "1px solid border-border on cards and widgets. Soft 12px (rounded-xl) to 16px (rounded-2xl) radius for a safe, friendly feel.",
-    "textures": "Apply a very subtle noise texture overlay to the main background to break digital flatness and create a grounded, organic environment.",
-    "glassmorphism": "Avoid on clinical data. For modals or sticky navs, use high opacity with blur (e.g., bg-white/80 or bg-black/60 backdrop-blur-xl border)."
+    "surfaces": "Flat Solid ONLY. No Glassmorphism for clinical/mental-health apps—glass feels cold. Use warm solid backgrounds with subtle borders.",
+    "shadows": "Minimal. Soft diffuse ambient shadow only on hover states to signal interactivity.",
+    "radii": "Subtle roundness, max 8px border-radius (rounded-lg). Avoid overly pill-shaped containers for structural elements."
   },
   "layouts": {
-    "dashboard": "Fixed and protected Admin Dashboard. Collapsible left sidebar for navigation + spacious modular widgets area. Admin views helper profiles, triggers, and tickets.",
-    "ticket_workspace": "Multi-note workspace inside the helper tool. Divide the screen into a ticket overview (left) and a notes stack/grid (right).",
-    "spacing": "Generous spacing. Use p-8 or p-12 for main sections, gap-6 to gap-8 in grids. Content must breathe."
-  },
-  "grids": {
-    "admin_overview": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
-    "notes_grid": "grid-cols-1 xl:grid-cols-2 gap-4 for multiple notes inside a ticket.",
-    "general": "Never fill 100% perfectly without breathing room. Use subgrid when nesting."
+    "sidebar": "Fixed left column. High contrast. Labels MUST be explicitly colored and visible next to icons.",
+    "resource_grid": "Bento Grid Mode B (High Density). grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4. gap-6. Every pixel utilized. h-full on children.",
+    "spacing": "Generous spacing philosophy (p-6, p-8) inside containers to give content breathing room."
   },
   "components": {
-    "category_badge": "MUST have high contrast text against the badge background (e.g., white text on dark green bg in light mode, or dark background on light green text in dark mode). Fixes the 'white on white' issue.",
-    "note_card": "Card representing a single note. Must display: Title (bold, text-lg), Author (muted, text-sm), Date (muted, text-sm), and Content (text-base, full width). Use Shadcn Card as base.",
-    "helper_profile": "A dedicated page or modal for the helper. Contains a free-text area specifically for 'Triggers' (what triggers them emotionally).",
-    "theme_toggle": "A persistent 'Clair/Sombre' (Light/Dark) toggle switch or button, usually placed in the header or sidebar.",
-    "ticket_card": "Cardless or very flat rectangular shapes with 1px border. Displays Helper avatar, Name, and Discord ID tag.",
-    "ai_summary_panel": "Inside the ticket detail, housed in a distinct but muted container. Structured cleanly: Context, Needs, Actions, Next Follow-up.",
-    "helper_assignment": "Use a Shadcn Select/Dropdown customized with avatar previews, Name, and Discord ID inline.",
-    "general_rules": "DO NOT use HTML-based components for advanced interactions. Use Shadcn components for Select, Tabs, Dialogs, Tables. Customize border-radii and spacing."
-  },
-  "motion": {
-    "transitions": "Gentle microinteractions. transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.3s ease (for dark mode switch). NO universal transitions.",
-    "loading": "Subtle skeleton loaders in earthy tones. Avoid jarring spinners.",
-    "hover": "Explicitly set hover colors. Lighter hue of the active state. E.g., hover:bg-primary_hover hover:text-white"
-  },
-  "accessibility": {
-    "contrast": "APCA minimums required. Minimum 4.5:1 for normal text against backgrounds. Check specifically for the category texts.",
-    "visibility": "Helper 'Triggers' must be strictly visible ONLY to the specific helper and the admins.",
-    "focus_states": "Focus states must have HIGHER contrast, ring-2 ring-primary.",
-    "testing": "All interactive elements MUST include a data-testid attribute in kebab-case."
+    "sidebar": "CRITICAL FIX: Resolve 'white on white' issue. Sidebar text labels next to icons MUST use text_primary (#1A1A1A) against the sidebar_bg (#F1EFE9). Display the Iris logo prominently at the top.",
+    "resource_card": "Flat rectangular card with 1px border (#E5E3DB). Contains: File type icon (PDF/Word/Image), Title (truncate if too long), File Size (<250MB), and Upload Date. Actions: Preview (eye icon), Download (download icon). Hover state: -translate-y-1 and shadow-sm.",
+    "upload_zone": "For Admins only. Large dashed border dropzone with an earthy accent color. Clear 'Up to 250 MB' helper text. Needs a progress bar indicator for large file uploads.",
+    "admin_controls": "Only render upload and delete/manage buttons if the user role is Admin."
   },
   "media": {
-    "image_urls": [
+    "logos": [
       {
-        "url": "https://images.unsplash.com/photo-1527980965255-d3b416303d12?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxmcmllbmRseSUyMHBvcnRyYWl0JTIwcHJvZmVzc2lvbmFsJTIwYXZhdGFyfGVufDB8fHx8MTc4NDg4MTQzOXww&ixlib=rb-4.1.0&q=85",
-        "description": "Friendly male professional portrait for helper avatar",
-        "category": "avatars"
-      },
-      {
-        "url": "https://images.pexels.com/photos/3778603/pexels-photo-3778603.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-        "description": "Friendly businessman portrait for helper avatar",
-        "category": "avatars"
-      },
-      {
-        "url": "https://images.unsplash.com/photo-1681445019831-1c22cd19c9eb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHw0fHxjYWxtJTIwYWJzdHJhY3QlMjBzYWdlJTIwZ3JlZW4lMjB0ZXh0dXJlfGVufDB8fHx8MTc4NDg4MTQzM3ww&ixlib=rb-4.1.0&q=85",
-        "description": "Calm organic green texture for header backgrounds or accent banners",
-        "category": "backgrounds"
+        "url": "https://customer-assets-lqy194kg.emergentagent.net/job_iris-logs/artifacts/jhsbq3v9_image.png",
+        "category": "sidebar_logo_and_login",
+        "description": "Main Iris app logo. Place at the top of the sidebar and on the login/auth screen."
       }
-    ]
+    ],
+    "icons": "Use @phosphor-icons/react for a clinical, highly legible, and calming aesthetic."
+  },
+  "motion": {
+    "transitions": "Use specific transitions: transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease.",
+    "rules": "No universal 'transition: all'. Ensure prefers-reduced-motion is respected."
+  },
+  "accessibility": {
+    "testing": "All interactive elements MUST include data-testid (e.g., data-testid='upload-resource-button', data-testid='sidebar-resources-link').",
+    "contrast": "Ensure APCA / WCAG AA minimums. Text on sidebar must be highly legible and dark enough against the light background."
   },
   "instructions_to_main_agent": [
-    "Fix the category text contrast issue: Ensure category labels are readable (not white-on-white). Apply dynamic text colors based on the dark/light mode background.",
-    "Restore and fix the Admin Space: Ensure it functions correctly as a protected dashboard. It must show an overview of all helpers, tickets, and helper profiles (including triggers).",
-    "Implement the Multi-Note Ticket Workspace: In the helper view, allow creating multiple separated notes per ticket. Each note must display a Title, Author, Date, and Content.",
-    "Implement Helper Profile & Triggers: Create a profile section for helpers containing a free-text field for 'Triggers'.",
-    "Enforce Trigger Visibility: The helper triggers must only be visible to the helper who owns them and to administrators in the admin space.",
-    "Implement Dark Mode: Add a persistent theme toggle button (Clair/Sombre) that saves user preference. Apply the dark_mode and light_mode color palettes.",
-    "Build the UI in React (.js) using Tailwind CSS and shadcn/ui primitives.",
-    "Implement the Ticket Detail page. Include an 'Assisted by...' section that displays a selected main helper's Name and Discord ID, using a styled Select component.",
-    "Integrate an AI summary section on each ticket made with Gemini (using Emergent Universal Key) that formats strictly into: Context, Expressed Needs, Actions, and Next Follow-up.",
-    "Adhere closely to the 'Organic & Earthy' mental-health color palette and generous spacing guidelines.",
-    "Use Phosphor Icons or Lucide React for UI iconography. Do NOT use emojis."
+    "Use JavaScript (.js/.jsx) NOT TypeScript (.tsx) for React components.",
+    "Implement light theme. Mental health apps benefit from bright, natural, earthy light themes over dark mode.",
+    "Sidebar Fix: Update the Sidebar navigation component. Ensure text labels (e.g., <span>Dashboard</span>) are rendered alongside icons, and set the text color to a high-contrast dark gray/olive. Do not hide text labels or leave them white on a light background.",
+    "Logo: Replace the current logo placeholder with the provided image URL.",
+    "Resources Page: Create a new 'Resources' route/view. All authenticated helpers can view this grid and download files. Only Admins see the 'Upload Resource' button.",
+    "Upload Flow: Build a robust file input component capable of handling 250 MB uploads, with clear visual feedback (progress bar, success/error toasts). Allowed types: PDF, Word, Images, Text.",
+    "Avoid glassmorphism entirely. Stick to crisp, solid surfaces."
   ],
   "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "Do not converge toward generic, on-distribution outputs.",
-    "Avoid generic centered layouts, simplistic gradients, and uniform styling.",
-    "Create depth through layered design elements with z-index hierarchy.",
-    "NEVER use a completely transparent background in header or surfaces overlaying content.",
-    "MUST NOT apply universal transition (e.g. transition: all). Add transitions for specific properties only.",
-    "MUST NOT center align the app container (.App { text-align: center; }).",
-    "Always use modern button styles with relevant animations.",
-    "NEVER use emojis for icons. Use proper icon libraries.",
-    "Use 2-3x more spacing than typical to create a premium, calm feel.",
-    "Implement toasts using 'sonner' for notifications.",
-    "Ensure all interactive and key informational elements MUST include a data-testid attribute for robust testing."
+    "You MUST NOT apply universal transition (e.g., transition: all). This results in breaking transforms.",
+    "You MUST NOT center align the app container, i.e., do not add .App { text-align: center; } in the css file.",
+    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 for icons.",
+    "Use 'sonner' for toasts.",
+    "All interactive elements MUST include a data-testid attribute for automated testing.",
+    "Prioritize pre-existing components from src/components/ui when applicable."
   ]
 }
