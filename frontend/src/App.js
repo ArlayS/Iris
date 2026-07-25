@@ -36,6 +36,13 @@ function AuthenticatedApp({ helper, isAdmin }) {
       .catch(() => undefined);
   };
 
+  const deleteTicket = (ticketId) => {
+    setTickets((current) => current.filter((ticket) => ticket.id !== ticketId));
+    api.get("/tickets/stats")
+      .then((response) => setStats(response.data))
+      .catch(() => undefined);
+  };
+
   const logout = async () => {
     await api.post("/auth/logout");
     window.location.assign("/");
@@ -46,7 +53,7 @@ function AuthenticatedApp({ helper, isAdmin }) {
       <Routes>
         <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} />} />
         <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
-        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} isAdmin={isAdmin} helper={helper} />} />
+        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} onTicketDeleted={deleteTicket} isAdmin={isAdmin} helper={helper} />} />
         <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/profile" element={<HelperProfilePage helper={helper} />} />

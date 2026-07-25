@@ -1,6 +1,6 @@
 import { Archive, Bot, Check, ChevronLeft, FilePlus2, FileText, HeartHandshake, LoaderCircle, Pause, Play, RefreshCw, Save, ShieldCheck, Trash2, UserRoundCheck, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { api, getErrorMessage } from "../api/client";
@@ -9,8 +9,9 @@ import { api, getErrorMessage } from "../api/client";
 const formatTime = (timestamp) => new Date(timestamp).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
 
-export default function TicketWorkspacePage({ onTicketUpdate, isAdmin, helper }) {
+export default function TicketWorkspacePage({ onTicketUpdate, onTicketDeleted, isAdmin, helper }) {
   const { ticketId } = useParams();
+  const navigate = useNavigate();
   const [ticket, setTicket] = useState(null);
   const [vocalSummary, setVocalSummary] = useState("");
   const [loading, setLoading] = useState(true);
@@ -88,6 +89,18 @@ export default function TicketWorkspacePage({ onTicketUpdate, isAdmin, helper })
       await api.delete(`/tickets/${ticketId}/notes/${noteId}`);
       setTicket((current) => ({ ...current, notes_entries: current.notes_entries.filter((note) => note.id !== noteId) }));
       toast.success("Note supprimée.");
+    } catch (requestError) {
+      toast.error(getErrorMessage(requestError));
+    }
+  };
+
+  const deleteTicket = async () => {
+    if (!window.confirm("Supprimer définitivement ce dossier et sa transcription ? Cette action est irréversible.")) return;
+    try {
+      await api.delete(`/admin/tickets/${ticketId}`);
+      onTicketDeleted(ticketId);
+      toast.success("Dossier supprimé.");
+      navigate("/");
     } catch (requestError) {
       toast.error(getErrorMessage(requestError));
     }
@@ -186,6 +199,7 @@ export default function TicketWorkspacePage({ onTicketUpdate, isAdmin, helper })
             {syncing ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={16} />} Synchroniser
           </button>
           <button className="secondary-button" onClick={archive} type="button" data-testid="archive-ticket-button"><Archive size={16} /> {ticket.status === "active" ? "Archiver" : "Réactiver"}</button>
+          {isAdmin && <button className="danger-button" onClick={deleteTicket} type="button" data-testid="delete-ticket-button"><Trash2 size={16} /> Supprimer</button>}
           <button className="primary-button" disabled={saving} onClick={save} type="button" data-testid="save-ticket-button">
             {saving ? <LoaderCircle className="spin" size={16} /> : <Save size={16} />} Enregistrer
           </button>

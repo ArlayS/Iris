@@ -1513,6 +1513,32 @@ body {
   margin-top: 10px;
 }
 
+.admin-session-diagnostic {
+  background: #eef4ef;
+  border-left: 3px solid #547b60;
+  color: #365443;
+  font: 500 12px "IBM Plex Sans", sans-serif;
+  margin: 16px 0;
+  padding: 11px 13px;
+}
+
+.danger-button {
+  align-items: center;
+  background: #fff5f4;
+  border: 1px solid #e7beba;
+  border-radius: 999px;
+  color: #a2413d;
+  cursor: pointer;
+  display: inline-flex;
+  font: 600 11px "IBM Plex Sans", sans-serif;
+  gap: 7px;
+  padding: 10px 12px;
+}
+
+.danger-button:hover {
+  background: #fde7e4;
+}
+
 @media (max-width: 760px) {
   .profile-hero {
     align-items: flex-start;

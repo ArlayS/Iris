@@ -50,7 +50,11 @@ async def admin_overview(
     ).sort("updated_at", -1).to_list(250)
     overview_items: list[AdminHelperOverview] = []
     for helper in helpers:
-        assigned = [ticket for ticket in tickets if ticket.get("assigned_helper", {}).get("id") == helper.id]
+        assigned = [
+            ticket
+            for ticket in tickets
+            if (ticket.get("assigned_helper") or {}).get("id") == helper.id
+        ]
         overview_items.append(
             AdminHelperOverview(
                 helper=helper,
@@ -95,3 +99,12 @@ async def assign_ticket_helper(
         },
     )
     return await ticket_or_404(ticket_id)
+
+
+@router.delete("/tickets/{ticket_id}", status_code=204)
+async def delete_ticket_as_admin(
+    ticket_id: str,
+    _: AuthenticatedHelper = Depends(current_admin),
+) -> None:
+    await ticket_or_404(ticket_id)
+    await db.tickets.delete_one({"id": ticket_id, "demo_ticket": {"$ne": True}})

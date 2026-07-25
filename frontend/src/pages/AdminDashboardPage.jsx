@@ -8,12 +8,21 @@ import { api, getErrorMessage } from "../api/client";
 export default function AdminDashboardPage() {
   const [overview, setOverview] = useState(null);
   const [error, setError] = useState("");
+  const [sessionInfo, setSessionInfo] = useState(null);
 
   const loadOverview = useCallback(() => {
     setError("");
     api.get("/admin/overview")
       .then((response) => setOverview(response.data))
-      .catch((requestError) => setError(getErrorMessage(requestError)));
+      .catch(async (requestError) => {
+        setError(getErrorMessage(requestError));
+        try {
+          const response = await api.get("/auth/session");
+          setSessionInfo(response.data);
+        } catch {
+          setSessionInfo(null);
+        }
+      });
   }, []);
 
   useEffect(() => {
@@ -21,7 +30,7 @@ export default function AdminDashboardPage() {
   }, [loadOverview]);
 
   if (error) {
-    return <section className="page-content admin-page" data-testid="admin-access-error"><p className="admin-error">{error}</p><p className="admin-error-help">Iris vérifie le rôle Discord Coordinateur à chaque accès. Si le rôle vient d’être ajouté, reconnectez-vous puis relancez cette vérification.</p><button className="calm-primary-button" type="button" onClick={loadOverview} data-testid="retry-admin-access-button"><RefreshCw size={16} /> Vérifier mes autorisations</button></section>;
+    return <section className="page-content admin-page" data-testid="admin-access-error"><p className="admin-error">{error}</p><p className="admin-error-help">Iris vérifie le rôle Discord Coordinateur à chaque accès. Si le rôle vient d’être ajouté, reconnectez-vous puis relancez cette vérification.</p>{sessionInfo?.helper && <p className="admin-session-diagnostic" data-testid="admin-session-diagnostic">Compte connecté : {sessionInfo.helper.global_name || sessionInfo.helper.username} · ID {sessionInfo.helper.id}</p>}<button className="calm-primary-button" type="button" onClick={loadOverview} data-testid="retry-admin-access-button"><RefreshCw size={16} /> Vérifier mes autorisations</button></section>;
   }
 
   if (!overview) {
