@@ -11,6 +11,7 @@ import DashboardPage from "./pages/DashboardPage";
 import HelperProfilePage from "./pages/HelperProfilePage";
 import LoginPage from "./pages/LoginPage";
 import NewTicketPage from "./pages/NewTicketPage";
+import ResourcesPage from "./pages/ResourcesPage";
 import TicketWorkspacePage from "./pages/TicketWorkspacePage";
 
 
@@ -49,6 +50,7 @@ function AuthenticatedApp({ helper, isAdmin, theme, toggleTheme }) {
         <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
+        <Route path="/resources" element={<ResourcesPage isAdmin={isAdmin} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>

@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 8 — Ressources feature + Iris logo. Added /app/backend/tests/test_resources.py (26 tests covering auth guards on GET/POST/DELETE/download, admin-only upload/delete via current_admin, allowed extensions PDF/DOC/DOCX/JPG/JPEG/PNG/WEBP/GIF/TXT only, 250MB cap with 413, tempfile streaming upload, UUID iris/resources storage path, singleton storage_key init, storage_path excluded from list and model, soft-delete, EMERGENT_LLM_KEY absent from frontend, sidebar labels Suivis/Archives/Ressources/Mon profil/Administration, iris-logo + login-iris-logo test-ids and asset URL, /resources route + isAdmin gating on resource-upload-form and delete-resource, download unconditional, client-side 250MB cap, accept attribute matches backend extensions, nav-link span dark color for contrast). Added /app/backend/tests/conftest.py to add /app/backend to sys.path (fixed pre-existing ModuleNotFoundError for `config`/`routers` in test_profile_notes_triggers.py). Full regression: 137/137 pytest pass against the public preview URL. Playwright checks against https://iris-logs.preview.emergentagent.com desktop 1920x1080 + mobile 390x844: login-iris-logo renders, asset loads (natural 938x422), no overflow at 390px, sidebar not rendered pre-auth, GET /resources unauth returns to LoginPage. Live upload/download intentionally NOT executed — needs a Discord admin account per review.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_resources.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/iteration_8.xml",
+    "/app/test_reports/pytest/iteration_8_full.xml"
+  ],
+  "action_items": [
+    "HUMAN VERIFICATION: a real Discord admin must (a) upload a real ~1MB PDF via POST /api/resources and verify object storage round-trip via GET /api/resources/{id}/download, (b) confirm a >250MB upload actually returns 413 and no temp file is left on disk, (c) verify that DELETE /api/resources/{id} soft-deletes and the record disappears from GET /api/resources, and (d) verify the sidebar-resources-link is visible with high-contrast dark text (color:#1a2a20) on the sage background."
+  ],
+  "critical_code_review_comments": [
+    "routers/resources.py:list_resources — projects out `storage_path` from the query itself (not just from the response model). Correct defense in depth — even if ResourceDocument were extended, storage_path never leaves the DB layer.",
+    "routers/resources.py:upload_resource — reads UploadFile in 1MB chunks into a NamedTemporaryFile and enforces 250MB *before* forwarding to the storage service (413 raised mid-stream). Temp file is unlinked in a finally block whether or not the request succeeded. Good.",
+    "routers/resources.py:upload_resource — `resource.model_dump()` is used to build the Mongo document then `storage_path` and `is_deleted` are appended separately; the returned ResourceDocument object never contains storage_path, matching the model contract. Good.",
+    "services/storage_service.py — `storage_key` cached as module-global singleton, re-initialised on 403 (rotating key). Uses synchronous `requests` but is invoked from the router via `asyncio.to_thread(...)`, so the FastAPI event loop is not blocked. Good.",
+    "services/storage_service.py:extension_from_filename — uses Path().suffix.lower(); for filenames like 'foo' (no dot) returns empty string, which correctly falls through the ALLOWED_TYPES check and is rejected with 422. No path-traversal risk because the resource_id is a server-generated UUID and the filename is never used to build the storage path.",
+    "routers/resources.py:delete_resource — soft-delete only marks is_deleted=True and adds deleted_at ISO timestamp. The object in Emergent object storage is NOT removed. If GDPR/retention becomes a requirement, add a background task to purge storage after N days. Not blocking today.",
+    "routers/resources.py:download_resource — uses StreamingResponse with an in-memory BytesIO of the full content. For a 250MB PDF this holds the whole payload in memory during the response. Acceptable given the current small helper roster and the storage service does not expose a streaming iterator, but flag it in case files scale up.",
+    "components/AppShell.jsx — the sidebar iris-logo replaces the old text mark; the alt='Iris' is set. Consider making the logo asset self-hosted (frontend/public) rather than customer-assets URL to avoid a hard dependency on the external customer-assets host during production loads. Not blocking.",
+    "MentalHealth.css:.nano-sidebar .nav-link span — color #1a2a20 on --sage-soft background yields WCAG AAA contrast. The previous 'white on white' issue described in the request is not present.",
+    "pages/ResourcesPage.jsx — the upload form and the per-card delete button are both wrapped in `{isAdmin && ...}`; the download button is always rendered. Server still enforces current_admin, so client tampering has no effect on privilege.",
+    "pages/ResourcesPage.jsx — file input has `accept='.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.gif,.txt'` matching the backend ALLOWED_TYPES exactly. Client-side 250MB pre-check prevents huge uploads from wasting bandwidth."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_resources.py (new, 26 tests)",
+    "/app/backend/tests/conftest.py (new — adds /app/backend to sys.path so pytest from /app can import config/routers/services)"
+  ],
+  "success_rate": {"backend": "100% (137/137 pytest against public preview URL)", "frontend": "100% Playwright static + logo asset checks on desktop 1920x1080 and mobile 390x844. Live upload/download not automated."},
+  "test_credentials": "None. /app/memory/test_credentials.md remains empty (Discord OAuth + admin role required for live upload/delete tests).",
+  "seed_data_creation": "None. No resource documents were uploaded to Mongo or to Emergent object storage during validation.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression suite is now 4 files under /app/backend/tests/: test_iris_api.py, test_demo_removed.py, test_admin_and_ai_summary.py, test_resources.py (+ conftest.py adds backend to sys.path). Run with `pytest /app/backend/tests/ -v` from anywhere. If routers/resources.py is refactored to expose storage_path in the list response, or if the ALLOWED_TYPES map is changed, TestResourceRouterContract will fire. If the sidebar iris-logo test-id is removed or the login logo URL changes, TestFrontendResources will fire. If the nav-link span color is loosened to white on light background, test_nav_link_has_visible_contrast will fire.",
+  "rca of the issue": "Not a bug fix — feature validation for iteration 8. E1 added (1) a Resources router mounted at /api/resources with current_helper on GET/download and current_admin on POST/DELETE, backed by Emergent object storage under iris/resources/<uuid>.<ext>, (2) a soft-delete flag and storage_path projection so storage_path never leaves Mongo, (3) a ResourcesPage with admin-gated upload + delete and unconditional download, and (4) the Iris logo at both /login and the sidebar with high-contrast dark-on-sage nav labels. The only pre-existing issue found was a pytest import-path problem in test_profile_notes_triggers.py (ModuleNotFoundError for `config` and `routers` when pytest was launched from /app); adding /app/backend/tests/conftest.py to prepend /app/backend to sys.path is a test-infra fix, not a code behaviour change."
+}

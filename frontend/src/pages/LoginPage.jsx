@@ -7,7 +7,7 @@ export default function LoginPage() {
     <main className="login-page" data-testid="login-page">
       <section className="login-grid">
         <div className="login-identity">
-          <div className="login-mark">I</div>
+          <div className="login-mark"><img src="https://customer-assets-lqy194kg.emergentagent.net/job_iris-logs/artifacts/jhsbq3v9_image.png" alt="Iris" data-testid="login-iris-logo" /></div>
           <p className="eyebrow">IRIS / ESPACE D’ÉCOUTE</p>
           <h1>Un espace d’écoute, pour accompagner avec soin.</h1>
           <p className="login-description">
