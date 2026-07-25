@@ -68,6 +68,12 @@ Créer Iris, un outil interne de gestion pour les helpers d’un serveur Discord
 - Tous les helpers connectés peuvent consulter et télécharger les ressources partagées.
 - Les administrateurs peuvent publier ou retirer des PDF, Word, images et textes jusqu’à 250 Mo ; les documents sont stockés de manière sécurisée hors de l’interface.
 
+## Correctif Administration et suppression — 2026-07-25
+- La vue Administration gère désormais les dossiers non attribués sans erreur et s’ouvre correctement pour le rôle Coordinateur.
+- Le rôle Coordinateur a été confirmé sur le compte administrateur communiqué et la vue renvoie les six helpers configurés.
+- Les Coordinateurs peuvent supprimer définitivement un dossier depuis son espace de travail, après confirmation ; les helpers standards ne voient pas cette action.
+- Le thème sombre et ses réglages ont été retirés définitivement à la demande de l’utilisateur.
+
 ## Backlog priorisé
 ### P0 — configuration nécessaire
 - Ajouter un nouveau `DISCORD_BOT_TOKEN` après réinitialisation.
