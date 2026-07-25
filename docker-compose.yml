@@ -1,4 +1,7 @@
 version: '3.8'
+networks:
+  npm_default:
+    external: true
 
 services:
   # Base de données MongoDB
@@ -12,28 +15,31 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: secretpassword
+    networks:
+      - npm_default
 
   # API Backend (FastAPI)
   backend:
     build: ./backend
     container_name: emergent-backend
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=mongodb://admin:secretpassword@mongodb:27017/emergent_db?authSource=admin
+    env_file:
+    - .env
     depends_on:
       - mongodb
+    networks:
+      - npm_default
 
   # Application Frontend (React)
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
+      args:
+        - REACT_APP_BACKEND_URL=https://api.loasis.app
     container_name: emergent-frontend
-    ports:
-      - "80:80"
-    environment:
-      - VITE_API_URL=http://localhost:8000
     depends_on:
       - backend
+    networks:
+      - npm_default
 
 volumes:
   mongo-data:
