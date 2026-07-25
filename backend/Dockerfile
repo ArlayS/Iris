@@ -1,18 +1,20 @@
-FROM node:20-slim AS build
+FROM python:3.11-slim
+
 WORKDIR /app
-COPY package*.json ./
-RUN npm install --force
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install emergentintegrations==0.2.0 --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
+# Installation des dépendances
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copie du code source
 COPY . .
 
-# Récupère l'ARG passé par docker-compose et l'expose comme variable d'env pour le build
-ARG REACT_APP_BACKEND_URL
-ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
+# Exposition du port backend par défaut de FastAPI
+EXPOSE 8000
 
-RUN npm run build
-
-# Utilisation de Nginx pour servir le build statique en production
-FROM nginx:alpine
-COPY --from=build /app/build /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
