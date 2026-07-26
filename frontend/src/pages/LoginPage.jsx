@@ -35,14 +35,15 @@ export default function LoginPage() {
           <h2>Accéder à l’espace helpers</h2>
           <p>Connectez-vous avec Discord. L’accès est réservé aux membres ayant le rôle Helper du serveur.</p>
 
+
+          
           {authError && (
             <div className="auth-error-card" data-testid="auth-error-message">
               <AlertTriangle size={18} />
               <p>{authError}</p>
             </div>
           )}
-
-          
+<a
             className="discord-button"
             href={`${backendUrl}/api/auth/discord/login`}
             data-testid="discord-login-button"
