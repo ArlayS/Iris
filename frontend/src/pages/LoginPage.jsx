@@ -1,8 +1,20 @@
-import { ArrowUpRight, RadioTower, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, ArrowUpRight, RadioTower, ShieldCheck } from "lucide-react";
 
 
 export default function LoginPage() {
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
+  const [authError, setAuthError] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("auth_error");
+    if (error) {
+      setAuthError(error);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   return (
     <main className="login-page" data-testid="login-page">
       <section className="login-grid">
@@ -22,7 +34,15 @@ export default function LoginPage() {
           <p className="eyebrow">ACCÈS SÉCURISÉ</p>
           <h2>Accéder à l’espace helpers</h2>
           <p>Connectez-vous avec Discord. L’accès est réservé aux membres ayant le rôle Helper du serveur.</p>
-          <a
+
+          {authError && (
+            <div className="auth-error-card" data-testid="auth-error-message">
+              <AlertTriangle size={18} />
+              <p>{authError}</p>
+            </div>
+          )}
+
+          
             className="discord-button"
             href={`${backendUrl}/api/auth/discord/login`}
             data-testid="discord-login-button"
