@@ -20,20 +20,19 @@ export default function LoginPage() {
       <section className="login-grid">
         <div className="login-identity">
           <div className="login-mark"><img src="https://customer-assets-lqy194kg.emergentagent.net/job_iris-logs/artifacts/jhsbq3v9_image.png" alt="Iris" data-testid="login-iris-logo" /></div>
-          <p className="eyebrow">IRIS / ESPACE D’ÉCOUTE</p>
-          <h1>Un espace d’écoute, pour accompagner avec soin.</h1>
+          <p className="eyebrow">IRIS / ESPACE DE GESTION</p>
+          <h1>Un espace de gestion, pour accompagner avec soin.</h1>
           <p className="login-description">
-            Centralisez les demandes d’aide, les repères privés et la continuité de suivi des personnes accompagnées.
+            Centralisez les taches réalisées aux seins du Staff de L'Oasis.
           </p>
           <div className="login-specs">
             <span><RadioTower size={15} /> ESPACE CONFIDENTIEL</span>
-            <span><ShieldCheck size={15} /> ACCÈS HELPERS</span>
+            <span><ShieldCheck size={15} /> ACCÈS SÉCURISÉ</span>
           </div>
         </div>
         <div className="login-action">
-          <p className="eyebrow">ACCÈS SÉCURISÉ</p>
-          <h2>Accéder à l’espace helpers</h2>
-          <p>Connectez-vous avec Discord. L’accès est réservé aux membres ayant le rôle Helper du serveur.</p>
+          <h2>Accéder à votre espace</h2>
+          <p>Connectez-vous avec Discord. L’accès est réservé aux membres ayant un rôle Staff sur le serveur.</p>
 
 
           
@@ -50,10 +49,10 @@ export default function LoginPage() {
           >
             Continuer avec Discord <ArrowUpRight size={18} />
           </a>
-          <small>Une autorisation Discord et le rôle Helper sont requis.</small>
+          <small>Une connexion Discord et un rôle interne sont requis.</small>
         </div>
       </section>
-      <footer data-testid="login-footer">IRIS · ESPACE CONFIDENTIEL · ÉQUIPE HELPERS</footer>
+      <footer data-testid="login-footer">IRIS · ESPACE CONFIDENTIEL · L'OASIS 2026</footer>
     </main>
   );
 }
