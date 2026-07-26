@@ -22,6 +22,8 @@ services:
   backend:
     build: ./backend
     container_name: emergent-backend
+    volumes:
+    - resources-data:/app/storage
     env_file:
     - .env
     depends_on:
@@ -43,3 +45,4 @@ services:
 
 volumes:
   mongo-data:
+  resources-data:
