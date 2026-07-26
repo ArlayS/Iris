@@ -1,62 +1,31 @@
-import os
+import shutil
 from pathlib import Path
 
-import requests
 
-from config import EMERGENT_LLM_KEY
-
-
-STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
+STORAGE_ROOT = Path("/app/storage")
 APP_NAME = "iris"
-storage_key: str | None = None
 
 
 def init_storage() -> str:
-    global storage_key
-    if storage_key:
-        return storage_key
-    if not EMERGENT_LLM_KEY:
-        raise RuntimeError("Clé de stockage Emergent absente.")
-    response = requests.post(
-        f"{STORAGE_URL}/init",
-        json={"emergent_key": EMERGENT_LLM_KEY},
-        timeout=30,
-    )
-    response.raise_for_status()
-    storage_key = response.json()["storage_key"]
-    return storage_key
+    STORAGE_ROOT.mkdir(parents=True, exist_ok=True)
+    return "local"
 
 
 def put_object_from_file(path: str, file_path: str, content_type: str) -> dict:
-    global storage_key
-    key = init_storage()
-    with open(file_path, "rb") as file_handle:
-        response = requests.put(
-            f"{STORAGE_URL}/objects/{path}",
-            headers={"X-Storage-Key": key, "Content-Type": content_type},
-            data=file_handle,
-            timeout=900,
-        )
-    if response.status_code == 403:
-        storage_key = None
-        return put_object_from_file(path, file_path, content_type)
-    response.raise_for_status()
-    return response.json()
+    init_storage()
+    destination = STORAGE_ROOT / path
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(file_path, destination)
+    size = destination.stat().st_size
+    return {"path": path, "size": size}
 
 
 def get_object(path: str) -> tuple[bytes, str]:
-    global storage_key
-    key = init_storage()
-    response = requests.get(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key},
-        timeout=180,
-    )
-    if response.status_code == 403:
-        storage_key = None
-        return get_object(path)
-    response.raise_for_status()
-    return response.content, response.headers.get("Content-Type", "application/octet-stream")
+    source = STORAGE_ROOT / path
+    if not source.exists():
+        raise FileNotFoundError(f"Ressource introuvable sur le disque : {path}")
+    content = source.read_bytes()
+    return content, "application/octet-stream"
 
 
 def resource_path(resource_id: str, extension: str) -> str:
