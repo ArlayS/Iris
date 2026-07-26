@@ -38,11 +38,18 @@ async def discord_login() -> RedirectResponse:
     return response
 
 
+from fastapi.responses import RedirectResponse
+from urllib.parse import quote
+
 @router.get("/discord/callback")
 async def discord_callback(code: str, state: str, request: Request) -> RedirectResponse:
     if state != request.cookies.get(STATE_COOKIE):
-        return RedirectResponse(f"{FRONTEND_URL}/?auth=failed", status_code=302)
-    helper = await exchange_code(code)
+        return RedirectResponse(f"{FRONTEND_URL}/?auth_error=Session+expir%C3%A9e%2C+r%C3%A9essayez.", status_code=302)
+    try:
+        helper = await exchange_code(code)
+    except HTTPException as error:
+        message = quote(str(error.detail))
+        return RedirectResponse(f"{FRONTEND_URL}/?auth_error={message}", status_code=302)
     response = RedirectResponse(FRONTEND_URL, status_code=302)
     response.set_cookie(
         SESSION_COOKIE,
@@ -55,7 +62,6 @@ async def discord_callback(code: str, state: str, request: Request) -> RedirectR
     )
     response.delete_cookie(STATE_COOKIE, domain=COOKIE_DOMAIN)
     return response
-
 
 @router.get("/session", response_model=AuthSession)
 async def session(request: Request, response: Response) -> AuthSession:
