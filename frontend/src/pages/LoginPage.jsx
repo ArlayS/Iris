@@ -23,7 +23,7 @@ export default function LoginPage() {
           <p className="eyebrow">IRIS / ESPACE DE GESTION</p>
           <h1>Un espace de gestion, pour accompagner avec soin.</h1>
           <p className="login-description">
-            Centralisez les taches réalisées aux seins du Staff de L'Oasis.
+            Centralisez les taches réalisées aux sein du Staff de L'Oasis.
           </p>
           <div className="login-specs">
             <span><RadioTower size={15} /> ESPACE CONFIDENTIEL</span>
