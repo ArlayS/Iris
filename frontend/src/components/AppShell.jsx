@@ -5,6 +5,7 @@ import {
   ChevronDown,
   FileStack,
   Grid2X2,
+  ListTodo,
   LayoutDashboard,
   LogOut,
   RadioTower,
@@ -82,10 +83,19 @@ export default function AppShell({
                   <FileStack size={18} />
                   <span>Réunions</span>
                 </NavLink>
+                <NavLink
+  className="nav-link"
+  to="/staff/taches"
+  data-testid="staff-tasks-link"
+  title="Tâches trimestrielles"
+>
+  <ListTodo size={18} />
+  <span>Tâches</span>
+</NavLink>
               </div>
             </>
           )}
-
+        </br>
           {canSeeHelper && (
             <>
               <button
