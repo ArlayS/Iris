@@ -189,10 +189,7 @@ async def upload_meeting_image(
 
 
 @router.get("/meetings/images/{filename}")
-async def get_meeting_image(
-    filename: str,
-    _: AuthenticatedHelper = Depends(current_staff),
-) -> StreamingResponse:
+async def get_meeting_image(filename: str) -> StreamingResponse:
     extension = filename.rsplit(".", 1)[-1].lower()
     content_type = f"image/{extension if extension != 'jpg' else 'jpeg'}"
     try:
