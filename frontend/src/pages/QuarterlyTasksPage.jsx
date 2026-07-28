@@ -171,7 +171,17 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
   useEffect(() => {
     load();
   }, []);
-
+  
+const removePeriod = async (periodId) => {
+  try {
+    await api.delete(`/staff/tasks/period/${periodId}`);
+    setArchivedPeriods((current) => current.filter((p) => p.id !== periodId));
+    if (openArchiveId === periodId) setOpenArchiveId(null);
+    toast.success("Période supprimée.");
+  } catch (error) {
+    toast.error(getErrorMessage(error));
+  }
+};
   const declarePeriod = async (event) => {
     event.preventDefault();
     setCreatingPeriod(true);
@@ -355,14 +365,16 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
               {archivedPeriods.length === 0 ? (
                 <p className="dashboard-empty" style={{ padding: "24px" }}>Aucune période archivée.</p>
               ) : (
-                archivedPeriods.map((archivedPeriod) => (
-                  <ArchivedPeriodRow
-                    key={archivedPeriod.id}
-                    period={archivedPeriod}
-                    isOpen={openArchiveId === archivedPeriod.id}
-                    onToggle={(id) => setOpenArchiveId((current) => (current === id ? null : id))}
-                  />
-                ))
+              archivedPeriods.map((archivedPeriod) => (
+  <ArchivedPeriodRow
+    key={archivedPeriod.id}
+    period={archivedPeriod}
+    isOpen={openArchiveId === archivedPeriod.id}
+    onToggle={(id) => setOpenArchiveId((current) => (current === id ? null : id))}
+    isResponsable={isResponsable}
+    onDelete={removePeriod}
+  />
+))
               )}
             </div>
           </div>
