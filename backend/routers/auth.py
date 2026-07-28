@@ -14,6 +14,7 @@ from services.auth_service import (
     exchange_code,
     has_iris_access,
     is_admin_helper,
+    is_responsable_helper,
     is_staff_helper,
     parse_session,
 )
@@ -69,29 +70,33 @@ async def session(request: Request, response: Response) -> AuthSession:
     response.headers["Pragma"] = "no-cache"
     raw_session = request.cookies.get(SESSION_COOKIE)
     helper = parse_session(raw_session)
+    empty = AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False, is_responsable=False)
     if raw_session and not helper:
         response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
         response.delete_cookie(SESSION_COOKIE)
-        return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False)
+        return empty
     is_admin = False
     is_staff = False
+    is_responsable = False
     if helper:
         try:
-            if not await has_iris_access(helper.id) and not await is_staff_helper(helper.id):
+            has_access = await has_iris_access(helper.id)
+            is_staff = await is_staff_helper(helper.id)
+            is_responsable = await is_responsable_helper(helper.id)
+            if not has_access and not is_staff and not is_responsable:
                 response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
                 response.delete_cookie(SESSION_COOKIE)
-                return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False)
+                return empty
             is_admin = await is_admin_helper(helper.id)
-            is_staff = await is_staff_helper(helper.id)
         except HTTPException:
             response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
             response.delete_cookie(SESSION_COOKIE)
-            return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False)
-    return AuthSession(authenticated=helper is not None, helper=helper, is_admin=is_admin, is_staff=is_staff)
+            return empty
+    return AuthSession(authenticated=helper is not None, helper=helper, is_admin=is_admin, is_staff=is_staff, is_responsable=is_responsable)
 
 
 @router.post("/logout", response_model=AuthSession)
 async def logout(response: Response) -> AuthSession:
     response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
     response.delete_cookie(SESSION_COOKIE)
-    return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False)
+    return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False, is_responsable=False)
