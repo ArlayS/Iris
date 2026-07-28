@@ -61,29 +61,32 @@ export default function MeetingSummaryEditorPage() {
 
   if (loading) {
     return (
-      <div className="dashboard-page">
+      <section className="page-content dashboard-page">
         <p className="dashboard-loading">Chargement…</p>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-header">
+    <section className="page-content dashboard-page" data-testid="meeting-editor-page">
+      <header className="page-header">
         <div>
-          <span className="dashboard-eyebrow">Espace Helpers</span>
-          <h1 className="dashboard-title">
-            {isNew ? "Nouveau résumé" : title || "Résumé de réunion"}
-          </h1>
+          <p className="eyebrow">ESPACE HELPERS</p>
+          <h1>{isNew ? "Nouveau résumé" : title || "Résumé de réunion"}</h1>
         </div>
-        <button type="button" className="btn-ghost" onClick={() => navigate("/staff/meetings")}>
-          <ArrowLeft size={16} />
-          Retour aux résumés
-        </button>
-      </div>
+        <div className="dashboard-actions">
+          <button type="button" className="calm-primary-button" onClick={() => navigate("/staff/meetings")}>
+            <ArrowLeft size={17} /> Retour
+          </button>
+        </div>
+      </header>
 
-      <form onSubmit={save} className="summary-form">
-        <div className="dashboard-card summary-meta-card">
+      <form onSubmit={save} className="dashboard-grid">
+        <section className="activity-pane">
+          <div className="section-heading">
+            <span>DÉTAILS</span>
+          </div>
+
           <div className="summary-field">
             <label htmlFor="title">Titre</label>
             <input
@@ -98,8 +101,7 @@ export default function MeetingSummaryEditorPage() {
 
           <div className="summary-field">
             <label htmlFor="meeting-date">
-              <Calendar size={14} />
-              Date
+              <Calendar size={14} /> Date
             </label>
             <input
               id="meeting-date"
@@ -110,37 +112,54 @@ export default function MeetingSummaryEditorPage() {
             />
           </div>
 
-          <div className="summary-field summary-field-full">
+          <div className="summary-field">
             <label htmlFor="agenda">Ordre du jour</label>
             <textarea
               id="agenda"
               value={agenda}
               onChange={(e) => setAgenda(e.target.value)}
               placeholder="Points abordés, décisions à prendre…"
-              rows={2}
+              rows={3}
             />
           </div>
-        </div>
 
-        <div className="dashboard-card summary-editor-card">
-          <div className="summary-editor-label">Résumé</div>
+          <div className="section-heading" style={{ marginTop: "20px" }}>
+            <span>RÉSUMÉ</span>
+          </div>
           <TiptapSummaryEditor
             value={content}
             onChange={setContent}
             placeholder="Rédiger le résumé… (tapez / pour les commandes)"
           />
-        </div>
 
-        <div className="summary-actions">
-          <button type="button" className="btn-ghost" onClick={() => navigate("/staff/meetings")}>
-            Annuler
-          </button>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            <Save size={16} />
-            {saving ? "Enregistrement…" : "Enregistrer le résumé"}
-          </button>
-        </div>
+          <div className="summary-actions" style={{ marginTop: "20px" }}>
+            <button type="button" className="btn-ghost" onClick={() => navigate("/staff/meetings")}>
+              Annuler
+            </button>
+            <button type="submit" className="calm-primary-button" disabled={saving}>
+              <Save size={16} /> {saving ? "Enregistrement…" : "Enregistrer le résumé"}
+            </button>
+          </div>
+        </section>
+
+        <aside className="system-pane">
+          <p className="eyebrow">REPÈRES</p>
+          <div>
+            <span>Statut</span>
+            <b>{content.trim() ? "RÉDIGÉ" : "EN ATTENTE"}</b>
+          </div>
+          <div>
+            <span>Date de réunion</span>
+            <strong>
+              {new Date(meetingDate).toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </strong>
+          </div>
+        </aside>
       </form>
-    </div>
+    </section>
   );
 }
