@@ -40,7 +40,7 @@ export default function MeetingSummariesPage() {
     <section className="page-content dashboard-page" data-testid="meetings-page">
       <header className="page-header">
         <div>
-          <p className="eyebrow">ESPACE HELPERS</p>
+          <p className="eyebrow">ESPACE STAFF</p>
           <h1>Résumés de réunion.</h1>
         </div>
         <div className="dashboard-actions">
@@ -70,7 +70,7 @@ export default function MeetingSummariesPage() {
 
       <section className="care-hero" data-testid="latest-meeting-hero">
         <div>
-          <p className="eyebrow">À RÉDIGER</p>
+          <p className="eyebrow">DERNIÈRE RÉUNION</p>
           <h2>{latest ? latest.title : "Aucune réunion pour le moment."}</h2>
           <p>
             {latest
@@ -121,9 +121,9 @@ export default function MeetingSummariesPage() {
             })}
           </span>
         </div>
-        <span className={`status-dot ${meeting.status === "redige" ? "active" : "archived"}`}>
-          {meeting.status === "redige" ? "RÉDIGÉ" : "À RÉDIGER"}
-        </span>
+     <span className={`status-dot ${meeting.status === "redige" ? "active" : "pending"}`}>
+  {meeting.status === "redige" ? "RÉDIGÉ" : "À RÉDIGER"}
+</span>
       </div>
 
       <p className="meeting-agenda-full">{meeting.agenda || "Aucun ordre du jour renseigné."}</p>
