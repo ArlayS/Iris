@@ -18,117 +18,27 @@
   align-items: start;
 }
 
-.absence-calendar {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(58, 90, 64, 0.06);
-  padding: clamp(18px, 3vw, 28px);
-}
-
-.absence-calendar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.absence-calendar-header h2 {
-  color: var(--ink);
-  font: 600 20px "Manrope", sans-serif;
-  margin: 0;
-  text-transform: capitalize;
-}
-
-.absence-calendar-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.absence-calendar-nav button {
-  background: var(--sage-soft);
-  border: 1px solid #d4e1d6;
-  border-radius: 8px;
-  color: var(--sage);
-  cursor: pointer;
+.absence-avatar {
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--sage);
+  color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font: 600 12px "IBM Plex Sans", sans-serif;
-  padding: 7px 10px;
+  flex-shrink: 0;
 }
 
-.absence-calendar-nav button:hover {
-  background: #dbe7dd;
-}
-
-.absence-calendar-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  color: var(--muted);
-  font: 600 11px "IBM Plex Sans", sans-serif;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 0 2px 8px;
-}
-
-.absence-calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-}
-
-.absence-day {
-  background: #fbfbf9;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  color: var(--ink);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-  min-height: 68px;
-  padding: 8px;
-  font-family: "IBM Plex Sans", sans-serif;
-  transition: background-color 150ms ease, border-color 150ms ease;
-}
-
-.absence-day:hover {
-  background: var(--sage-soft);
-  border-color: #cadccf;
-}
-
-.absence-day.is-outside {
-  color: #b7bfba;
-  background: transparent;
-}
-
-.absence-day.is-today {
-  border-color: var(--sage);
-  border-width: 2px;
-}
-
-.absence-day.is-selected {
-  background: var(--sage-soft);
-  border-color: var(--sage);
-}
-
-.absence-day-number {
-  font: 600 12px "IBM Plex Sans", sans-serif;
-}
-
-.absence-day-chips {
-  display: flex;
-  gap: 3px;
-  flex-wrap: wrap;
+.absence-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .absence-day-chip {
-  background: var(--sage);
-  color: #fff;
   border-radius: 999px;
+  background: var(--clay);
+  color: #fff;
   font: 700 10px "IBM Plex Sans", sans-serif;
   width: 18px;
   height: 18px;
@@ -138,24 +48,82 @@
   flex-shrink: 0;
 }
 
-.absence-day-chip.is-more {
-  background: var(--clay);
+.absence-mode-hint {
+  background: var(--sage-soft);
+  color: #365443;
+  font: 500 12px "IBM Plex Sans", sans-serif;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
 }
 
+.calm-primary-button.is-cancel {
+  background: #fff5f4;
+  border-color: #e7beba;
+  color: #a2413d;
+}
+
+.calm-primary-button.is-cancel:hover {
+  background: #fde7e4;
+  color: #a2413d;
+}
+
+.absence-day.is-viewed {
+  background: #eef3ee;
+  border-color: var(--sage);
+}
+
+.absence-detail-panel,
 .absence-confirm-panel {
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
+.absence-detail-panel > div:first-child,
 .absence-confirm-panel > div:first-child {
   display: flex;
   align-items: center;
   justify-content: space-between;
   color: var(--ink);
   font: 600 14px "Manrope", sans-serif;
+  text-transform: capitalize;
+}
+
+.absence-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.absence-detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f7faf7;
+  border: 1px solid #e0e9e2;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.absence-detail-row strong {
+  color: var(--ink);
+  font: 600 13px "Manrope", sans-serif;
+  display: block;
+}
+
+.absence-detail-row small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.absence-detail-row p {
+  color: #46594c;
+  font-size: 13px;
+  margin: 6px 0 0;
+  line-height: 1.5;
 }
 
 .absence-confirm-panel textarea {
@@ -172,44 +140,6 @@
   outline: 0;
   border-color: #3a5a40;
   box-shadow: 0 0 0 3px rgba(58, 90, 64, 0.12);
-}
-
-.absence-upcoming {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(58, 90, 64, 0.06);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.absence-upcoming-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px;
-  background: #f7faf7;
-  border: 1px solid #e0e9e2;
-  border-radius: 10px;
-}
-
-.absence-upcoming-row strong {
-  color: var(--ink);
-  font: 600 13px "Manrope", sans-serif;
-  display: block;
-}
-
-.absence-upcoming-row small {
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.absence-upcoming-row p {
-  color: #46594c;
-  font-size: 12px;
-  margin: 4px 0 0;
 }
 body {
   background: var(--canvas);
