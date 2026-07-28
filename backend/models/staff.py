@@ -41,10 +41,6 @@ class QuarterlyTask(BaseModel):
     created_at: str
     updated_at: str
     
-
-class QuarterlyTaskUpdate(BaseModel):
-    is_done: bool
-
 class AbsenceCreate(BaseModel):
     start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
     end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
