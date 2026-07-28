@@ -26,7 +26,11 @@ function NominateSelect({ task, members, onNominate }) {
   const available = members.filter(
     (m) => !task.volunteers.some((v) => v.id === m.id)
   );
+const [category, setCategory] = useState("");
+const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
+const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
 
+const isEvent = category.trim().toLowerCase().includes("event");
   const handleNominate = async () => {
     if (!selected) return;
     await onNominate(task.id, selected);
@@ -593,12 +597,40 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
                 placeholder="Explication détaillée de la tâche…"
                 rows={3}
               />
-              <input
-                type="date"
-                className="meeting-inline-input"
-                value={taskDate}
-                onChange={(e) => setTaskDate(e.target.value)}
-              />
+            {isEvent ? (
+  <div style={{ display: "flex", gap: "10px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+      <label style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
+        Date de début
+      </label>
+      <input
+        type="date"
+        className="meeting-inline-input"
+        value={taskDate}
+        onChange={(e) => setTaskDate(e.target.value)}
+      />
+    </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+      <label style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
+        Date de fin
+      </label>
+      <input
+        type="date"
+        className="meeting-inline-input"
+        value={endDate}
+        min={taskDate}
+        onChange={(e) => setEndDate(e.target.value)}
+      />
+    </div>
+  </div>
+) : (
+  <input
+    type="date"
+    className="meeting-inline-input"
+    value={taskDate}
+    onChange={(e) => setTaskDate(e.target.value)}
+  />
+)}
               <button type="submit" className="meeting-inline-submit" disabled={submitting}>
                 <Plus size={16} /> {submitting ? "Enregistrement…" : "Ajouter la tâche"}
               </button>
