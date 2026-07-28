@@ -11,6 +11,168 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--sage-soft);
+  color: var(--sage);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon-pending {
+  background: #fdf3e0;
+  color: #b8860b;
+}
+
+.stat-icon-done {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.meetings-list-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.meetings-list-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.meetings-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.meeting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--ink);
+  transition: background 0.15s ease;
+}
+
+.meeting-row:last-child {
+  border-bottom: none;
+}
+
+.meeting-row:hover {
+  background: var(--sage-soft);
+}
+
+.meeting-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.meeting-row-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.meeting-row-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meeting-row-agenda {
+  flex: 1.5;
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.status-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.status-pending {
+  background: #fdf3e0;
+  color: #b8860b;
+}
+
+.status-done {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.icon-btn-danger {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.icon-btn-danger:hover {
+  background: #fdeaea;
+  color: #c0392b;
+}
+
+.dashboard-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 40px 0;
+}
 .dashboard-page {
   padding: 32px 40px;
   max-width: 1100px;
