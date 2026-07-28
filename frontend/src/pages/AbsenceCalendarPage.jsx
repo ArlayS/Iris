@@ -169,6 +169,11 @@ export default function AbsenceCalendarPage({ isResponsable }) {
           <h1>Calendrier des absences</h1>
         </div>
         <div className="dashboard-actions">
+          {isResponsable && (
+            <Link className="calm-primary-button is-secondary" to="/staff/meetings/new" data-testid="add-meeting-shortcut-button">
+              <Plus size={17} /> Ajouter une réunion
+            </Link>
+          )}
           {mode === "view" ? (
             <button className="calm-primary-button" type="button" onClick={enterAddMode} data-testid="enter-absence-mode-button">
               <CalendarPlus size={17} /> Entrer une absence
