@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from io import BytesIO
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import Response, StreamingResponse
 
 from database import db
 from models.staff import (
@@ -22,12 +22,28 @@ from services.storage_service import extension_from_filename, get_object, put_ob
 
 router = APIRouter(prefix="/staff", tags=["staff"])
 
-MEETING_IMAGE_TYPES = {"jpg", "jpeg", "png", "webp", "gif"}
-MAX_MEETING_IMAGE_SIZE = 10 * 1024 * 1024  # 10 Mo
+MEETING_MEDIA_TYPES = {
+    "jpg", "jpeg", "png", "webp", "gif",
+    "mp4", "webm", "mov",
+    "mp3", "wav", "ogg", "m4a",
+}
+MAX_MEETING_MEDIA_SIZE = 50 * 1024 * 1024  # 50 Mo
+
+VIDEO_EXTENSIONS = {"mp4", "webm", "mov"}
+AUDIO_EXTENSIONS = {"mp3", "wav", "ogg", "m4a"}
 
 
 def _meeting_status(content_markdown: str) -> str:
     return "redige" if content_markdown.strip() else "en_attente_resume"
+
+
+def _media_content_type(extension: str) -> str:
+    if extension in VIDEO_EXTENSIONS:
+        return f"video/{extension}"
+    if extension in AUDIO_EXTENSIONS:
+        audio_map = {"mp3": "mpeg", "wav": "wav", "ogg": "ogg", "m4a": "mp4"}
+        return f"audio/{audio_map[extension]}"
+    return f"image/{extension if extension != 'jpg' else 'jpeg'}"
 
 
 @router.get("/absences", response_model=list[AbsenceEntry])
@@ -150,24 +166,6 @@ async def delete_meeting(
     result = await db.meeting_summaries.delete_one({"id": meeting_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Résumé introuvable.")
-MEETING_MEDIA_TYPES = {
-    "jpg", "jpeg", "png", "webp", "gif",
-    "mp4", "webm", "mov",
-    "mp3", "wav", "ogg", "m4a",
-}
-MAX_MEETING_MEDIA_SIZE = 50 * 1024 * 1024  # 50 Mo
-
-VIDEO_EXTENSIONS = {"mp4", "webm", "mov"}
-AUDIO_EXTENSIONS = {"mp3", "wav", "ogg", "m4a"}
-
-
-def _media_content_type(extension: str) -> str:
-    if extension in VIDEO_EXTENSIONS:
-        return f"video/{extension}"
-    if extension in AUDIO_EXTENSIONS:
-        audio_map = {"mp3": "mpeg", "wav": "wav", "ogg": "ogg", "m4a": "mp4"}
-        return f"audio/{audio_map[extension]}"
-    return f"image/{extension if extension != 'jpg' else 'jpeg'}"
 
 
 @router.post("/meetings/upload-image")
@@ -207,11 +205,28 @@ async def upload_meeting_media(
 
 
 @router.get("/meetings/images/{filename}")
-async def get_meeting_media(filename: str) -> StreamingResponse:
+async def get_meeting_media(filename: str, request: Request):
     extension = filename.rsplit(".", 1)[-1].lower()
     content_type = _media_content_type(extension)
     try:
         content, _unused = await asyncio.to_thread(get_object, f"iris/meeting-images/{filename}")
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail="Fichier introuvable.") from error
-    return StreamingResponse(BytesIO(content), media_type=content_type)
+
+    file_size = len(content)
+    range_header = request.headers.get("range")
+
+    if range_header:
+        start_str, end_str = range_header.replace("bytes=", "").split("-")
+        start = int(start_str)
+        end = int(end_str) if end_str else file_size - 1
+        chunk = content[start:end + 1]
+        headers = {
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(len(chunk)),
+        }
+        return Response(content=chunk, status_code=206, media_type=content_type, headers=headers)
+
+    headers = {"Accept-Ranges": "bytes", "Content-Length": str(file_size)}
+    return Response(content=content, media_type=content_type, headers=headers)
