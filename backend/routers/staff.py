@@ -441,11 +441,10 @@ async def update_meeting(
     )
     return existing
 
-
 @router.delete("/meetings/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_meeting(
     meeting_id: str,
-    _: AuthenticatedHelper = Depends(current_staff),
+    helper: AuthenticatedHelper = Depends(current_responsable),  # au lieu de current_staff
 ) -> None:
     existing = await db.meeting_summaries.find_one({"id": meeting_id}, {"_id": 0})
     if not existing:
@@ -453,7 +452,6 @@ async def delete_meeting(
     if existing.get("is_locked", False):
         raise HTTPException(status_code=403, detail="Ce résumé est verrouillé.")
     await db.meeting_summaries.delete_one({"id": meeting_id})
-
 
 @router.post("/meetings/{meeting_id}/lock", response_model=MeetingSummary)
 async def toggle_meeting_lock(
