@@ -69,7 +69,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
 
   useEffect(() => {
     let isMounted = true;
-    Promise.all([api.get("/staff/absences"), api.get("/staff/meetings")])
+    Promise.all([api.get("/staff/calendrier"), api.get("/staff/meetings")])
       .then(([absencesResponse, meetingsResponse]) => {
         if (!isMounted) return;
         setAbsences(absencesResponse.data);
@@ -175,7 +175,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
     if (!selection) return;
     setSubmitting(true);
     try {
-      const response = await api.post("/staff/absences", {
+      const response = await api.post("/staff/calendrier", {
         start_date: toIsoDate(selection.start),
         end_date: toIsoDate(selection.end),
         reason,
@@ -214,7 +214,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
 
   const removeAbsence = async (absenceId) => {
     try {
-      await api.delete(`/staff/absences/${absenceId}`);
+      await api.delete(`/staff/calendrier/${absenceId}`);
       setAbsences((current) => current.filter((entry) => entry.id !== absenceId));
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -230,7 +230,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
       <header className="page-header">
         <div>
           <p className="eyebrow">ESPACE STAFF</p>
-          <h1>Calendrier des absences</h1>
+          <h1>Calendrier </h1>
         </div>
         <div className="dashboard-actions">
           {mode === "view" && isResponsable && (
