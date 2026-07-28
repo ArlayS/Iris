@@ -44,12 +44,16 @@ function TaskCard({ task, isResponsable, onRemove, onToggleSignup, isSignedUp })
             ))
           )}
         </div>
-        {onToggleSignup && (
-          <button type="button" className={`btn-ghost ${isSignedUp ? "is-secondary" : ""}`} onClick={() => onToggleSignup(task)}>
-            {isSignedUp ? <UserCheck size={16} /> : <UserPlus size={16} />}
-            {isSignedUp ? "Inscrit" : "S'inscrire"}
-          </button>
-        )}
+       {onToggleSignup && (
+  <button
+    type="button"
+    className={`btn-ghost ${isSignedUp ? "btn-locked" : ""}`}
+    onClick={() => onToggleSignup(task)}
+  >
+    {isSignedUp ? <UserMinus size={16} /> : <UserPlus size={16} />}
+    {isSignedUp ? "Se désinscrire" : "S'inscrire"}
+  </button>
+)}
       </div>
     </div>
   );
