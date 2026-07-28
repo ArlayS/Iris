@@ -1,146 +1,145 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { Calendar, FileText, NotebookPen, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { ArrowLeft, Calendar, Save } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
-import TiptapSummaryEditor from "../components/TiptapSummaryEditor";
 
-export default function MeetingSummaryEditorPage() {
-  const { meetingId } = useParams();
-  const navigate = useNavigate();
-  const isNew = meetingId === "new";
+function StatusBadge({ status }) {
+  const isPending = status === "en_attente_resume";
+  return (
+    <span className={`status-badge ${isPending ? "status-pending" : "status-done"}`}>
+      {isPending ? "À rédiger" : "Rédigé"}
+    </span>
+  );
+}
 
-  const [title, setTitle] = useState("");
-  const [agenda, setAgenda] = useState("");
-  const [meetingDate, setMeetingDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(!isNew);
-  const [saving, setSaving] = useState(false);
+export default function MeetingSummariesPage() {
+  const [meetings, setMeetings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (isNew) return;
+  const loadMeetings = () => {
+    setLoading(true);
     api
-      .get(`/staff/meetings/${meetingId}`)
-      .then((response) => {
-        setTitle(response.data.title);
-        setAgenda(response.data.agenda || "");
-        setMeetingDate(response.data.meeting_date);
-        setContent(response.data.content_markdown);
-      })
+      .get("/staff/meetings")
+      .then((response) => setMeetings(response.data))
       .catch((error) => toast.error(getErrorMessage(error)))
       .finally(() => setLoading(false));
-  }, [meetingId, isNew]);
+  };
 
-  const save = async (event) => {
-    event.preventDefault();
-    setSaving(true);
+  useEffect(() => {
+    loadMeetings();
+  }, []);
+
+  const handleDelete = async (meetingId) => {
+    if (!window.confirm("Supprimer ce résumé ?")) return;
     try {
-      if (isNew) {
-        const response = await api.post("/staff/meetings", {
-          title,
-          agenda,
-          content_markdown: content,
-          meeting_date: meetingDate,
-        });
-        toast.success("Résumé créé.");
-        navigate(`/staff/meetings/${response.data.id}`, { replace: true });
-      } else {
-        await api.put(`/staff/meetings/${meetingId}`, {
-          title,
-          agenda,
-          content_markdown: content,
-        });
-        toast.success("Résumé mis à jour.");
-      }
+      await api.delete(`/staff/meetings/${meetingId}`);
+      toast.success("Résumé supprimé.");
+      setMeetings((prev) => prev.filter((m) => m.id !== meetingId));
     } catch (error) {
       toast.error(getErrorMessage(error));
-    } finally {
-      setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="dashboard-page">
-        <p className="dashboard-loading">Chargement…</p>
-      </div>
-    );
-  }
+  const pendingCount = meetings.filter((m) => m.status === "en_attente_resume").length;
+  const doneCount = meetings.filter((m) => m.status === "redige").length;
 
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
         <div>
           <span className="dashboard-eyebrow">Espace Helpers</span>
-          <h1 className="dashboard-title">
-            {isNew ? "Nouveau résumé" : title || "Résumé de réunion"}
-          </h1>
+          <h1 className="dashboard-title">Résumés de réunion</h1>
         </div>
-        <button type="button" className="btn-ghost" onClick={() => navigate("/staff/meetings")}>
-          <ArrowLeft size={16} />
-          Retour aux résumés
-        </button>
+        <Link to="/staff/meetings/new" className="btn-primary">
+          <Plus size={16} />
+          Nouveau résumé
+        </Link>
       </div>
 
-      <form onSubmit={save} className="summary-form">
-        <div className="dashboard-card summary-meta-card">
-          <div className="summary-field">
-            <label htmlFor="title">Titre</label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Titre de la réunion"
-              required
-            />
+      <div className="stats-row">
+        <div className="dashboard-card stat-card">
+          <div className="stat-icon">
+            <NotebookPen size={18} />
           </div>
-
-          <div className="summary-field">
-            <label htmlFor="meeting-date">
-              <Calendar size={14} />
-              Date
-            </label>
-            <input
-              id="meeting-date"
-              type="date"
-              value={meetingDate}
-              onChange={(e) => setMeetingDate(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="summary-field summary-field-full">
-            <label htmlFor="agenda">Ordre du jour</label>
-            <textarea
-              id="agenda"
-              value={agenda}
-              onChange={(e) => setAgenda(e.target.value)}
-              placeholder="Points abordés, décisions à prendre…"
-              rows={2}
-            />
+          <div>
+            <div className="stat-label">Résumés totaux</div>
+            <div className="stat-value">{meetings.length}</div>
           </div>
         </div>
 
-        <div className="dashboard-card summary-editor-card">
-          <div className="summary-editor-label">Résumé</div>
-          <TiptapSummaryEditor
-            value={content}
-            onChange={setContent}
-            placeholder="Rédiger le résumé… (tapez / pour les commandes)"
-          />
+        <div className="dashboard-card stat-card">
+          <div className="stat-icon stat-icon-pending">
+            <FileText size={18} />
+          </div>
+          <div>
+            <div className="stat-label">À rédiger</div>
+            <div className="stat-value">{pendingCount}</div>
+          </div>
         </div>
 
-        <div className="summary-actions">
-          <button type="button" className="btn-ghost" onClick={() => navigate("/staff/meetings")}>
-            Annuler
-          </button>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            <Save size={16} />
-            {saving ? "Enregistrement…" : "Enregistrer le résumé"}
-          </button>
+        <div className="dashboard-card stat-card">
+          <div className="stat-icon stat-icon-done">
+            <Calendar size={18} />
+          </div>
+          <div>
+            <div className="stat-label">Rédigés</div>
+            <div className="stat-value">{doneCount}</div>
+          </div>
         </div>
-      </form>
+      </div>
+
+      <div className="dashboard-card meetings-list-card">
+        <div className="meetings-list-header">
+          <span>Réunions</span>
+        </div>
+
+        {loading ? (
+          <p className="dashboard-loading">Chargement…</p>
+        ) : meetings.length === 0 ? (
+          <p className="dashboard-empty">Aucun résumé pour le moment.</p>
+        ) : (
+          <div className="meetings-list">
+            {meetings.map((meeting) => (
+              <Link
+                to={`/staff/meetings/${meeting.id}`}
+                key={meeting.id}
+                className="meeting-row"
+              >
+                <div className="meeting-row-main">
+                  <div className="meeting-row-title">{meeting.title}</div>
+                  <div className="meeting-row-date">
+                    <Calendar size={13} />
+                    {new Date(meeting.meeting_date).toLocaleDateString("fr-FR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </div>
+                </div>
+
+                {meeting.agenda && (
+                  <div className="meeting-row-agenda">{meeting.agenda}</div>
+                )}
+
+                <div className="meeting-row-actions">
+                  <StatusBadge status={meeting.status} />
+                  <button
+                    type="button"
+                    className="icon-btn-danger"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleDelete(meeting.id);
+                    }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
