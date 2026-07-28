@@ -156,7 +156,21 @@ async def update_meeting(
         updated_at=updated_at,
     )
     return existing
-
+@router.post("/meetings/{meeting_id}/lock", response_model=MeetingSummary)
+async def toggle_meeting_lock(
+    meeting_id: str,
+    helper: AuthenticatedHelper = Depends(current_responsable),
+) -> MeetingSummary:
+    existing = await db.meeting_summaries.find_one({"id": meeting_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Résumé introuvable.")
+    new_lock_state = not existing.get("is_locked", False)
+    await db.meeting_summaries.update_one(
+        {"id": meeting_id},
+        {"$set": {"is_locked": new_lock_state}},
+    )
+    existing["is_locked"] = new_lock_state
+    return existing
 
 @router.delete("/meetings/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_meeting(
