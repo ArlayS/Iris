@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Archive, Calendar, ChevronDown, Plus, Trash2, UserCheck, UserPlus } from "lucide-react";
+import { Archive, Calendar, ChevronDown, Plus, Trash2, UserMinus, UserCheck, UserPlus } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 
 function formatDate(value) {
