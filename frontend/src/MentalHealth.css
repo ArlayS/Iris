@@ -11,6 +11,56 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+
+.tiptap-editor {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.tiptap-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: #fafbfa;
+}
+
+.tiptap-toolbar button {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.tiptap-toolbar button.is-active {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
+
+.tiptap-editor-content {
+  min-height: 200px;
+  padding: 16px 18px;
+}
+
+.tiptap-editor-content .ProseMirror {
+  min-height: 180px;
+  outline: none;
+  color: var(--ink);
+  font: 15px "IBM Plex Sans", sans-serif;
+  line-height: 1.6;
+}
+
+.tiptap-editor-content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9aa39c;
+  float: left;
+  pointer-events: none;
+  height: 0;
+}
 .staff-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
