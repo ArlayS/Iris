@@ -17,3 +17,7 @@ async def initialize_indexes() -> None:
     await db.helper_profiles.create_index("helper_id", unique=True)
     await db.resources.create_index("id", unique=True)
     await db.resources.create_index([("is_deleted", 1), ("created_at", -1)])
+    await db.absences.create_index("id", unique=True)
+    await db.absences.create_index([("start_date", 1), ("end_date", 1)])
+    await db.meeting_summaries.create_index("id", unique=True)
+    await db.meeting_summaries.create_index("created_at")
