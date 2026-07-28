@@ -15,7 +15,34 @@
 .tiptap-readonly .bn-container {
   padding: 0;
 }
+.meeting-agenda-full {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+  padding: 16px 20px;
+  background: var(--sage-soft);
+  border-radius: 12px;
+}
 
+.btn-locked {
+  background: #fdeaea;
+  border-color: #f0c4c4;
+  color: #c0392b;
+}
+
+.lock-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fdeaea;
+  color: #c0392b;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
 .tiptap-readonly {
   border: none;
 }
