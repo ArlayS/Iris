@@ -1,17 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, FileText, NotebookPen, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Calendar, FileText, NotebookPen, Plus, Radio, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, getErrorMessage } from "../api/client";
-
-function StatusBadge({ status }) {
-  const isPending = status === "en_attente_resume";
-  return (
-    <span className={`status-badge ${isPending ? "status-pending" : "status-done"}`}>
-      {isPending ? "À rédiger" : "Rédigé"}
-    </span>
-  );
-}
 
 export default function MeetingSummariesPage() {
   const [meetings, setMeetings] = useState([]);
@@ -43,87 +34,95 @@ export default function MeetingSummariesPage() {
 
   const pendingCount = meetings.filter((m) => m.status === "en_attente_resume").length;
   const doneCount = meetings.filter((m) => m.status === "redige").length;
+  const latest = meetings[0];
 
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-header">
+    <section className="page-content dashboard-page" data-testid="meetings-page">
+      <header className="page-header">
         <div>
-          <span className="dashboard-eyebrow">Espace Helpers</span>
-          <h1 className="dashboard-title">Résumés de réunion</h1>
+          <p className="eyebrow">ESPACE HELPERS</p>
+          <h1>Résumés de réunion.</h1>
         </div>
-        <Link to="/staff/meetings/new" className="btn-primary">
-          <Plus size={16} />
-          Nouveau résumé
-        </Link>
-      </div>
-
-      <div className="stats-row">
-        <div className="dashboard-card stat-card">
-          <div className="stat-icon">
-            <NotebookPen size={18} />
-          </div>
-          <div>
-            <div className="stat-label">Résumés totaux</div>
-            <div className="stat-value">{meetings.length}</div>
-          </div>
+        <div className="dashboard-actions">
+          <Link className="calm-primary-button" to="/staff/meetings/new" data-testid="new-meeting-button">
+            <Plus size={17} /> Nouveau résumé
+          </Link>
         </div>
+      </header>
 
-        <div className="dashboard-card stat-card">
-          <div className="stat-icon stat-icon-pending">
-            <FileText size={18} />
-          </div>
-          <div>
-            <div className="stat-label">À rédiger</div>
-            <div className="stat-value">{pendingCount}</div>
-          </div>
+      <div className="metrics-grid" data-testid="meeting-statistics">
+        <div className="metric-block">
+          <NotebookPen size={18} />
+          <span>Résumés totaux</span>
+          <strong>{meetings.length}</strong>
         </div>
-
-        <div className="dashboard-card stat-card">
-          <div className="stat-icon stat-icon-done">
-            <Calendar size={18} />
-          </div>
-          <div>
-            <div className="stat-label">Rédigés</div>
-            <div className="stat-value">{doneCount}</div>
-          </div>
+        <div className="metric-block">
+          <FileText size={18} />
+          <span>À rédiger</span>
+          <strong>{pendingCount}</strong>
+        </div>
+        <div className="metric-block">
+          <Calendar size={18} />
+          <span>Rédigés</span>
+          <strong>{doneCount}</strong>
         </div>
       </div>
 
-      <div className="dashboard-card meetings-list-card">
-        <div className="meetings-list-header">
-          <span>Réunions</span>
+      <section className="care-hero" data-testid="latest-meeting-hero">
+        <div>
+          <p className="eyebrow">À RÉDIGER</p>
+          <h2>{latest ? latest.title : "Aucune réunion pour le moment."}</h2>
+          <p>
+            {latest
+              ? `${new Date(latest.meeting_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })} · ${latest.agenda || "Ouvrez le résumé pour le compléter."}`
+              : "Créez un nouveau résumé pour commencer."}
+          </p>
         </div>
-
-        {loading ? (
-          <p className="dashboard-loading">Chargement…</p>
-        ) : meetings.length === 0 ? (
-          <p className="dashboard-empty">Aucun résumé pour le moment.</p>
+        {latest ? (
+          <Link to={`/staff/meetings/${latest.id}`} className="care-open">
+            <span>Ouvrir le résumé</span>
+            <ArrowRight size={20} />
+          </Link>
         ) : (
-          <div className="meetings-list">
-            {meetings.map((meeting) => (
-              <Link
-                to={`/staff/meetings/${meeting.id}`}
-                key={meeting.id}
-                className="meeting-row"
-              >
-                <div className="meeting-row-main">
-                  <div className="meeting-row-title">{meeting.title}</div>
-                  <div className="meeting-row-date">
-                    <Calendar size={13} />
+          <Radio size={32} />
+        )}
+      </section>
+
+      <div className="dashboard-grid">
+        <section className="activity-pane" data-testid="meetings-list-panel">
+          <div className="section-heading">
+            <span>RÉUNIONS</span>
+            <span className="live-dot">CONFIDENTIEL</span>
+          </div>
+
+          {loading ? (
+            <p className="dashboard-loading">Chargement…</p>
+          ) : meetings.length === 0 ? (
+            <div className="dashboard-empty">
+              <Radio size={28} />
+              <p>Aucun résumé pour le moment.</p>
+              <Link to="/staff/meetings/new">
+                Créer un premier résumé <ArrowRight size={14} />
+              </Link>
+            </div>
+          ) : (
+            <div className="ticket-table">
+              {meetings.map((meeting) => (
+                <Link to={`/staff/meetings/${meeting.id}`} className="ticket-table-row" key={meeting.id}>
+                  <span className="ticket-table-person">
+                    <strong>{meeting.title}</strong>
+                  </span>
+                  <span>
                     {new Date(meeting.meeting_date).toLocaleDateString("fr-FR", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
                     })}
-                  </div>
-                </div>
-
-                {meeting.agenda && (
-                  <div className="meeting-row-agenda">{meeting.agenda}</div>
-                )}
-
-                <div className="meeting-row-actions">
-                  <StatusBadge status={meeting.status} />
+                  </span>
+                  <span>{meeting.agenda || "—"}</span>
+                  <span className={`status-dot ${meeting.status === "redige" ? "active" : "archived"}`}>
+                    {meeting.status === "redige" ? "RÉDIGÉ" : "À RÉDIGER"}
+                  </span>
                   <button
                     type="button"
                     className="icon-btn-danger"
@@ -134,12 +133,28 @@ export default function MeetingSummariesPage() {
                   >
                     <Trash2 size={15} />
                   </button>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <aside className="system-pane">
+          <p className="eyebrow">REPÈRES</p>
+          <div>
+            <span><NotebookPen size={15} /> Résumés en attente</span>
+            <b>{pendingCount}</b>
           </div>
-        )}
+          <div>
+            <span><FileText size={15} /> Résumés rédigés</span>
+            <b>{doneCount}</b>
+          </div>
+          <div>
+            <span>Dernière réunion</span>
+            <strong>{latest ? latest.title : "—"}</strong>
+          </div>
+        </aside>
       </div>
-    </div>
+    </section>
   );
 }
