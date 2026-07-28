@@ -106,23 +106,28 @@ export default function MeetingSummariesPage() {
               </Link>
             </div>
           ) : (
-            <div className="ticket-table">
+            
+ <div className="ticket-table">
   {meetings.map((meeting) => (
-    <div className="ticket-table-row meeting-row-full" key={meeting.id}>
-      <span className="ticket-table-person">
-        <strong>{meeting.title}</strong>
-      </span>
-      <span>
-        {new Date(meeting.meeting_date).toLocaleDateString("fr-FR", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })}
-      </span>
-      <span className="meeting-agenda-full">{meeting.agenda || "Aucun ordre du jour renseigné."}</span>
-      <span className={`status-dot ${meeting.status === "redige" ? "active" : "archived"}`}>
-        {meeting.status === "redige" ? "RÉDIGÉ" : "À RÉDIGER"}
-      </span>
+    <div className="meeting-row-stacked" key={meeting.id}>
+      <div className="meeting-row-top">
+        <div className="meeting-row-heading">
+          <strong>{meeting.title}</strong>
+          <span className="meeting-row-date-inline">
+            {new Date(meeting.meeting_date).toLocaleDateString("fr-FR", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </span>
+        </div>
+        <span className={`status-dot ${meeting.status === "redige" ? "active" : "archived"}`}>
+          {meeting.status === "redige" ? "RÉDIGÉ" : "À RÉDIGER"}
+        </span>
+      </div>
+
+      <p className="meeting-agenda-full">{meeting.agenda || "Aucun ordre du jour renseigné."}</p>
+
       <div className="meeting-row-buttons">
         <Link to={`/staff/meetings/${meeting.id}`} className="btn-consult">
           Consulter <ArrowRight size={14} />
