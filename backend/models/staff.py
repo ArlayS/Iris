@@ -40,8 +40,8 @@ class QuarterlyTaskCreate(BaseModel):
     name: str = Field(min_length=1, max_length=160)
     category: str = Field(min_length=1, max_length=80)
     explanation: str = Field(default="", max_length=2000)
-    task_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
-    end_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    task_date: str = Field(min_length=1, max_length=120)
+    end_date: str | None = Field(default=None, max_length=120)
     target_role: Literal["staff", "helper", "tous"] = "tous"
 
 
