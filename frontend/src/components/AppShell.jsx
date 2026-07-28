@@ -27,6 +27,10 @@ export default function AppShell({
   const [isHelperMenuOpen, setIsHelperMenuOpen] = useState(true);
   const [isStaffMenuOpen, setIsStaffMenuOpen] = useState(true);
 
+  const canSeeStaff = isResponsable || isAdmin || isHelper || isStaff;
+  const canSeeHelper = isResponsable || isAdmin || isHelper;
+  const canSeeAdmin = isResponsable || isAdmin;
+
   const getHighestRoleLabel = () => {
     if (isResponsable) return "Responsable";
     if (isAdmin) return "Coordinateur";
@@ -35,17 +39,11 @@ export default function AppShell({
     return "Connecté";
   };
 
-  const canSeeStaff = isResponsable || isAdmin || isHelper || isStaff;
-  const canSeeHelper = isResponsable || isAdmin || isHelper;
-  const canSeeAdmin = isResponsable || isAdmin;
-
   return (
     <div className="app-shell" data-testid="iris-application">
       <aside className="sidebar nano-sidebar" data-testid="main-navigation">
         <Link className="brand nano-brand" to="/" data-testid="iris-home-link">
-  <img src={irisLogo} alt="Iris" data-testid="iris-logo" />
-</Link>
-  
+          <img src={irisLogo} alt="Iris" data-testid="iris-logo" />
         </Link>
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
@@ -139,33 +137,33 @@ export default function AppShell({
         </nav>
 
         <div className="sidebar-bottom">
-  <div className="helper-identity" data-testid="helper-identity">
-    <Link
-      className="helper-account-link"
-      to="/profile"
-      data-testid="helper-profile-link"
-      title="Ouvrir mon profil"
-    >
-      <span className="helper-avatar">
-        {helper?.avatar_url ? <img src={helper.avatar_url} alt="" /> : <RadioTower size={15} />}
-      </span>
-      <span>
-        <strong>{helper?.global_name || helper?.username}</strong>
-        <small>{getHighestRoleLabel()}</small>
-      </span>
-    </Link>
-    <button
-      aria-label="Se déconnecter"
-      className="icon-button"
-      onClick={onLogout}
-      title="Se déconnecter"
-      type="button"
-      data-testid="logout-button"
-    >
-      <LogOut size={16} />
-    </button>
-  </div>
-</div>
+          <div className="helper-identity" data-testid="helper-identity">
+            <Link
+              className="helper-account-link"
+              to="/profile"
+              data-testid="helper-profile-link"
+              title="Ouvrir mon profil"
+            >
+              <span className="helper-avatar">
+                {helper?.avatar_url ? <img src={helper.avatar_url} alt="" /> : <RadioTower size={15} />}
+              </span>
+              <span>
+                <strong>{helper?.global_name || helper?.username}</strong>
+                <small>{getHighestRoleLabel()}</small>
+              </span>
+            </Link>
+            <button
+              aria-label="Se déconnecter"
+              className="icon-button"
+              onClick={onLogout}
+              title="Se déconnecter"
+              type="button"
+              data-testid="logout-button"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        </div>
       </aside>
 
       <main className="app-main">{children}</main>
