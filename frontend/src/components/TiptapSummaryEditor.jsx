@@ -13,7 +13,16 @@ export default function TiptapSummaryEditor({ value, onChange, placeholder = "RÃ
       return;
     }
     hasLoadedInitialContent.current = true;
+async function uploadFile(file) {
+  const formData = new FormData();
+  formData.append("file", file);
 
+  const response = await api.post("/staff/meetings/upload-image", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  return response.data.url;
+}
     const loadContent = async () => {
       if (value && typeof value === "string" && value.trim().length > 0) {
         try {
