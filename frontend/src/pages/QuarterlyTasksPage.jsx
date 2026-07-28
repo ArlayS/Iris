@@ -26,11 +26,7 @@ function NominateSelect({ task, members, onNominate }) {
   const available = members.filter(
     (m) => !task.volunteers.some((v) => v.id === m.id)
   );
-const [category, setCategory] = useState("");
-const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
-const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-const isEvent = category.trim().toLowerCase().includes("event");
   const handleNominate = async () => {
     if (!selected) return;
     await onNominate(task.id, selected);
@@ -86,7 +82,15 @@ function VolunteerBadge({ volunteer, taskId, isResponsable, onRate, onRemove }) 
         </span>
         {isResponsable && (
           <>
-           
+            <button
+              type="button"
+              className="icon-btn-danger"
+              onClick={() => setEditing((c) => !c)}
+              aria-label="Noter"
+              style={{ padding: "4px" }}
+            >
+              <Star size={14} />
+            </button>
             <button
               type="button"
               className="icon-btn-danger"
@@ -171,14 +175,23 @@ function TaskCard({
           >
             {task.name}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--muted)", marginTop: "4px" }}>
-  <Calendar size={14} />
-  <span>
-    {task.end_date
-      ? `${formatDate(task.task_date)} → ${formatDate(task.end_date)}`
-      : formatDate(task.task_date)}
-  </span>
-</div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "13px",
+              color: "var(--muted)",
+              marginTop: "4px",
+            }}
+          >
+            <Calendar size={14} />
+            <span>
+              {task.end_date
+                ? `${formatDate(task.task_date)} → ${formatDate(task.end_date)}`
+                : formatDate(task.task_date)}
+            </span>
+          </div>
         </div>
         {isResponsable && onRemove && (
           <button
@@ -323,7 +336,10 @@ function ArchivedPeriodRow({ period, isOpen, onToggle, isResponsable, onDelete }
           ) : tasks.length === 0 ? (
             <p className="dashboard-empty">Aucune tâche enregistrée pour cette période.</p>
           ) : (
-            <div className="meeting-list" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div
+              className="meeting-list"
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+            >
               {tasks.map((task) => (
                 <TaskCard key={task.id} task={task} />
               ))}
@@ -350,7 +366,10 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
   const [category, setCategory] = useState("");
   const [explanation, setExplanation] = useState("");
   const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
+
+  const isEvent = category.trim().toLowerCase().includes("event");
 
   const load = async () => {
     setLoading(true);
@@ -429,34 +448,34 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
     }
   };
 
-const addTask = async (event) => {
-  event.preventDefault();
-  if (!name.trim() || !category.trim() || !taskDate) return;
-  if (isEvent && !endDate) {
-    toast.error("Merci d'indiquer une date de fin pour cet événement.");
-    return;
-  }
-  setSubmitting(true);
-  try {
-    const response = await api.post("/staff/tasks", {
-      period_id: period.id,
-      name,
-      category,
-      explanation,
-      task_date: taskDate,
-      end_date: isEvent ? endDate : null,
-    });
-    setTasks((current) => [...current, response.data]);
-    setName("");
-    setCategory("");
-    setExplanation("");
-    toast.success("Tâche ajoutée.");
-  } catch (error) {
-    toast.error(getErrorMessage(error));
-  } finally {
-    setSubmitting(false);
-  }
-};
+  const addTask = async (event) => {
+    event.preventDefault();
+    if (!name.trim() || !category.trim() || !taskDate) return;
+    if (isEvent && !endDate) {
+      toast.error("Merci d'indiquer une date de fin pour cet événement.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const response = await api.post("/staff/tasks", {
+        period_id: period.id,
+        name,
+        category,
+        explanation,
+        task_date: taskDate,
+        end_date: isEvent ? endDate : null,
+      });
+      setTasks((current) => [...current, response.data]);
+      setName("");
+      setCategory("");
+      setExplanation("");
+      toast.success("Tâche ajoutée.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const removeTask = async (taskId) => {
     try {
@@ -547,7 +566,11 @@ const addTask = async (event) => {
           )}
 
           {isResponsable && (
-            <form onSubmit={declarePeriod} className="meeting-inline-form" style={{ marginTop: "16px", marginBottom: "24px" }}>
+            <form
+              onSubmit={declarePeriod}
+              className="meeting-inline-form"
+              style={{ marginTop: "16px", marginBottom: "24px" }}
+            >
               <div className="meeting-inline-form-header">
                 <span>Déclarer une nouvelle période (3 mois)</span>
               </div>
@@ -579,7 +602,7 @@ const addTask = async (event) => {
                 className="meeting-inline-input"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="Catégorie (ex: Communication, Support…)"
+                placeholder="Catégorie (ex: Communication, Support, Event…)"
                 maxLength={80}
               />
               <textarea
@@ -589,40 +612,40 @@ const addTask = async (event) => {
                 placeholder="Explication détaillée de la tâche…"
                 rows={3}
               />
-            {isEvent ? (
-  <div style={{ display: "flex", gap: "10px" }}>
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
-      <label style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
-        Date de début
-      </label>
-      <input
-        type="date"
-        className="meeting-inline-input"
-        value={taskDate}
-        onChange={(e) => setTaskDate(e.target.value)}
-      />
-    </div>
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
-      <label style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
-        Date de fin
-      </label>
-      <input
-        type="date"
-        className="meeting-inline-input"
-        value={endDate}
-        min={taskDate}
-        onChange={(e) => setEndDate(e.target.value)}
-      />
-    </div>
-  </div>
-) : (
-  <input
-    type="date"
-    className="meeting-inline-input"
-    value={taskDate}
-    onChange={(e) => setTaskDate(e.target.value)}
-  />
-)}
+              {isEvent ? (
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+                    <label style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
+                      Date de début
+                    </label>
+                    <input
+                      type="date"
+                      className="meeting-inline-input"
+                      value={taskDate}
+                      onChange={(e) => setTaskDate(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+                    <label style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
+                      Date de fin
+                    </label>
+                    <input
+                      type="date"
+                      className="meeting-inline-input"
+                      value={endDate}
+                      min={taskDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  className="meeting-inline-input"
+                  value={taskDate}
+                  onChange={(e) => setTaskDate(e.target.value)}
+                />
+              )}
               <button type="submit" className="meeting-inline-submit" disabled={submitting}>
                 <Plus size={16} /> {submitting ? "Enregistrement…" : "Ajouter la tâche"}
               </button>
@@ -633,7 +656,10 @@ const addTask = async (event) => {
             {tasks.length === 0 ? (
               <p className="dashboard-empty">Aucune tâche pour cette période.</p>
             ) : (
-              <div className="meeting-list" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div
+                className="meeting-list"
+                style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+              >
                 {tasks.map((task) => (
                   <TaskCard
                     key={task.id}
