@@ -13,8 +13,6 @@ import Underline from "@tiptap/extension-underline";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import { Markdown } from "tiptap-markdown";
-import { SlashSuggestion, filterCommandItems } from "tiptap-slash-react";
-import "tiptap-slash-react/dist/index.css";
 import {
   Bold,
   Heading2,
@@ -32,7 +30,7 @@ import {
 export default function TiptapSummaryEditor({
   value,
   onChange,
-  placeholder = "Rédiger le résumé… (tapez / pour les commandes)",
+  placeholder = "Rédiger le résumé…",
   autoFocus = false,
 }) {
   const safeValue = typeof value === "string" ? value : "";
@@ -52,9 +50,6 @@ export default function TiptapSummaryEditor({
       Underline,
       TextStyle,
       Color,
-      SlashSuggestion.configure({
-        suggestion: { items: ({ query }) => filterCommandItems(query) },
-      }),
     ],
     content: safeValue,
     autofocus: autoFocus ? "end" : false,
@@ -95,19 +90,4 @@ export default function TiptapSummaryEditor({
         <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon size={15} /></button>
         <button type="button" onClick={() => { const url = window.prompt("URL du lien:"); if (url) editor.chain().focus().setLink({ href: url }).run(); }}><LinkIcon size={15} /></button>
         <span className="tiptap-toolbar-divider" />
-        <button type="button" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={15} /></button>
-        <button type="button" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={15} /></button>
-      </div>
-
-      {editor && (
-        <BubbleMenu editor={editor} shouldShow={({ from, to }) => from !== to} className="tiptap-bubble-menu">
-          <button type="button" className={editor.isActive("bold") ? "is-active" : ""} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={14} /></button>
-          <button type="button" className={editor.isActive("italic") ? "is-active" : ""} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={14} /></button>
-          <button type="button" className={editor.isActive("underline") ? "is-active" : ""} onClick={() => editor.chain().focus().toggleUnderline().run()}><UnderlineIcon size={14} /></button>
-        </BubbleMenu>
-      )}
-
-      <EditorContent editor={editor} className="tiptap-editor-content" />
-    </div>
-  );
-}
+        
