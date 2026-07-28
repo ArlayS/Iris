@@ -215,6 +215,7 @@ async def create_task(
         explanation=payload.explanation.strip(),
         task_date=payload.task_date,
         end_date=payload.end_date if is_event else None,
+        target_role=payload.target_role,
         created_by={
             "id": helper.id,
             "username": helper.username,
@@ -227,7 +228,6 @@ async def create_task(
     )
     await db.quarterly_tasks.insert_one(task.model_dump())
     return task
-
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
