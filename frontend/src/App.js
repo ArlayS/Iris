@@ -16,6 +16,7 @@ import TicketWorkspacePage from "./pages/TicketWorkspacePage";
 import AbsenceCalendarPage from "./pages/AbsenceCalendarPage";
 import MeetingSummariesPage from "./pages/MeetingSummariesPage";
 import MeetingSummaryEditorPage from "./pages/MeetingSummaryEditorPage";
+import QuarterlyTasksPage from "./pages/QuarterlyTasksPage";
 
 function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable }) {
   const [tickets, setTickets] = useState([]);
@@ -76,6 +77,10 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable })
         <Route
           path="/new"
           element={canSeeHelper ? <NewTicketPage onCreated={updateTicket} /> : <Navigate to="/staff/calendrier" replace />}
+        />
+            <Route
+              path="/staff/taches"
+              element={isStaff ? <QuarterlyTasksPage isResponsable={isResponsable} /> : <Navigate to="/" replace />}
         />
         <Route
           path="/tickets/:ticketId"
