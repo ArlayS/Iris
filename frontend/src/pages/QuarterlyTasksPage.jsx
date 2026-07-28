@@ -55,7 +55,7 @@ function TaskCard({ task, isResponsable, onRemove, onToggleSignup, isSignedUp })
   );
 }
 
-function ArchivedPeriodRow({ period, isOpen, onToggle }) {
+function ArchivedPeriodRow({ period, isOpen, onToggle, isResponsable, onDelete }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -74,29 +74,42 @@ function ArchivedPeriodRow({ period, isOpen, onToggle }) {
 
   return (
     <div style={{ borderBottom: "1px solid var(--line)" }}>
-      <button
-        type="button"
-        onClick={() => {
-          onToggle(period.id);
-          load();
-        }}
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          width: "100%",
-          padding: "16px 24px",
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          textAlign: "left",
-        }}
-      >
-        <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)" }}>
-          {formatDate(period.start_date)} → {formatDate(period.end_date)}
-        </span>
-        <ChevronDown size={16} style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
-      </button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <button
+          type="button"
+          onClick={() => {
+            onToggle(period.id);
+            load();
+          }}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flex: 1,
+            padding: "16px 24px",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+        >
+          <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)" }}>
+            {formatDate(period.start_date)} → {formatDate(period.end_date)}
+          </span>
+          <ChevronDown size={16} style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
+        </button>
+        {isResponsable && (
+          <button
+            type="button"
+            className="icon-btn-danger"
+            onClick={() => onDelete(period.id)}
+            aria-label="Supprimer la période"
+            style={{ marginRight: "16px" }}
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
       {isOpen && (
         <div style={{ padding: "0 24px 20px" }}>
           {loading ? (
@@ -115,6 +128,7 @@ function ArchivedPeriodRow({ period, isOpen, onToggle }) {
     </div>
   );
 }
+
 
 export default function QuarterlyTasksPage({ isResponsable, helper }) {
   const [period, setPeriod] = useState(null);
