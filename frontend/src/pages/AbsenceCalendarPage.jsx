@@ -17,9 +17,11 @@ import {
 import { fr } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import {
+  ArrowUpRight,
   CalendarPlus,
   ChevronLeft,
   ChevronRight,
+  FilePlus2,
   FileText,
   Plus,
   RadioTower,
@@ -29,7 +31,6 @@ import {
 import { toast } from "sonner";
 
 import { api, getErrorMessage } from "../api/client";
-import { renderMarkdown } from "../utils/markdown";
 
 const WEEKDAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
@@ -39,6 +40,17 @@ function toIsoDate(date) {
 
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function previewText(markdown, maxLength = 140) {
+  const plain = (markdown || "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/^#+\s*/gm, "")
+    .replace(/[*_`>-]/g, "")
+    .replace(/\n+/g, " ")
+    .trim();
+  if (plain.length <= maxLength) return plain;
+  return `${plain.slice(0, maxLength).trim()}…`;
 }
 
 function HelperAvatar({ helper, size = 20 }) {
@@ -358,15 +370,19 @@ export default function AbsenceCalendarPage({ isResponsable }) {
                   {viewedDayMeetings.length > 0 && (
                     <div className="absence-detail-list">
                       {viewedDayMeetings.map((meeting) => (
-                        <Link className="absence-detail-row absence-meeting-row" to={`/staff/meetings/${meeting.id}`} key={meeting.id}>
+                        <div className="absence-detail-row absence-meeting-info-row" key={meeting.id}>
                           <span className="absence-meeting-icon">
                             <FileText size={16} />
                           </span>
                           <div>
                             <strong>{meeting.title}</strong>
                             <small>Par {meeting.author.display_name || meeting.author.username}</small>
+                            {meeting.content_markdown && <p>{previewText(meeting.content_markdown)}</p>}
                           </div>
-                        </Link>
+                          <Link className="icon-button absence-meeting-open" to={`/staff/meetings/${meeting.id}`} aria-label="Ouvrir la réunion" title="Ouvrir">
+                            <ArrowUpRight size={16} />
+                          </Link>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -395,31 +411,29 @@ export default function AbsenceCalendarPage({ isResponsable }) {
           )}
 
           {mode === "meeting" && meetingDay && (
-            <div className="absence-confirm-panel">
-              <div>
+            <div className="meeting-inline-form">
+              <div className="meeting-inline-form-header">
                 <strong>{capitalize(format(meetingDay, "EEEE d MMMM yyyy", { locale: fr }))}</strong>
                 <button type="button" className="icon-button" onClick={() => setMeetingDay(null)} aria-label="Réinitialiser la sélection">
                   <X size={15} />
                 </button>
               </div>
               <input
-                className="meeting-title-input"
+                className="meeting-inline-input"
                 value={meetingTitle}
                 onChange={(event) => setMeetingTitle(event.target.value)}
                 placeholder="Titre de la réunion"
                 maxLength={160}
               />
-              <div className="meeting-editor-grid meeting-editor-grid-compact">
-                <textarea
-                  value={meetingContent}
-                  onChange={(event) => setMeetingContent(event.target.value)}
-                  placeholder={"# Points abordés\n- ...\n**Décisions :**"}
-                  rows={7}
-                />
-                <div className="meeting-preview meeting-preview-compact" dangerouslySetInnerHTML={{ __html: renderMarkdown(meetingContent) }} />
-              </div>
-              <button className="calm-primary-button" type="button" onClick={submitMeeting} disabled={submitting}>
-                {submitting ? "Enregistrement…" : "Ajouter la réunion"}
+              <textarea
+                className="meeting-inline-textarea"
+                value={meetingContent}
+                onChange={(event) => setMeetingContent(event.target.value)}
+                placeholder="Rédiger le résumé de la réunion…"
+                rows={6}
+              />
+              <button className="meeting-inline-submit" type="button" onClick={submitMeeting} disabled={submitting}>
+                <FilePlus2 size={17} /> {submitting ? "Enregistrement…" : "Ajouter la réunion"}
               </button>
             </div>
           )}
