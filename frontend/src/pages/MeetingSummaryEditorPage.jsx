@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { api, getErrorMessage } from "../api/client";
-import { renderMarkdown } from "../utils/markdown";
+import TiptapSummaryEditor from "../components/TiptapSummaryEditor";
 
 
 export default function MeetingSummaryEditorPage() {
@@ -12,6 +12,8 @@ export default function MeetingSummaryEditorPage() {
   const isNew = meetingId === "new";
 
   const [title, setTitle] = useState("");
+  const [agenda, setAgenda] = useState("");
+  const [meetingDate, setMeetingDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -21,6 +23,8 @@ export default function MeetingSummaryEditorPage() {
     api.get(`/staff/meetings/${meetingId}`)
       .then((response) => {
         setTitle(response.data.title);
+        setAgenda(response.data.agenda || "");
+        setMeetingDate(response.data.meeting_date);
         setContent(response.data.content_markdown);
       })
       .catch((error) => toast.error(getErrorMessage(error)))
@@ -32,11 +36,16 @@ export default function MeetingSummaryEditorPage() {
     setSaving(true);
     try {
       if (isNew) {
-        const response = await api.post("/staff/meetings", { title, content_markdown: content });
+        const response = await api.post("/staff/meetings", {
+          title,
+          agenda,
+          content_markdown: content,
+          meeting_date: meetingDate,
+        });
         toast.success("Résumé créé.");
         navigate(`/staff/meetings/${response.data.id}`, { replace: true });
       } else {
-        await api.put(`/staff/meetings/${meetingId}`, { title, content_markdown: content });
+        await api.put(`/staff/meetings/${meetingId}`, { title, agenda, content_markdown: content });
         toast.success("Résumé mis à jour.");
       }
     } catch (error) {
@@ -66,15 +75,26 @@ export default function MeetingSummaryEditorPage() {
           maxLength={160}
           required
         />
-        <div className="meeting-editor-grid">
-          <textarea
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            placeholder={"# Points abordés\n- ...\n**Décisions :**"}
-            rows={20}
-          />
-          <div className="meeting-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />
+        <div className="meeting-editor-meta">
+          <label>
+            Date de la réunion
+            <input
+              type="date"
+              value={meetingDate}
+              onChange={(event) => setMeetingDate(event.target.value)}
+              required
+            />
+          </label>
         </div>
+        <textarea
+          className="meeting-agenda-input"
+          value={agenda}
+          onChange={(event) => setAgenda(event.target.value)}
+          placeholder="Raison / ordre du jour"
+          maxLength={4000}
+          rows={2}
+        />
+        <TiptapSummaryEditor value={content} onChange={setContent} />
         <button className="calm-primary-button" type="submit" disabled={saving}>
           {saving ? "Enregistrement…" : "Enregistrer"}
         </button>
