@@ -4,7 +4,7 @@ import { ArrowRight, Calendar, FileText, NotebookPen, Plus, Radio, Trash2 } from
 import { toast } from "sonner";
 import { api, getErrorMessage } from "../api/client";
 
-export default function MeetingSummariesPage() {
+export default function MeetingSummariesPage({ isResponsable }) { // ← ajout de la prop
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -101,43 +101,45 @@ export default function MeetingSummariesPage() {
               </Link>
             </div>
           ) : (
-            
- <div className="ticket-table">
-  {meetings.map((meeting) => (
-    <div className="meeting-row-stacked" key={meeting.id}>
-      <div className="meeting-row-top">
-        <div className="meeting-row-heading">
-          <strong>{meeting.title}</strong>
-          <span className="meeting-row-date-inline">
-            {new Date(meeting.meeting_date).toLocaleDateString("fr-FR", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
-        </div>
-     <span className={`status-dot ${meeting.status === "redige" ? "active" : "pending"}`}>
-  {meeting.status === "redige" ? "RÉDIGÉ" : "À RÉDIGER"}
-</span>
-      </div>
+            <div className="ticket-table">
+              {meetings.map((meeting) => (
+                <div className="meeting-row-stacked" key={meeting.id}>
+                  <div className="meeting-row-top">
+                    <div className="meeting-row-heading">
+                      <strong>{meeting.title}</strong>
+                      <span className="meeting-row-date-inline">
+                        {new Date(meeting.meeting_date).toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    <span className={`status-dot ${meeting.status === "redige" ? "active" : "pending"}`}>
+                      {meeting.status === "redige" ? "RÉDIGÉ" : "À RÉDIGER"}
+                    </span>
+                  </div>
 
-      <p className="meeting-agenda-full">{meeting.agenda || "Aucun ordre du jour renseigné."}</p>
+                  <p className="meeting-agenda-full">{meeting.agenda || "Aucun ordre du jour renseigné."}</p>
 
-      <div className="meeting-row-buttons">
-        <Link to={`/staff/meetings/${meeting.id}`} className="btn-consult">
-          Consulter <ArrowRight size={14} />
-        </Link>
-        <button
-          type="button"
-          className="icon-btn-danger"
-          onClick={() => handleDelete(meeting.id)}
-        >
-          <Trash2 size={15} />
-        </button>
-      </div>
-    </div>
-  ))}
-</div>
+                  <div className="meeting-row-buttons">
+                    <Link to={`/staff/meetings/${meeting.id}`} className="btn-consult">
+                      Consulter <ArrowRight size={14} />
+                    </Link>
+                    {isResponsable && ( // ← condition ajoutée ici
+                      <button
+                        type="button"
+                        className="icon-btn-danger"
+                        onClick={() => handleDelete(meeting.id)}
+                        aria-label="Supprimer le résumé"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </section>
 
