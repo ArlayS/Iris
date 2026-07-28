@@ -4,9 +4,7 @@ from pydantic import BaseModel, Field
 
 from models.ticket import HelperIdentity
 
-class VolunteerRating(BaseModel):
-    rating: int = Field(ge=1, le=5)
-    note: str = Field(default="", max_length=500)
+
 class AbsenceEntry(BaseModel):
     id: str
     helper: HelperIdentity
@@ -14,8 +12,17 @@ class AbsenceEntry(BaseModel):
     end_date: str
     reason: str = ""
     created_at: str
+
+
+class AbsenceCreate(BaseModel):
+    start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    reason: str = Field(default="", max_length=500)
+
+
 class QuarterlyPeriodCreate(BaseModel):
-    start_date: str  # format YYYY-MM-DD
+    start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+
 
 class QuarterlyPeriod(BaseModel):
     id: str
@@ -25,12 +32,19 @@ class QuarterlyPeriod(BaseModel):
     created_by: dict
     created_at: str
 
+
 class QuarterlyTaskCreate(BaseModel):
     period_id: str
-    name: str
-    category: str
-    explanation: str
-    task_date: str  # format YYYY-MM-DD
+    name: str = Field(min_length=1, max_length=160)
+    category: str = Field(min_length=1, max_length=80)
+    explanation: str = Field(default="", max_length=2000)
+    task_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+class VolunteerRating(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    note: str = Field(default="", max_length=500)
+
 
 class QuarterlyTask(BaseModel):
     id: str
@@ -43,11 +57,6 @@ class QuarterlyTask(BaseModel):
     volunteers: list[dict] = []
     created_at: str
     updated_at: str
-    
-class AbsenceCreate(BaseModel):
-    start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
-    end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
-    reason: str = Field(default="", max_length=500)
 
 
 MeetingStatus = Literal["en_attente_resume", "redige"]
