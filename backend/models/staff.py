@@ -33,6 +33,7 @@ class MeetingSummary(BaseModel):
     author: HelperIdentity
     created_at: str
     updated_at: str
+    is_locked: bool = False
 
 
 class MeetingSummaryCreate(BaseModel):
