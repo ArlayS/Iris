@@ -11,6 +11,70 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+
+.meeting-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.meeting-editor-main {
+  padding: clamp(24px, 3vw, 32px);
+  border-right: 1px solid var(--line);
+}
+
+.meeting-editor-side {
+  padding: clamp(24px, 3vw, 32px);
+  background: #f5f8f5;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.meeting-editor-side .eyebrow {
+  margin-bottom: 6px;
+}
+
+.meeting-editor-side > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.meeting-editor-side > div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.meeting-editor-side span {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.meeting-editor-side b,
+.meeting-editor-side strong {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+@media (max-width: 980px) {
+  .meeting-editor-grid {
+    grid-template-columns: 1fr;
+  }
+  .meeting-editor-main {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
 .status-dot.pending {
   background: #fdf3e0;
   color: #b8860b;
