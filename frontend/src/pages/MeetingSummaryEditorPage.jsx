@@ -218,7 +218,7 @@ export default function MeetingSummaryEditorPage({ isResponsable }) {
             <div className="section-heading">
               <span>ORDRE DU JOUR</span>
             </div>
-            <p className="meeting-agenda-full" style={{ marginBottom: "20px" }}>
+            <p className="meeting-agenda-full" style={{ marginBottom: "20px", background: "#FFFFFF" }}>
               {agenda || "Aucun ordre du jour renseigné."}
             </p>
 
