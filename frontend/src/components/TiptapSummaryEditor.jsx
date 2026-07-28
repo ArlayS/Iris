@@ -5,6 +5,8 @@ import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { api } from "../api/client";
 
+const BACKEND_BASE_URL = "https://api.loasis.app";
+
 async function uploadFile(file) {
   const formData = new FormData();
   formData.append("file", file);
@@ -13,7 +15,10 @@ async function uploadFile(file) {
     headers: { "Content-Type": "multipart/form-data" },
   });
 
-  return response.data.url;
+  const relativeUrl = response.data.url;
+  return relativeUrl.startsWith("http")
+    ? relativeUrl
+    : `${BACKEND_BASE_URL}${relativeUrl}`;
 }
 
 export default function TiptapSummaryEditor({
