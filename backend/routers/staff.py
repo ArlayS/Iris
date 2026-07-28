@@ -150,19 +150,37 @@ async def delete_meeting(
     result = await db.meeting_summaries.delete_one({"id": meeting_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Résumé introuvable.")
+MEETING_MEDIA_TYPES = {
+    "jpg", "jpeg", "png", "webp", "gif",
+    "mp4", "webm", "mov",
+    "mp3", "wav", "ogg", "m4a",
+}
+MAX_MEETING_MEDIA_SIZE = 50 * 1024 * 1024  # 50 Mo
+
+VIDEO_EXTENSIONS = {"mp4", "webm", "mov"}
+AUDIO_EXTENSIONS = {"mp3", "wav", "ogg", "m4a"}
+
+
+def _media_content_type(extension: str) -> str:
+    if extension in VIDEO_EXTENSIONS:
+        return f"video/{extension}"
+    if extension in AUDIO_EXTENSIONS:
+        audio_map = {"mp3": "mpeg", "wav": "wav", "ogg": "ogg", "m4a": "mp4"}
+        return f"audio/{audio_map[extension]}"
+    return f"image/{extension if extension != 'jpg' else 'jpeg'}"
 
 
 @router.post("/meetings/upload-image")
-async def upload_meeting_image(
+async def upload_meeting_media(
     file: UploadFile = File(...),
     _: AuthenticatedHelper = Depends(current_staff),
 ) -> dict:
     if not file.filename:
-        raise HTTPException(status_code=422, detail="Choisissez une image à envoyer.")
+        raise HTTPException(status_code=422, detail="Choisissez un fichier à envoyer.")
 
     extension = extension_from_filename(file.filename)
-    if extension not in MEETING_IMAGE_TYPES:
-        raise HTTPException(status_code=422, detail="Format d'image non autorisé.")
+    if extension not in MEETING_MEDIA_TYPES:
+        raise HTTPException(status_code=422, detail="Format non autorisé.")
 
     temp_path: str | None = None
     total_size = 0
@@ -171,17 +189,17 @@ async def upload_meeting_image(
             temp_path = temp_file.name
             while chunk := await file.read(1024 * 1024):
                 total_size += len(chunk)
-                if total_size > MAX_MEETING_IMAGE_SIZE:
-                    raise HTTPException(status_code=413, detail="Image trop volumineuse (max 10 Mo).")
+                if total_size > MAX_MEETING_MEDIA_SIZE:
+                    raise HTTPException(status_code=413, detail="Fichier trop volumineux (max 50 Mo).")
                 temp_file.write(chunk)
 
-        image_id = str(uuid4())
-        image_filename = f"{image_id}.{extension}"
-        image_path = f"iris/meeting-images/{image_filename}"
-        content_type = f"image/{extension if extension != 'jpg' else 'jpeg'}"
-        await asyncio.to_thread(put_object_from_file, image_path, temp_path, content_type)
+        media_id = str(uuid4())
+        media_filename = f"{media_id}.{extension}"
+        media_path = f"iris/meeting-images/{media_filename}"
+        content_type = _media_content_type(extension)
+        await asyncio.to_thread(put_object_from_file, media_path, temp_path, content_type)
 
-        return {"url": f"/api/staff/meetings/images/{image_filename}"}
+        return {"url": f"/api/staff/meetings/images/{media_filename}"}
     finally:
         await file.close()
         if temp_path and os.path.exists(temp_path):
@@ -189,11 +207,11 @@ async def upload_meeting_image(
 
 
 @router.get("/meetings/images/{filename}")
-async def get_meeting_image(filename: str) -> StreamingResponse:
+async def get_meeting_media(filename: str) -> StreamingResponse:
     extension = filename.rsplit(".", 1)[-1].lower()
-    content_type = f"image/{extension if extension != 'jpg' else 'jpeg'}"
+    content_type = _media_content_type(extension)
     try:
         content, _unused = await asyncio.to_thread(get_object, f"iris/meeting-images/{filename}")
     except FileNotFoundError as error:
-        raise HTTPException(status_code=404, detail="Image introuvable.") from error
+        raise HTTPException(status_code=404, detail="Fichier introuvable.") from error
     return StreamingResponse(BytesIO(content), media_type=content_type)
