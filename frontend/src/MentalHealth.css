@@ -17,7 +17,15 @@
   gap: 22px;
   align-items: start;
 }
+.calm-primary-button.is-secondary {
+  background: var(--sage-soft);
+  border-color: #cadccf;
+  color: var(--sage);
+}
 
+.calm-primary-button.is-secondary:hover {
+  background: #dbe7dd;
+}
 .absence-avatar {
   border-radius: 999px;
   overflow: hidden;
