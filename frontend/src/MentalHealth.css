@@ -11,6 +11,19 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+
+.tiptap-editor {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+  min-height: 250px;
+}
+
+.tiptap-editor .bn-container {
+  min-height: 250px;
+  padding: 8px;
+}
 .tiptap-editor-content table {
   border-collapse: collapse;
   width: 100%;
