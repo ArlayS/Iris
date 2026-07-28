@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
@@ -13,6 +14,7 @@ from services.auth_service import (
     exchange_code,
     has_iris_access,
     is_admin_helper,
+    is_staff_helper,
     parse_session,
 )
 
@@ -38,9 +40,6 @@ async def discord_login() -> RedirectResponse:
     return response
 
 
-from fastapi.responses import RedirectResponse
-from urllib.parse import quote
-
 @router.get("/discord/callback")
 async def discord_callback(code: str, state: str, request: Request) -> RedirectResponse:
     if state != request.cookies.get(STATE_COOKIE):
@@ -63,6 +62,7 @@ async def discord_callback(code: str, state: str, request: Request) -> RedirectR
     response.delete_cookie(STATE_COOKIE, domain=COOKIE_DOMAIN)
     return response
 
+
 @router.get("/session", response_model=AuthSession)
 async def session(request: Request, response: Response) -> AuthSession:
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
@@ -72,25 +72,26 @@ async def session(request: Request, response: Response) -> AuthSession:
     if raw_session and not helper:
         response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
         response.delete_cookie(SESSION_COOKIE)
-        return AuthSession(authenticated=False, helper=None, is_admin=False)
+        return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False)
+    is_admin = False
+    is_staff = False
     if helper:
         try:
-            if not await has_iris_access(helper.id):
+            if not await has_iris_access(helper.id) and not await is_staff_helper(helper.id):
                 response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
                 response.delete_cookie(SESSION_COOKIE)
-                return AuthSession(authenticated=False, helper=None, is_admin=False)
+                return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False)
             is_admin = await is_admin_helper(helper.id)
+            is_staff = await is_staff_helper(helper.id)
         except HTTPException:
             response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
             response.delete_cookie(SESSION_COOKIE)
-            return AuthSession(authenticated=False, helper=None, is_admin=False)
-    else:
-        is_admin = False
-    return AuthSession(authenticated=helper is not None, helper=helper, is_admin=is_admin)
+            return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False)
+    return AuthSession(authenticated=helper is not None, helper=helper, is_admin=is_admin, is_staff=is_staff)
 
 
 @router.post("/logout", response_model=AuthSession)
 async def logout(response: Response) -> AuthSession:
     response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
     response.delete_cookie(SESSION_COOKIE)
-    return AuthSession(authenticated=False, helper=None, is_admin=False)
+    return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False)
