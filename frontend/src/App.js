@@ -18,7 +18,7 @@ import MeetingSummariesPage from "./pages/MeetingSummariesPage";
 import MeetingSummaryEditorPage from "./pages/MeetingSummaryEditorPage";
 
 
-function AuthenticatedApp({ helper, isAdmin, isStaff }) {
+function AuthenticatedApp({ helper, isAdmin, isStaff, isResponsable }) {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ active_count: 0, archived_count: 0, total_messages: 0 });
 
@@ -62,7 +62,8 @@ function AuthenticatedApp({ helper, isAdmin, isStaff }) {
         <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
         <Route path="/resources" element={<ResourcesPage isAdmin={isAdmin} />} />
         <Route path="/staff/absences" element={isStaff ? <AbsenceCalendarPage /> : <Navigate to="/" replace />} />
-        <Route path="/staff/meetings" element={isStaff ? <MeetingSummariesPage /> : <Navigate to="/" replace />} />
+        <Route path="/staff/meetings" element={isStaff ? <MeetingSummariesPage isResponsable={isResponsable} /> : <Navigate to="/" replace />} />
+        <Route path="/staff/meetings/new" element={isStaff && isResponsable ? <MeetingSummaryEditorPage /> : <Navigate to="/staff/meetings" replace />} />
         <Route path="/staff/meetings/:meetingId" element={isStaff ? <MeetingSummaryEditorPage /> : <Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -90,7 +91,16 @@ function App() {
   return (
     <div className="App" data-testid="iris-app">
       <BrowserRouter>
-        {session.authenticated ? <AuthenticatedApp helper={session.helper} isAdmin={session.is_admin} isStaff={session.is_staff} /> : <LoginPage />}
+        {session.authenticated ? (
+          <AuthenticatedApp
+            helper={session.helper}
+            isAdmin={session.is_admin}
+            isStaff={session.is_staff}
+            isResponsable={session.is_responsable}
+          />
+        ) : (
+          <LoginPage />
+        )}
         <Toaster theme="light" position="bottom-right" />
       </BrowserRouter>
     </div>
