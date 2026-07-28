@@ -18,7 +18,7 @@ export default function AppShell({ children, helper, tickets, onLogout, isAdmin,
             <>
               <button className="helper-menu-trigger" type="button" onClick={() => setIsStaffMenuOpen((current) => !current)} aria-expanded={isStaffMenuOpen} data-testid="staff-menu-toggle"><Users size={18} /><span>Staff</span><ChevronDown className={isStaffMenuOpen ? "is-open" : ""} size={16} /></button>
               <div className={`helper-menu-links ${isStaffMenuOpen ? "is-open" : ""}`} data-testid="staff-menu-links">
-                <NavLink className="nav-link" to="/staff/absences" data-testid="staff-absences-link" title="Calendrier"><CalendarDays size={18} /><span>Calendrier</span></NavLink>
+                <NavLink className="nav-link" to="/staff/calendrier" data-testid="staff-absences-link" title="Calendrier"><CalendarDays size={18} /><span>Calendrier</span></NavLink>
                 <NavLink className="nav-link" to="/staff/meetings" data-testid="staff-meetings-link" title="Résumés de réunions"><FileStack size={18} /><span>Réunions</span></NavLink>
               </div>
             </>
