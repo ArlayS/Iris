@@ -13,7 +13,19 @@ import {
 } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 
+function normalizeText(value) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function isIsoDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value || "");
+}
+
 function formatDate(value) {
+  if (!isIsoDate(value)) return value;
   return new Date(value).toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "long",
@@ -385,7 +397,9 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
 
   const [roleFilter, setRoleFilter] = useState("tous");
 
-  const isEvent = category.trim().toLowerCase().includes("event");
+  const normalizedCategory = normalizeText(category.trim());
+  const isEvent = normalizedCategory.includes("event");
+  const isRedactionnel = normalizedCategory.includes("redactionnel");
 
   const load = async () => {
     setLoading(true);
@@ -466,8 +480,8 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
 
   const addTask = async (event) => {
     event.preventDefault();
-    if (!name.trim() || !category.trim() || !taskDate) return;
-    if (isEvent && !endDate) {
+    if (!name.trim() || !category.trim() || !taskDate.trim()) return;
+    if (isEvent && !isRedactionnel && !endDate) {
       toast.error("Merci d'indiquer une date de fin pour cet événement.");
       return;
     }
@@ -479,7 +493,7 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
         category,
         explanation,
         task_date: taskDate,
-        end_date: isEvent ? endDate : null,
+        end_date: isEvent && !isRedactionnel ? endDate : null,
         target_role: targetRole,
       });
       setTasks((current) => [...current, response.data]);
@@ -629,7 +643,7 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
                   className="meeting-inline-input"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  placeholder="Catégorie (ex: Communication, Support, Event…)"
+                  placeholder="Catégorie (ex: Communication, Event, Rédactionnel…)"
                   maxLength={80}
                   style={{ flex: 1 }}
                 />
@@ -651,7 +665,15 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
                 placeholder="Explication détaillée de la tâche…"
                 rows={3}
               />
-              {isEvent ? (
+              {isRedactionnel ? (
+                <input
+                  className="meeting-inline-input"
+                  value={taskDate}
+                  onChange={(e) => setTaskDate(e.target.value)}
+                  placeholder="Date libre (ex: À déterminer, Semaine du 12 août…)"
+                  maxLength={120}
+                />
+              ) : isEvent ? (
                 <div style={{ display: "flex", gap: "10px" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
                     <label style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600 }}>
