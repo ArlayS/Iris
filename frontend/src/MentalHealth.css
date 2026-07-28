@@ -18,6 +18,34 @@
 .tiptap-readonly .bn-container {
   padding: 0;
 }
+.summary-field textarea,
+.summary-field input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.activity-pane {
+  overflow: hidden;
+  min-width: 0;
+}
+.page-header {
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.page-header h1 {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  flex: 1 1 100%;
+}
+
+.dashboard-actions {
+  flex: 0 0 auto;
+}
+
 .meeting-agenda-full {
   font-size: 14px;
   color: var(--muted);
