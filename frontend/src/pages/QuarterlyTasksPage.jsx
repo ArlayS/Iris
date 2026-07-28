@@ -184,48 +184,50 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
               <div className="meeting-list">
                 {tasks.map((task) => (
                   <div key={task.id} className="meeting-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "10px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                      <div>
-                        <span className="category-badge">{task.category}</span>
-                        <div style={{ fontWeight: 600, fontSize: "15px", marginTop: "6px" }}>{task.name}</div>
-                        <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>
-                          <Calendar size={12} style={{ verticalAlign: "middle", marginRight: "4px" }} />
-                          {formatDate(task.task_date)}
-                        </div>
-                      </div>
-                      {isResponsable && (
-                        <button type="button" className="icon-btn-danger" onClick={() => removeTask(task.id)} aria-label="Supprimer">
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+    <div style={{ minWidth: 0, flex: 1 }}>
+      <span className="category-badge">{task.category}</span>
+      <div style={{ fontWeight: 700, fontSize: "20px", marginTop: "8px", color: "var(--ink)" }}>{task.name}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--muted)", marginTop: "4px" }}>
+        <Calendar size={14} />
+        <span>{formatDate(task.task_date)}</span>
+      </div>
+    </div>
+    {isResponsable && (
+      <button type="button" className="icon-btn-danger" onClick={() => removeTask(task.id)} aria-label="Supprimer">
+        <Trash2 size={16} />
+      </button>
+    )}
+  </div>
 
-                    {task.explanation && (
-                      <p style={{ fontSize: "13px", color: "var(--muted)", margin: 0, lineHeight: 1.5 }}>{task.explanation}</p>
-                    )}
+  {task.explanation && (
+    <p style={{ fontSize: "13px", color: "var(--muted)", margin: 0, lineHeight: 1.6, whiteSpace: "normal", wordBreak: "break-word", overflowWrap: "anywhere" }}>
+      {task.explanation}
+    </p>
+  )}
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
-                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                        {task.volunteers.length === 0 ? (
-                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>Personne inscrit pour l'instant.</span>
-                        ) : (
-                          task.volunteers.map((v) => (
-                            <span key={v.id} className="status-badge status-done">
-                              {v.display_name || v.username}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        className={`btn-ghost ${isSignedUp(task) ? "is-secondary" : ""}`}
-                        onClick={() => toggleSignup(task)}
-                      >
-                        {isSignedUp(task) ? <UserCheck size={16} /> : <UserPlus size={16} />}
-                        {isSignedUp(task) ? "Inscrit" : "S'inscrire"}
-                      </button>
-                    </div>
-                  </div>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px", flexWrap: "wrap", gap: "10px" }}>
+    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+      {task.volunteers.length === 0 ? (
+        <span style={{ fontSize: "12px", color: "var(--muted)" }}>Personne inscrit pour l'instant.</span>
+      ) : (
+        task.volunteers.map((v) => (
+          <span key={v.id} className="status-badge status-done">
+            {v.display_name || v.username}
+          </span>
+        ))
+      )}
+    </div>
+    <button
+      type="button"
+      className={`btn-ghost ${isSignedUp(task) ? "is-secondary" : ""}`}
+      onClick={() => toggleSignup(task)}
+    >
+      {isSignedUp(task) ? <UserCheck size={16} /> : <UserPlus size={16} />}
+      {isSignedUp(task) ? "Inscrit" : "S'inscrire"}
+    </button>
+  </div>
+</div>
                 ))}
               </div>
             )}
