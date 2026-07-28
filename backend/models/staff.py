@@ -39,11 +39,7 @@ class QuarterlyTaskCreate(BaseModel):
     category: str = Field(min_length=1, max_length=80)
     explanation: str = Field(default="", max_length=2000)
     task_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
-
-
-class VolunteerRating(BaseModel):
-    rating: int = Field(ge=1, le=5)
-    note: str = Field(default="", max_length=500)
+    end_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
 
 
 class QuarterlyTask(BaseModel):
@@ -53,11 +49,16 @@ class QuarterlyTask(BaseModel):
     category: str
     explanation: str
     task_date: str
+    end_date: str | None = None
     created_by: dict
     volunteers: list[dict] = []
     created_at: str
     updated_at: str
 
+
+class VolunteerRating(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    note: str = Field(default="", max_length=500)
 
 MeetingStatus = Literal["en_attente_resume", "redige"]
 
