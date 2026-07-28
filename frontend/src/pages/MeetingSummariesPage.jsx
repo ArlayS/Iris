@@ -43,11 +43,6 @@ export default function MeetingSummariesPage() {
           <p className="eyebrow">ESPACE STAFF</p>
           <h1>Résumés de réunion.</h1>
         </div>
-        <div className="dashboard-actions">
-          <Link className="calm-primary-button" to="/staff/meetings/new" data-testid="new-meeting-button">
-            <Plus size={17} /> Nouveau résumé
-          </Link>
-        </div>
       </header>
 
       <div className="metrics-grid" data-testid="meeting-statistics">
