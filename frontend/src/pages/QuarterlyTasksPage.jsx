@@ -21,6 +21,12 @@ function formatDate(value) {
   });
 }
 
+const ROLE_LABELS = {
+  tous: "Tous",
+  staff: "Staff",
+  helper: "Helper",
+};
+
 function NominateSelect({ task, members, onNominate }) {
   const [selected, setSelected] = useState("");
   const available = members.filter(
@@ -164,7 +170,14 @@ function TaskCard({
         }}
       >
         <div style={{ minWidth: 0, flex: 1 }}>
-          <span className="category-badge">{task.category}</span>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            <span className="category-badge">{task.category}</span>
+            {task.target_role && task.target_role !== "tous" && (
+              <span className="status-badge">
+                {ROLE_LABELS[task.target_role] || task.target_role}
+              </span>
+            )}
+          </div>
           <div
             style={{
               fontWeight: 700,
@@ -367,7 +380,10 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
   const [explanation, setExplanation] = useState("");
   const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [targetRole, setTargetRole] = useState("tous");
   const [submitting, setSubmitting] = useState(false);
+
+  const [roleFilter, setRoleFilter] = useState("tous");
 
   const isEvent = category.trim().toLowerCase().includes("event");
 
@@ -464,11 +480,13 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
         explanation,
         task_date: taskDate,
         end_date: isEvent ? endDate : null,
+        target_role: targetRole,
       });
       setTasks((current) => [...current, response.data]);
       setName("");
       setCategory("");
       setExplanation("");
+      setTargetRole("tous");
       toast.success("Tâche ajoutée.");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -537,6 +555,14 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
   const isSignedUp = (task) =>
     helper && task.volunteers.some((v) => v.id === helper.id);
 
+  const filteredTasks = tasks.filter(
+    (task) =>
+      roleFilter === "tous" ||
+      task.target_role === roleFilter ||
+      !task.target_role ||
+      task.target_role === "tous"
+  );
+
   return (
     <section className="page-content dashboard-page" data-testid="quarterly-tasks-page">
       <header className="page-header">
@@ -598,13 +624,26 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
                 placeholder="Nom de la tâche"
                 maxLength={160}
               />
-              <input
-                className="meeting-inline-input"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="Catégorie (ex: Communication, Support, Event…)"
-                maxLength={80}
-              />
+              <div style={{ display: "flex", gap: "10px" }}>
+                <input
+                  className="meeting-inline-input"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="Catégorie (ex: Communication, Support, Event…)"
+                  maxLength={80}
+                  style={{ flex: 1 }}
+                />
+                <select
+                  className="meeting-inline-input"
+                  value={targetRole}
+                  onChange={(e) => setTargetRole(e.target.value)}
+                  style={{ maxWidth: "160px" }}
+                >
+                  <option value="tous">Rôle : Tous</option>
+                  <option value="staff">Rôle : Staff</option>
+                  <option value="helper">Rôle : Helper</option>
+                </select>
+              </div>
               <textarea
                 className="meeting-inline-textarea"
                 value={explanation}
@@ -652,15 +691,28 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
             </form>
           )}
 
+          <div style={{ display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
+            {["tous", "staff", "helper"].map((r) => (
+              <button
+                key={r}
+                type="button"
+                className={`btn-ghost ${roleFilter === r ? "btn-locked" : ""}`}
+                onClick={() => setRoleFilter(r)}
+              >
+                {ROLE_LABELS[r]}
+              </button>
+            ))}
+          </div>
+
           <div className="meetings-list-card dashboard-card">
-            {tasks.length === 0 ? (
-              <p className="dashboard-empty">Aucune tâche pour cette période.</p>
+            {filteredTasks.length === 0 ? (
+              <p className="dashboard-empty">Aucune tâche ne correspond à ce filtre.</p>
             ) : (
               <div
                 className="meeting-list"
                 style={{ display: "flex", flexDirection: "column", gap: "12px" }}
               >
-                {tasks.map((task) => (
+                {filteredTasks.map((task) => (
                   <TaskCard
                     key={task.id}
                     task={task}
