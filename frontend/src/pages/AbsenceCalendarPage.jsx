@@ -15,7 +15,8 @@ import {
   subMonths,
 } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarPlus, ChevronLeft, ChevronRight, RadioTower, Trash2, X } from "lucide-react";
+import { CalendarPlus, ChevronLeft, ChevronRight, Plus, RadioTower, Trash2, X } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { api, getErrorMessage } from "../api/client";
