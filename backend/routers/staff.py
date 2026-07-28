@@ -12,7 +12,7 @@ from models.staff import (
     MeetingSummaryUpdate,
 )
 from models.ticket import AuthenticatedHelper
-from services.auth_service import current_staff
+from services.auth_service import current_responsable, current_staff
 
 
 router = APIRouter(prefix="/staff", tags=["staff"])
@@ -75,9 +75,8 @@ async def get_meeting(
 
 @router.post("/meetings", response_model=MeetingSummary, status_code=status.HTTP_201_CREATED)
 async def create_meeting(
-    from services.auth_service import current_responsable, current_staff
     payload: MeetingSummaryCreate,
-    helper: AuthenticatedHelper = Depends(current_staff),
+    helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> MeetingSummary:
     now = datetime.now(timezone.utc).isoformat()
     meeting = MeetingSummary(
