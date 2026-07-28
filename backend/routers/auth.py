@@ -70,14 +70,19 @@ async def session(request: Request, response: Response) -> AuthSession:
     response.headers["Pragma"] = "no-cache"
     raw_session = request.cookies.get(SESSION_COOKIE)
     helper = parse_session(raw_session)
-    empty = AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False, is_responsable=False)
+    empty = AuthSession(
+        authenticated=False, helper=None, is_admin=False, is_staff=False, is_helper=False, is_responsable=False
+    )
     if raw_session and not helper:
         response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
         response.delete_cookie(SESSION_COOKIE)
         return empty
+
     is_admin = False
     is_staff = False
+    is_helper = False
     is_responsable = False
+
     if helper:
         try:
             has_access = await has_iris_access(helper.id)
@@ -88,15 +93,26 @@ async def session(request: Request, response: Response) -> AuthSession:
                 response.delete_cookie(SESSION_COOKIE)
                 return empty
             is_admin = await is_admin_helper(helper.id)
+            is_helper = has_access
         except HTTPException:
             response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
             response.delete_cookie(SESSION_COOKIE)
             return empty
-    return AuthSession(authenticated=helper is not None, helper=helper, is_admin=is_admin, is_staff=is_staff, is_responsable=is_responsable)
+
+    return AuthSession(
+        authenticated=helper is not None,
+        helper=helper,
+        is_admin=is_admin,
+        is_staff=is_staff,
+        is_helper=is_helper,
+        is_responsable=is_responsable,
+    )
 
 
 @router.post("/logout", response_model=AuthSession)
 async def logout(response: Response) -> AuthSession:
     response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
     response.delete_cookie(SESSION_COOKIE)
-    return AuthSession(authenticated=False, helper=None, is_admin=False, is_staff=False, is_responsable=False)
+    return AuthSession(
+        authenticated=False, helper=None, is_admin=False, is_staff=False, is_helper=False, is_responsable=False
+    )
