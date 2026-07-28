@@ -192,14 +192,18 @@ async def create_task(
     now = datetime.now(timezone.utc).isoformat()
     task = QuarterlyTask(
         id=str(uuid4()),
-        title=payload.title.strip(),
-        is_done=False,
+        period_id=payload.period_id,
+        name=payload.name.strip(),
+        category=payload.category.strip(),
+        explanation=payload.explanation.strip(),
+        task_date=payload.task_date,
         created_by={
             "id": helper.id,
             "username": helper.username,
             "display_name": helper.global_name,
             "avatar_url": helper.avatar_url,
         },
+        volunteers=[],
         created_at=now,
         updated_at=now,
     )
