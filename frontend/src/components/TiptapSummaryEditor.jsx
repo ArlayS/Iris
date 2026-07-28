@@ -38,26 +38,22 @@ export default function TiptapSummaryEditor({
     }
     hasLoadedInitialContent.current = true;
 
-    const loadContent = async () => {
-      if (value && typeof value === "string" && value.trim().length > 0) {
-        try {
-          const blocks = await editor.tryParseMarkdownToBlocks(value);
-          editor.replaceBlocks(editor.document, blocks);
-        } catch (err) {
-          console.error("Erreur lors du chargement du markdown:", err);
-        }
+    if (value && typeof value === "string" && value.trim().length > 0) {
+      try {
+        const blocks = JSON.parse(value);
+        editor.replaceBlocks(editor.document, blocks);
+      } catch (err) {
+        console.error("Erreur lors du chargement du contenu:", err);
       }
-    };
-
-    loadContent();
+    }
   }, [editor, value]);
 
-  const handleChange = async () => {
+  const handleChange = () => {
     try {
-      const markdown = await editor.blocksToMarkdownLossy(editor.document);
-      onChange(markdown);
+      const json = JSON.stringify(editor.document);
+      onChange(json);
     } catch (err) {
-      console.error("Erreur lors de la conversion en markdown:", err);
+      console.error("Erreur lors de la conversion en JSON:", err);
     }
   };
 
