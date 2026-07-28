@@ -6,7 +6,7 @@ from io import BytesIO
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 
 from database import db
 from models.staff import (
@@ -27,7 +27,7 @@ MEETING_MEDIA_TYPES = {
     "mp4", "webm", "mov",
     "mp3", "wav", "ogg", "m4a",
 }
-MAX_MEETING_MEDIA_SIZE = 50 * 1024 * 1024  # 50 Mo
+MAX_MEETING_MEDIA_SIZE = 50 * 1024 * 1024
 
 VIDEO_EXTENSIONS = {"mp4", "webm", "mov"}
 AUDIO_EXTENSIONS = {"mp3", "wav", "ogg", "m4a"}
@@ -122,6 +122,7 @@ async def create_meeting(
         },
         created_at=now,
         updated_at=now,
+        is_locked=False,
     )
     await db.meeting_summaries.insert_one(meeting.model_dump())
     return meeting
@@ -136,6 +137,9 @@ async def update_meeting(
     existing = await db.meeting_summaries.find_one({"id": meeting_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Résumé introuvable.")
+    if existing.get("is_locked", False):
+        raise HTTPException(status_code=403, detail="Ce résumé est verrouillé.")
+
     updated_at = datetime.now(timezone.utc).isoformat()
     new_status = _meeting_status(payload.content_markdown)
     await db.meeting_summaries.update_one(
@@ -156,10 +160,25 @@ async def update_meeting(
         updated_at=updated_at,
     )
     return existing
+
+
+@router.delete("/meetings/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_meeting(
+    meeting_id: str,
+    _: AuthenticatedHelper = Depends(current_staff),
+) -> None:
+    existing = await db.meeting_summaries.find_one({"id": meeting_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Résumé introuvable.")
+    if existing.get("is_locked", False):
+        raise HTTPException(status_code=403, detail="Ce résumé est verrouillé.")
+    await db.meeting_summaries.delete_one({"id": meeting_id})
+
+
 @router.post("/meetings/{meeting_id}/lock", response_model=MeetingSummary)
 async def toggle_meeting_lock(
     meeting_id: str,
-    helper: AuthenticatedHelper = Depends(current_responsable),
+    _: AuthenticatedHelper = Depends(current_responsable),
 ) -> MeetingSummary:
     existing = await db.meeting_summaries.find_one({"id": meeting_id}, {"_id": 0})
     if not existing:
@@ -171,15 +190,6 @@ async def toggle_meeting_lock(
     )
     existing["is_locked"] = new_lock_state
     return existing
-
-@router.delete("/meetings/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_meeting(
-    meeting_id: str,
-    _: AuthenticatedHelper = Depends(current_staff),
-) -> None:
-    result = await db.meeting_summaries.delete_one({"id": meeting_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Résumé introuvable.")
 
 
 @router.post("/meetings/upload-image")
