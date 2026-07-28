@@ -1,10 +1,11 @@
-import { Archive, BookOpenText, ChevronDown, Grid2X2, LayoutDashboard, LogOut, RadioTower } from "lucide-react";
+import { Archive, BookOpenText, CalendarDays, ChevronDown, FileStack, Grid2X2, LayoutDashboard, LogOut, RadioTower, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
 
-export default function AppShell({ children, helper, tickets, onLogout, isAdmin }) {
+export default function AppShell({ children, helper, tickets, onLogout, isAdmin, isStaff }) {
   const [isHelperMenuOpen, setIsHelperMenuOpen] = useState(true);
+  const [isStaffMenuOpen, setIsStaffMenuOpen] = useState(true);
 
   return (
     <div className="app-shell" data-testid="iris-application">
@@ -19,6 +20,16 @@ export default function AppShell({ children, helper, tickets, onLogout, isAdmin 
             <NavLink className="nav-link" to="/resources" data-testid="sidebar-resources-link" title="Ressources"><BookOpenText size={18} /><span>Ressources</span></NavLink>
             <NavLink className="nav-link" to="/admin" data-testid="admin-panel-link" title="Vue administrateur"><LayoutDashboard size={18} /><span>Administration</span></NavLink>
           </div>
+
+          {isStaff && (
+            <>
+              <button className="helper-menu-trigger" type="button" onClick={() => setIsStaffMenuOpen((current) => !current)} aria-expanded={isStaffMenuOpen} data-testid="staff-menu-toggle"><Users size={18} /><span>Staff</span><ChevronDown className={isStaffMenuOpen ? "is-open" : ""} size={16} /></button>
+              <div className={`helper-menu-links ${isStaffMenuOpen ? "is-open" : ""}`} data-testid="staff-menu-links">
+                <NavLink className="nav-link" to="/staff/absences" data-testid="staff-absences-link" title="Calendrier des absences"><CalendarDays size={18} /><span>Absences</span></NavLink>
+                <NavLink className="nav-link" to="/staff/meetings" data-testid="staff-meetings-link" title="Résumés de réunions"><FileStack size={18} /><span>Réunions</span></NavLink>
+              </div>
+            </>
+          )}
         </nav>
 
         <div className="sidebar-bottom">
