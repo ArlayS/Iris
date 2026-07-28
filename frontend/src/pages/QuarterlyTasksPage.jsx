@@ -442,29 +442,34 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
     }
   };
 
-  const addTask = async (event) => {
-    event.preventDefault();
-    if (!name.trim() || !category.trim() || !taskDate) return;
-    setSubmitting(true);
-    try {
-      const response = await api.post("/staff/tasks", {
-        period_id: period.id,
-        name,
-        category,
-        explanation,
-        task_date: taskDate,
-      });
-      setTasks((current) => [...current, response.data]);
-      setName("");
-      setCategory("");
-      setExplanation("");
-      toast.success("Tâche ajoutée.");
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+const addTask = async (event) => {
+  event.preventDefault();
+  if (!name.trim() || !category.trim() || !taskDate) return;
+  if (isEvent && !endDate) {
+    toast.error("Merci d'indiquer une date de fin pour cet événement.");
+    return;
+  }
+  setSubmitting(true);
+  try {
+    const response = await api.post("/staff/tasks", {
+      period_id: period.id,
+      name,
+      category,
+      explanation,
+      task_date: taskDate,
+      end_date: isEvent ? endDate : null,
+    });
+    setTasks((current) => [...current, response.data]);
+    setName("");
+    setCategory("");
+    setExplanation("");
+    toast.success("Tâche ajoutée.");
+  } catch (error) {
+    toast.error(getErrorMessage(error));
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const removeTask = async (taskId) => {
     try {
