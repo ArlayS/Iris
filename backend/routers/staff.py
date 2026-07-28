@@ -205,7 +205,98 @@ async def create_task(
     )
     await db.quarterly_tasks.insert_one(task.model_dump())
     return task
+@router.get("/tasks/period", response_model=QuarterlyPeriod | None)
+async def get_current_period(_: AuthenticatedHelper = Depends(current_staff)):
+    return await db.quarterly_periods.find_one({}, {"_id": 0}, sort=[("start_date", -1)])
 
+@router.post("/tasks/period", response_model=QuarterlyPeriod, status_code=status.HTTP_201_CREATED)
+async def create_period(
+    payload: QuarterlyPeriodCreate,
+    helper: AuthenticatedHelper = Depends(current_responsable),
+) -> QuarterlyPeriod:
+    start = date.fromisoformat(payload.start_date)
+    end = start + relativedelta(months=3)
+    period = QuarterlyPeriod(
+        id=str(uuid4()),
+        start_date=payload.start_date,
+        end_date=end.isoformat(),
+        created_by={
+            "id": helper.id,
+            "username": helper.username,
+            "display_name": helper.global_name,
+            "avatar_url": helper.avatar_url,
+        },
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    await db.quarterly_periods.insert_one(period.model_dump())
+    return period
+
+@router.get("/tasks", response_model=list[QuarterlyTask])
+async def list_tasks(period_id: str | None = None, _: AuthenticatedHelper = Depends(current_staff)) -> list[QuarterlyTask]:
+    query = {"period_id": period_id} if period_id else {}
+    return await db.quarterly_tasks.find(query, {"_id": 0}).sort("task_date", 1).to_list(500)
+
+@router.post("/tasks", response_model=QuarterlyTask, status_code=status.HTTP_201_CREATED)
+async def create_task(
+    payload: QuarterlyTaskCreate,
+    helper: AuthenticatedHelper = Depends(current_responsable),
+) -> QuarterlyTask:
+    now = datetime.now(timezone.utc).isoformat()
+    task = QuarterlyTask(
+        id=str(uuid4()),
+        period_id=payload.period_id,
+        name=payload.name.strip(),
+        category=payload.category.strip(),
+        explanation=payload.explanation.strip(),
+        task_date=payload.task_date,
+        created_by={
+            "id": helper.id,
+            "username": helper.username,
+            "display_name": helper.global_name,
+            "avatar_url": helper.avatar_url,
+        },
+        volunteers=[],
+        created_at=now,
+        updated_at=now,
+    )
+    await db.quarterly_tasks.insert_one(task.model_dump())
+    return task
+
+@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_task(
+    task_id: str,
+    _: AuthenticatedHelper = Depends(current_responsable),
+) -> None:
+    result = await db.quarterly_tasks.delete_one({"id": task_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
+
+@router.post("/tasks/{task_id}/signup", response_model=QuarterlyTask)
+async def signup_task(
+    task_id: str,
+    helper: AuthenticatedHelper = Depends(current_staff),
+) -> QuarterlyTask:
+    existing = await db.quarterly_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
+    volunteers = existing.get("volunteers", [])
+    is_signed_up = any(v["id"] == helper.id for v in volunteers)
+    if is_signed_up:
+        volunteers = [v for v in volunteers if v["id"] != helper.id]
+    else:
+        volunteers.append({
+            "id": helper.id,
+            "username": helper.username,
+            "display_name": helper.global_name,
+            "avatar_url": helper.avatar_url,
+        })
+    updated_at = datetime.now(timezone.utc).isoformat()
+    await db.quarterly_tasks.update_one(
+        {"id": task_id},
+        {"$set": {"volunteers": volunteers, "updated_at": updated_at}},
+    )
+    existing.update(volunteers=volunteers, updated_at=updated_at)
+    return existing
 @router.put("/tasks/{task_id}", response_model=QuarterlyTask)
 async def update_task(
     task_id: str,
