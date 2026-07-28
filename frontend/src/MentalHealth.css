@@ -192,7 +192,25 @@
   padding: 10px;
   background: #f7faf7;
   border: 1px solid #e0e9e2;
-  border-radius:
+  border-radius: 10px;
+}
+
+.absence-upcoming-row strong {
+  color: var(--ink);
+  font: 600 13px "Manrope", sans-serif;
+  display: block;
+}
+
+.absence-upcoming-row small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.absence-upcoming-row p {
+  color: #46594c;
+  font-size: 12px;
+  margin: 4px 0 0;
+}
 body {
   background: var(--canvas);
   color: var(--ink);
