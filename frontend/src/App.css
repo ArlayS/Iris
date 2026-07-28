@@ -26,25 +26,6 @@ a { color: inherit; text-decoration: none; }
 .discord-button:active, .primary-button:active { transform: scale(.98); }
 .login-action small { color: #6b7280; font-size: 12px; margin-top: 16px; line-height: 1.5; }
 
-.staff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
-.absence-form { display: flex; flex-direction: column; gap: 14px; }
-.absence-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #9ca3af; }
-.absence-form textarea { background: #121212; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; color: #e5e7eb; padding: 8px 10px; font-family: inherit; }
-.absence-list { display: flex; flex-direction: column; gap: 10px; }
-.absence-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 4px; }
-.absence-row small { color: #9ca3af; display: block; }
-.meeting-list { display: flex; flex-direction: column; gap: 8px; }
-.meeting-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 4px; }
-.meeting-row a { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
-.meeting-row small { color: #9ca3af; }
-.meeting-editor { display: flex; flex-direction: column; gap: 14px; }
-.meeting-title-input { background: #121212; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; color: #e5e7eb; padding: 10px 12px; font-size: 15px; font-family: inherit; }
-.meeting-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.meeting-editor-grid textarea { background: #121212; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; color: #e5e7eb; padding: 12px; font-family: "IBM Plex Mono", monospace; font-size: 13px; resize: vertical; }
-.meeting-preview { background: #0d0d0d; border: 1px solid rgba(255,255,255,.1); border-radius: 4px; padding: 16px; overflow-y: auto; color: #d1d5db; }
-.meeting-preview h1, .meeting-preview h2, .meeting-preview h3 { color: #f3f4f6; margin: 0.6em 0 0.3em; }
-.meeting-preview code { background: rgba(255,255,255,.08); padding: 2px 5px; border-radius: 3px; }
-.meeting-preview pre { background: rgba(255,255,255,.06); padding: 10px; border-radius: 4px; overflow-x: auto; }
 
 .rdp { --rdp-accent-color: #5865f2; --rdp-background-color: rgba(88,101,242,.15); }
 
