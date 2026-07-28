@@ -42,16 +42,7 @@ function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function previewText(markdown, maxLength = 140) {
-  const plain = (markdown || "")
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/^#+\s*/gm, "")
-    .replace(/[*_`>-]/g, "")
-    .replace(/\n+/g, " ")
-    .trim();
-  if (plain.length <= maxLength) return plain;
-  return `${plain.slice(0, maxLength).trim()}…`;
-}
+
 
 function HelperAvatar({ helper, size = 20 }) {
   const label = helper?.display_name || helper?.username || "?";
