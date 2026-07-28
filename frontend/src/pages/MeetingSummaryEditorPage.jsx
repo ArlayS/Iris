@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Calendar, Pencil, Save, X } from "lucide-react";
+import { ArrowLeft, Calendar, Lock, Pencil, Save, Unlock, X } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 import TiptapSummaryEditor from "../components/TiptapSummaryEditor";
 import SummaryReader from "../components/SummaryReader";
 
-export default function MeetingSummaryEditorPage() {
+export default function MeetingSummaryEditorPage({ isResponsable }) {
   const { meetingId } = useParams();
   const navigate = useNavigate();
   const isNew = meetingId === "new";
@@ -18,6 +18,8 @@ export default function MeetingSummaryEditorPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(isNew);
+  const [isLocked, setIsLocked] = useState(false);
+  const [togglingLock, setTogglingLock] = useState(false);
 
   useEffect(() => {
     if (isNew) return;
@@ -28,13 +30,32 @@ export default function MeetingSummaryEditorPage() {
         setAgenda(response.data.agenda || "");
         setMeetingDate(response.data.meeting_date);
         setContent(response.data.content_markdown);
+        setIsLocked(response.data.is_locked || false);
       })
       .catch((error) => toast.error(getErrorMessage(error)))
       .finally(() => setLoading(false));
   }, [meetingId, isNew]);
 
+  const toggleLock = async () => {
+    setTogglingLock(true);
+    try {
+      const response = await api.post(`/staff/meetings/${meetingId}/lock`);
+      setIsLocked(response.data.is_locked);
+      setIsEditing(false);
+      toast.success(response.data.is_locked ? "Résumé verrouillé." : "Résumé déverrouillé.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setTogglingLock(false);
+    }
+  };
+
   const save = async (event) => {
     event.preventDefault();
+    if (isLocked) {
+      toast.error("Ce résumé est verrouillé.");
+      return;
+    }
     setSaving(true);
     try {
       if (isNew) {
@@ -79,7 +100,18 @@ export default function MeetingSummaryEditorPage() {
           <h1>{isNew ? "Nouveau résumé" : title || "Résumé de réunion"}</h1>
         </div>
         <div className="dashboard-actions">
-          {!isEditing && !isNew && (
+          {isResponsable && !isNew && (
+            <button
+              type="button"
+              className={`btn-ghost ${isLocked ? "btn-locked" : ""}`}
+              onClick={toggleLock}
+              disabled={togglingLock}
+            >
+              {isLocked ? <Unlock size={16} /> : <Lock size={16} />}
+              {isLocked ? "Déverrouiller" : "Verrouiller"}
+            </button>
+          )}
+          {!isEditing && !isNew && !isLocked && (
             <button type="button" className="calm-primary-button" onClick={() => setIsEditing(true)}>
               <Pencil size={16} /> Éditer
             </button>
@@ -89,6 +121,12 @@ export default function MeetingSummaryEditorPage() {
           </button>
         </div>
       </header>
+
+      {isLocked && (
+        <div className="lock-banner">
+          <Lock size={14} /> Ce résumé est verrouillé et ne peut plus être modifié.
+        </div>
+      )}
 
       {isEditing ? (
         <form onSubmit={save} className="dashboard-grid">
