@@ -12,20 +12,39 @@ class AbsenceEntry(BaseModel):
     end_date: str
     reason: str = ""
     created_at: str
+class QuarterlyPeriodCreate(BaseModel):
+    start_date: str  # format YYYY-MM-DD
+
+class QuarterlyPeriod(BaseModel):
+    id: str
+    start_date: str
+    end_date: str
+    created_by: dict
+    created_at: str
 
 class QuarterlyTaskCreate(BaseModel):
-    title: str
+    period_id: str
+    name: str
+    category: str
+    explanation: str
+    task_date: str  # format YYYY-MM-DD
+
+class QuarterlyTask(BaseModel):
+    id: str
+    period_id: str
+    name: str
+    category: str
+    explanation: str
+    task_date: str
+    created_by: dict
+    volunteers: list[dict] = []
+    created_at: str
+    updated_at: str
+    
 
 class QuarterlyTaskUpdate(BaseModel):
     is_done: bool
 
-class QuarterlyTask(BaseModel):
-    id: str
-    title: str
-    is_done: bool
-    created_by: dict
-    created_at: str
-    updated_at: str
 class AbsenceCreate(BaseModel):
     start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
     end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
