@@ -16,6 +16,7 @@ from config import (
     DISCORD_GUILD_ID,
     DISCORD_ADMIN_ROLE_ID,
     DISCORD_HELPER_ROLE_ID,
+    DISCORD_HELPER_ROLE2_ID,
     DISCORD_STAFF_ROLE_ID,
     DISCORD_RESPONSABLE_ROLE_ID,
     DISCORD_REDIRECT_URI,
@@ -23,7 +24,6 @@ from config import (
 )
 from models.ticket import AuthenticatedHelper
 from services.discord_service import DiscordService
-
 
 DISCORD_AUTHORIZE_URL = "https://discord.com/oauth2/authorize"
 DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
@@ -81,9 +81,12 @@ async def exchange_code(code: str) -> AuthenticatedHelper:
             "https://discord.com/api/users/@me/guilds",
             headers={"Authorization": f"Bearer {access_token}"},
         )
+
     if profile_response.is_error:
         raise HTTPException(status_code=401, detail="Profil Discord inaccessible.")
+
     profile = profile_response.json()
+
     if guilds_response.is_error or not any(
         guild.get("id") == DISCORD_GUILD_ID for guild in guilds_response.json()
     ):
@@ -91,17 +94,20 @@ async def exchange_code(code: str) -> AuthenticatedHelper:
             status_code=403,
             detail="Votre compte Discord ne fait pas partie du serveur Iris.",
         )
+
     if not await has_any_access(profile["id"]):
         raise HTTPException(
             status_code=403,
             detail="Votre compte Discord ne possède pas un rôle autorisé pour Iris.",
         )
+
     avatar = profile.get("avatar")
     avatar_url = (
         f"https://cdn.discordapp.com/avatars/{profile['id']}/{avatar}.png?size=128"
         if avatar
         else None
     )
+
     return AuthenticatedHelper(
         id=profile["id"],
         username=profile["username"],
@@ -164,8 +170,9 @@ def parse_session(raw_session: str | None) -> AuthenticatedHelper | None:
 
 async def has_iris_access(helper_id: str) -> bool:
     discord = DiscordService()
-    has_helper_role = await discord.member_has_role(helper_id, DISCORD_HELPER_ROLE_ID)
-    if has_helper_role:
+    if await discord.member_has_role(helper_id, DISCORD_HELPER_ROLE_ID):
+        return True
+    if DISCORD_HELPER_ROLE2_ID and await discord.member_has_role(helper_id, DISCORD_HELPER_ROLE2_ID):
         return True
     return await discord.member_has_role(helper_id, DISCORD_ADMIN_ROLE_ID)
 
@@ -199,14 +206,14 @@ async def current_helper(request: Request) -> AuthenticatedHelper:
     if not helper or helper.mode != "discord":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Connexion requise.")
     if not await has_any_access(helper.id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Votre rôle Discord ne permet plus d’accéder à Iris.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Votre rôle Discord ne permet plus d'accéder à Iris.")
     return helper
 
 
 async def current_admin(request: Request) -> AuthenticatedHelper:
     helper = await current_helper(request)
     if not await is_admin_helper(helper.id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle administrateur requis.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Coordinateur requis.")
     return helper
 
 
