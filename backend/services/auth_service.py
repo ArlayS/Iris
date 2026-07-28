@@ -17,6 +17,7 @@ from config import (
     DISCORD_ADMIN_ROLE_ID,
     DISCORD_HELPER_ROLE_ID,
     DISCORD_STAFF_ROLE_ID,
+    DISCORD_RESPONSABLE_ROLE_ID,
     DISCORD_REDIRECT_URI,
     missing_oauth_settings,
 )
@@ -179,10 +180,18 @@ async def is_staff_helper(helper_id: str) -> bool:
     return await DiscordService().member_has_role(helper_id, DISCORD_STAFF_ROLE_ID)
 
 
+async def is_responsable_helper(helper_id: str) -> bool:
+    if not DISCORD_RESPONSABLE_ROLE_ID:
+        return False
+    return await DiscordService().member_has_role(helper_id, DISCORD_RESPONSABLE_ROLE_ID)
+
+
 async def has_any_access(helper_id: str) -> bool:
     if await has_iris_access(helper_id):
         return True
-    return await is_staff_helper(helper_id)
+    if await is_staff_helper(helper_id):
+        return True
+    return await is_responsable_helper(helper_id)
 
 
 async def current_helper(request: Request) -> AuthenticatedHelper:
@@ -205,6 +214,13 @@ async def current_staff(request: Request) -> AuthenticatedHelper:
     helper = await current_helper(request)
     if not await is_staff_helper(helper.id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Staff requis.")
+    return helper
+
+
+async def current_responsable(request: Request) -> AuthenticatedHelper:
+    helper = await current_helper(request)
+    if not await is_responsable_helper(helper.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Responsable requis.")
     return helper
 
 
