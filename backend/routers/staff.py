@@ -46,12 +46,12 @@ def _media_content_type(extension: str) -> str:
     return f"image/{extension if extension != 'jpg' else 'jpeg'}"
 
 
-@router.get("/absences", response_model=list[AbsenceEntry])
+@router.get("/calendrier", response_model=list[AbsenceEntry])
 async def list_absences(_: AuthenticatedHelper = Depends(current_staff)) -> list[AbsenceEntry]:
     return await db.absences.find({}, {"_id": 0}).sort("start_date", 1).to_list(1000)
 
 
-@router.post("/absences", response_model=AbsenceEntry, status_code=status.HTTP_201_CREATED)
+@router.post("/calendrier", response_model=AbsenceEntry, status_code=status.HTTP_201_CREATED)
 async def create_absence(
     payload: AbsenceCreate,
     helper: AuthenticatedHelper = Depends(current_staff),
@@ -75,7 +75,7 @@ async def create_absence(
     return entry
 
 
-@router.delete("/absences/{absence_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/calendrier/{absence_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_absence(
     absence_id: str,
     _: AuthenticatedHelper = Depends(current_staff),
