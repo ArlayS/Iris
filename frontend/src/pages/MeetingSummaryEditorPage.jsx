@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Calendar, Save } from "lucide-react";
+import { ArrowLeft, Calendar, Pencil, Save, X } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 import TiptapSummaryEditor from "../components/TiptapSummaryEditor";
+import SummaryReader from "../components/SummaryReader";
 
 export default function MeetingSummaryEditorPage() {
   const { meetingId } = useParams();
@@ -16,6 +17,7 @@ export default function MeetingSummaryEditorPage() {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(isNew);
 
   useEffect(() => {
     if (isNew) return;
@@ -44,6 +46,7 @@ export default function MeetingSummaryEditorPage() {
         });
         toast.success("Résumé créé.");
         navigate(`/staff/meetings/${response.data.id}`, { replace: true });
+        setIsEditing(false);
       } else {
         await api.put(`/staff/meetings/${meetingId}`, {
           title,
@@ -51,6 +54,7 @@ export default function MeetingSummaryEditorPage() {
           content_markdown: content,
         });
         toast.success("Résumé mis à jour.");
+        setIsEditing(false);
       }
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -75,91 +79,136 @@ export default function MeetingSummaryEditorPage() {
           <h1>{isNew ? "Nouveau résumé" : title || "Résumé de réunion"}</h1>
         </div>
         <div className="dashboard-actions">
-          <button type="button" className="calm-primary-button" onClick={() => navigate("/staff/meetings")}>
+          {!isEditing && !isNew && (
+            <button type="button" className="calm-primary-button" onClick={() => setIsEditing(true)}>
+              <Pencil size={16} /> Éditer
+            </button>
+          )}
+          <button type="button" className="btn-ghost" onClick={() => navigate("/staff/meetings")}>
             <ArrowLeft size={17} /> Retour
           </button>
         </div>
       </header>
 
-      <form onSubmit={save} className="dashboard-grid">
-        <section className="activity-pane">
-          <div className="section-heading">
-            <span>DÉTAILS</span>
-          </div>
+      {isEditing ? (
+        <form onSubmit={save} className="dashboard-grid">
+          <section className="activity-pane">
+            <div className="section-heading">
+              <span>DÉTAILS</span>
+            </div>
 
-          <div className="summary-field">
-            <label htmlFor="title">Titre</label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Titre de la réunion"
-              required
+            <div className="summary-field">
+              <label htmlFor="title">Titre</label>
+              <input
+                id="title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Titre de la réunion"
+                required
+              />
+            </div>
+
+            <div className="summary-field">
+              <label htmlFor="meeting-date">
+                <Calendar size={14} /> Date
+              </label>
+              <input
+                id="meeting-date"
+                type="date"
+                value={meetingDate}
+                onChange={(e) => setMeetingDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="summary-field">
+              <label htmlFor="agenda">Ordre du jour</label>
+              <textarea
+                id="agenda"
+                value={agenda}
+                onChange={(e) => setAgenda(e.target.value)}
+                placeholder="Points abordés, décisions à prendre…"
+                rows={3}
+              />
+            </div>
+
+            <div className="section-heading" style={{ marginTop: "20px" }}>
+              <span>RÉSUMÉ</span>
+            </div>
+            <TiptapSummaryEditor
+              value={content}
+              onChange={setContent}
+              placeholder="Rédiger le résumé… (tapez / pour les commandes)"
             />
-          </div>
 
-          <div className="summary-field">
-            <label htmlFor="meeting-date">
-              <Calendar size={14} /> Date
-            </label>
-            <input
-              id="meeting-date"
-              type="date"
-              value={meetingDate}
-              onChange={(e) => setMeetingDate(e.target.value)}
-              required
-            />
-          </div>
+            <div className="summary-actions" style={{ marginTop: "20px" }}>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => (isNew ? navigate("/staff/meetings") : setIsEditing(false))}
+              >
+                <X size={16} /> Annuler
+              </button>
+              <button type="submit" className="calm-primary-button" disabled={saving}>
+                <Save size={16} /> {saving ? "Enregistrement…" : "Enregistrer le résumé"}
+              </button>
+            </div>
+          </section>
 
-          <div className="summary-field">
-            <label htmlFor="agenda">Ordre du jour</label>
-            <textarea
-              id="agenda"
-              value={agenda}
-              onChange={(e) => setAgenda(e.target.value)}
-              placeholder="Points abordés, décisions à prendre…"
-              rows={3}
-            />
-          </div>
+          <aside className="system-pane">
+            <p className="eyebrow">REPÈRES</p>
+            <div>
+              <span>Statut</span>
+              <b>{content.trim() ? "RÉDIGÉ" : "EN ATTENTE"}</b>
+            </div>
+            <div>
+              <span>Date de réunion</span>
+              <strong>
+                {new Date(meetingDate).toLocaleDateString("fr-FR", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </strong>
+            </div>
+          </aside>
+        </form>
+      ) : (
+        <div className="dashboard-grid">
+          <section className="activity-pane">
+            <div className="section-heading">
+              <span>ORDRE DU JOUR</span>
+            </div>
+            <p className="meeting-agenda-full" style={{ marginBottom: "20px" }}>
+              {agenda || "Aucun ordre du jour renseigné."}
+            </p>
 
-          <div className="section-heading" style={{ marginTop: "20px" }}>
-            <span>RÉSUMÉ</span>
-          </div>
-          <TiptapSummaryEditor
-            value={content}
-            onChange={setContent}
-            placeholder="Rédiger le résumé… (tapez / pour les commandes)"
-          />
+            <div className="section-heading">
+              <span>RÉSUMÉ</span>
+            </div>
+            <SummaryReader content={content} />
+          </section>
 
-          <div className="summary-actions" style={{ marginTop: "20px" }}>
-            <button type="button" className="btn-ghost" onClick={() => navigate("/staff/meetings")}>
-              Annuler
-            </button>
-            <button type="submit" className="calm-primary-button" disabled={saving}>
-              <Save size={16} /> {saving ? "Enregistrement…" : "Enregistrer le résumé"}
-            </button>
-          </div>
-        </section>
-
-        <aside className="system-pane">
-          <p className="eyebrow">REPÈRES</p>
-          <div>
-            <span>Statut</span>
-            <b>{content.trim() ? "RÉDIGÉ" : "EN ATTENTE"}</b>
-          </div>
-          <div>
-            <span>Date de réunion</span>
-            <strong>
-              {new Date(meetingDate).toLocaleDateString("fr-FR", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </strong>
-          </div>
-        </aside>
-      </form>
+          <aside className="system-pane">
+            <p className="eyebrow">REPÈRES</p>
+            <div>
+              <span>Statut</span>
+              <b>{content.trim() ? "RÉDIGÉ" : "EN ATTENTE"}</b>
+            </div>
+            <div>
+              <span>Date de réunion</span>
+              <strong>
+                {new Date(meetingDate).toLocaleDateString("fr-FR", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </strong>
+            </div>
+          </aside>
+        </div>
+      )}
     </section>
   );
 }
