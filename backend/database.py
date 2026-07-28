@@ -21,3 +21,5 @@ async def initialize_indexes() -> None:
     await db.absences.create_index([("start_date", 1), ("end_date", 1)])
     await db.meeting_summaries.create_index("id", unique=True)
     await db.meeting_summaries.create_index("created_at")
+    await db.meeting_summaries.create_index("meeting_date")
+    await db.meeting_summaries.create_index("status")
