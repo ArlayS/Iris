@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
+import irisLogo from "../assets/logo.png";
 
 export default function AppShell({
   children,
@@ -34,11 +35,9 @@ export default function AppShell({
     <div className="app-shell" data-testid="iris-application">
       <aside className="sidebar nano-sidebar" data-testid="main-navigation">
         <Link className="brand nano-brand" to="/" data-testid="iris-home-link">
-          <img
-            src="https://customer-assets-lqy194kg.emergentagent.net/job/iris-logs/artifacts/jhsbq3v9/image.png"
-            alt="Iris"
-            data-testid="iris-logo"
-          />
+  <img src={irisLogo} alt="Iris" data-testid="iris-logo" />
+</Link>
+  
         </Link>
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
