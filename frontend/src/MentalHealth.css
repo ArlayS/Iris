@@ -11,7 +11,159 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+.dashboard-page {
+  padding: 32px 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
 
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.dashboard-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sage);
+}
+
+.dashboard-title {
+  font-size: 40px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 4px;
+  line-height: 1.1;
+}
+
+.dashboard-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.summary-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.summary-meta-card {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+.summary-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-field-full {
+  grid-column: 1 / -1;
+}
+
+.summary-field label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.summary-field input,
+.summary-field textarea {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--ink);
+  font-family: inherit;
+  resize: vertical;
+}
+
+.summary-field input:focus,
+.summary-field textarea:focus {
+  outline: none;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(90, 130, 100, 0.12);
+}
+
+.summary-editor-card {
+  padding: 8px;
+}
+
+.summary-editor-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 12px 16px 4px;
+}
+
+.summary-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  background: var(--sage-soft);
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sage);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: var(--sage-dark, #3d5a45);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dashboard-loading {
+  text-align: center;
+  color: var(--muted);
+  padding: 60px 0;
+}
 .tiptap-editor {
   border: 1px solid var(--line);
   border-radius: 14px;
