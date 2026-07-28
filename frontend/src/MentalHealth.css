@@ -21,8 +21,11 @@
   line-height: 1.6;
   margin: 0;
   padding: 16px 20px;
-  background: var(--sage-soft);
+  background: #f4f4f2;
   border-radius: 12px;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .btn-locked {
@@ -1427,7 +1430,12 @@ body {
   padding: 30px 34px;
   position: relative;
 }
-
+.care-hero p {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
 .care-hero::after {
   background: #dce8df;
   border-radius: 50%;
