@@ -11,7 +11,17 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+.meeting-editor-main .section-heading {
+  margin-bottom: 20px;
+}
 
+.meeting-editor-main .summary-field {
+  margin-bottom: 18px;
+}
+
+.meeting-editor-main .summary-field label {
+  margin-bottom: 8px;
+}
 .meeting-editor-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
