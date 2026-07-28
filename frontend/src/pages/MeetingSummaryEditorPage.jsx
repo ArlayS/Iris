@@ -129,8 +129,8 @@ export default function MeetingSummaryEditorPage({ isResponsable }) {
       )}
 
       {isEditing ? (
-        <form onSubmit={save} className="dashboard-grid">
-          <section className="activity-pane">
+        <form onSubmit={save} className="meeting-editor-grid">
+          <section className="meeting-editor-main">
             <div className="section-heading">
               <span>DÉTAILS</span>
             </div>
@@ -194,7 +194,7 @@ export default function MeetingSummaryEditorPage({ isResponsable }) {
             </div>
           </section>
 
-          <aside className="system-pane">
+          <aside className="meeting-editor-side">
             <p className="eyebrow">REPÈRES</p>
             <div>
               <span>Statut</span>
@@ -213,8 +213,8 @@ export default function MeetingSummaryEditorPage({ isResponsable }) {
           </aside>
         </form>
       ) : (
-        <div className="dashboard-grid">
-          <section className="activity-pane">
+        <div className="meeting-editor-grid">
+          <section className="meeting-editor-main">
             <div className="section-heading">
               <span>ORDRE DU JOUR</span>
             </div>
@@ -228,7 +228,7 @@ export default function MeetingSummaryEditorPage({ isResponsable }) {
             <SummaryReader content={content} />
           </section>
 
-          <aside className="system-pane">
+          <aside className="meeting-editor-side">
             <p className="eyebrow">REPÈRES</p>
             <div>
               <span>Statut</span>
