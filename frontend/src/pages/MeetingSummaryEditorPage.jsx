@@ -96,7 +96,7 @@ export default function MeetingSummaryEditorPage({ isResponsable }) {
     <section className="page-content dashboard-page" data-testid="meeting-editor-page">
       <header className="page-header">
         <div>
-          <p className="eyebrow">ESPACE HELPERS</p>
+          <p className="eyebrow">ESPACE STAFF</p>
           <h1>{isNew ? "Nouveau résumé" : title || "Résumé de réunion"}</h1>
         </div>
         <div className="dashboard-actions">
