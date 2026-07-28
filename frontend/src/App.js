@@ -17,10 +17,13 @@ import AbsenceCalendarPage from "./pages/AbsenceCalendarPage";
 import MeetingSummariesPage from "./pages/MeetingSummariesPage";
 import MeetingSummaryEditorPage from "./pages/MeetingSummaryEditorPage";
 
-
-function AuthenticatedApp({ helper, isAdmin, isStaff, isResponsable }) {
+function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable }) {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ active_count: 0, archived_count: 0, total_messages: 0 });
+
+  const canSeeHelper = isResponsable || isAdmin || isHelper;
+  const canSeeAdmin = isResponsable || isAdmin;
+  const canSeeStaff = isResponsable || isAdmin || isHelper || isStaff;
 
   const refreshDashboard = async () => {
     const [ticketsResponse, statsResponse] = await Promise.all([api.get("/tickets"), api.get("/tickets/stats")]);
@@ -29,8 +32,10 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isResponsable }) {
   };
 
   useEffect(() => {
-    refreshDashboard().catch(() => undefined);
-  }, []);
+    if (canSeeHelper) {
+      refreshDashboard().catch(() => undefined);
+    }
+  }, [canSeeHelper]);
 
   const updateTicket = (ticket) => {
     setTickets((current) => [ticket, ...current.filter((item) => item.id !== ticket.id)]);
@@ -51,22 +56,75 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isResponsable }) {
     window.location.assign("/");
   };
 
+  const defaultRoute = canSeeHelper ? "/" : "/staff/calendrier";
+
   return (
-    <AppShell helper={helper} tickets={tickets} onLogout={logout} isAdmin={isAdmin} isStaff={isStaff}>
+    <AppShell
+      helper={helper}
+      tickets={tickets}
+      onLogout={logout}
+      isResponsable={isResponsable}
+      isAdmin={isAdmin}
+      isHelper={isHelper}
+      isStaff={isStaff}
+    >
       <Routes>
-        <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} />} />
-        <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
-        <Route path="/tickets/:ticketId" element={<TicketWorkspacePage onTicketUpdate={updateTicket} onTicketDeleted={deleteTicket} isAdmin={isAdmin} helper={helper} />} />
-        <Route path="/archives" element={<DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />} />
-        <Route path="/admin" element={isAdmin ? <AdminDashboardPage /> : <Navigate to="/" replace />} />
+        <Route
+          path="/"
+          element={canSeeHelper ? <DashboardPage stats={stats} tickets={tickets} /> : <Navigate to="/staff/calendrier" replace />}
+        />
+        <Route
+          path="/new"
+          element={canSeeHelper ? <NewTicketPage onCreated={updateTicket} /> : <Navigate to="/staff/calendrier" replace />}
+        />
+        <Route
+          path="/tickets/:ticketId"
+          element={
+            canSeeHelper ? (
+              <TicketWorkspacePage onTicketUpdate={updateTicket} onTicketDeleted={deleteTicket} isAdmin={isAdmin} helper={helper} />
+            ) : (
+              <Navigate to="/staff/calendrier" replace />
+            )
+          }
+        />
+        <Route
+          path="/archives"
+          element={
+            canSeeHelper ? (
+              <DashboardPage stats={stats} tickets={tickets.filter((ticket) => ticket.status === "archived")} />
+            ) : (
+              <Navigate to="/staff/calendrier" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin"
+          element={canSeeAdmin ? <AdminDashboardPage /> : <Navigate to={defaultRoute} replace />}
+        />
         <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
-        <Route path="/resources" element={<ResourcesPage isAdmin={isAdmin} />} />
-        <Route path="/staff/calendrier" element={isStaff ? <AbsenceCalendarPage isResponsable={isResponsable} /> : <Navigate to="/" replace />} />
-        <Route path="/staff/meetings" element={isStaff ? <MeetingSummariesPage isResponsable={isResponsable} /> : <Navigate to="/" replace />} />
-        <Route path="/staff/meetings/new" element={isStaff && isResponsable ? <MeetingSummaryEditorPage /> : <Navigate to="/staff/meetings" replace />} />
-        <Route path="/staff/meetings/:meetingId" element={<MeetingSummaryEditorPage isResponsable={isResponsable} />} />
-                                                          
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/resources"
+          element={canSeeHelper ? <ResourcesPage isAdmin={isAdmin} /> : <Navigate to="/staff/calendrier" replace />}
+        />
+        <Route
+          path="/staff/calendrier"
+          element={canSeeStaff ? <AbsenceCalendarPage isResponsable={isResponsable} /> : <Navigate to={defaultRoute} replace />}
+        />
+        <Route
+          path="/staff/meetings"
+          element={canSeeStaff ? <MeetingSummariesPage isResponsable={isResponsable} /> : <Navigate to={defaultRoute} replace />}
+        />
+        <Route
+          path="/staff/meetings/new"
+          element={
+            canSeeStaff && isResponsable ? <MeetingSummaryEditorPage /> : <Navigate to="/staff/meetings" replace />
+          }
+        />
+        <Route
+          path="/staff/meetings/:meetingId"
+          element={canSeeStaff ? <MeetingSummaryEditorPage isResponsable={isResponsable} /> : <Navigate to={defaultRoute} replace />}
+        />
+        <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>
     </AppShell>
   );
@@ -74,6 +132,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isResponsable }) {
 
 function App() {
   const [session, setSession] = useState(null);
+
   useEffect(() => {
     document.documentElement.removeAttribute("data-theme");
     localStorage.removeItem("iris-theme");
@@ -86,7 +145,7 @@ function App() {
   }, []);
 
   if (!session) {
-    return <div className="app-loading" data-testid="application-loading">Initialisation d’Iris…</div>;
+    return <div className="app-loading" data-testid="application-loading">Initialisation d'Iris</div>;
   }
 
   return (
@@ -97,6 +156,7 @@ function App() {
             helper={session.helper}
             isAdmin={session.is_admin}
             isStaff={session.is_staff}
+            isHelper={session.is_helper}
             isResponsable={session.is_responsable}
           />
         ) : (
