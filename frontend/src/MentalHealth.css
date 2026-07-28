@@ -11,6 +11,14 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+
+.tiptap-readonly .bn-container {
+  padding: 0;
+}
+
+.tiptap-readonly {
+  border: none;
+}
 .summary-field {
   display: flex;
   flex-direction: column;
