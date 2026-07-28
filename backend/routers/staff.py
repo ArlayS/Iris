@@ -331,7 +331,51 @@ async def signup_task(
     )
     existing.update(volunteers=volunteers, updated_at=updated_at)
     return existing
+@router.delete("/tasks/{task_id}/volunteers/{helper_id}", response_model=QuarterlyTask)
+async def remove_volunteer(
+    task_id: str,
+    helper_id: str,
+    _: AuthenticatedHelper = Depends(current_responsable),
+) -> QuarterlyTask:
+    existing = await db.quarterly_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
+    volunteers = [v for v in existing.get("volunteers", []) if v["id"] != helper_id]
+    updated_at = datetime.now(timezone.utc).isoformat()
+    await db.quarterly_tasks.update_one(
+        {"id": task_id},
+        {"$set": {"volunteers": volunteers, "updated_at": updated_at}},
+    )
+    existing.update(volunteers=volunteers, updated_at=updated_at)
+    return existing
 
+@router.put("/tasks/{task_id}/volunteers/{helper_id}/rate", response_model=QuarterlyTask)
+async def rate_volunteer(
+    task_id: str,
+    helper_id: str,
+    payload: VolunteerRating,
+    _: AuthenticatedHelper = Depends(current_responsable),
+) -> QuarterlyTask:
+    existing = await db.quarterly_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
+    volunteers = existing.get("volunteers", [])
+    found = False
+    for v in volunteers:
+        if v["id"] == helper_id:
+            v["rating"] = payload.rating
+            v["note"] = payload.note.strip()
+            found = True
+            break
+    if not found:
+        raise HTTPException(status_code=404, detail="Volontaire introuvable sur cette tâche.")
+    updated_at = datetime.now(timezone.utc).isoformat()
+    await db.quarterly_tasks.update_one(
+        {"id": task_id},
+        {"$set": {"volunteers": volunteers, "updated_at": updated_at}},
+    )
+    existing.update(volunteers=volunteers, updated_at=updated_at)
+    return existing
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
