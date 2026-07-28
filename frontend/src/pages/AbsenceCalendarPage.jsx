@@ -368,7 +368,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
                           <div>
                             <strong>{meeting.title}</strong>
                             <small>Par {meeting.author.display_name || meeting.author.username}</small>
-                            {meeting.content_markdown && <p>{previewText(meeting.content_markdown)}</p>}
+                            {meeting.content_markdown && <p>{meeting.content_markdown}</p>}
                           </div>
                           <Link className="icon-button absence-meeting-open" to={`/staff/meetings/${meeting.id}`} aria-label="Ouvrir la réunion" title="Ouvrir">
                             <ArrowUpRight size={16} />
