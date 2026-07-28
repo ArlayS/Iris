@@ -39,8 +39,7 @@ function HelperAvatar({ helper, size = 20 }) {
     </span>
   );
 }
-
-export default function AbsenceCalendarPage() {
+export default function AbsenceCalendarPage({ isResponsable }) {
   const [absences, setAbsences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
