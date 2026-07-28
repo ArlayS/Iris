@@ -211,8 +211,26 @@ async def create_task(
     return task
 @router.get("/tasks/period", response_model=QuarterlyPeriod | None)
 async def get_current_period(_: AuthenticatedHelper = Depends(current_staff)):
-    return await db.quarterly_periods.find_one({}, {"_id": 0}, sort=[("start_date", -1)])
+    cursor = db.quarterly_periods.find({"is_archived": False}, {"_id": 0}).sort("start_date", -1).limit(1)
+    results = await cursor.to_list(1)
+    return results[0] if results else None
 
+@router.get("/tasks/periods/archived", response_model=list[QuarterlyPeriod])
+async def list_archived_periods(_: AuthenticatedHelper = Depends(current_staff)) -> list[QuarterlyPeriod]:
+    return await db.quarterly_periods.find({"is_archived": True}, {"_id": 0}).sort("start_date", -1).to_list(200)
+
+@router.post("/tasks/period/{period_id}/archive", response_model=QuarterlyPeriod)
+async def archive_period(
+    period_id: str,
+    _: AuthenticatedHelper = Depends(current_responsable),
+) -> QuarterlyPeriod:
+    existing = await db.quarterly_periods.find_one({"id": period_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Période introuvable.")
+    await db.quarterly_periods.update_one({"id": period_id}, {"$set": {"is_archived": True}})
+    existing["is_archived"] = True
+    return existing
+    
 @router.post("/tasks/period", response_model=QuarterlyPeriod, status_code=status.HTTP_201_CREATED)
 async def create_period(
     payload: QuarterlyPeriodCreate,
