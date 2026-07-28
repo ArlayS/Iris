@@ -19,6 +19,7 @@ class QuarterlyPeriod(BaseModel):
     id: str
     start_date: str
     end_date: str
+    is_archived: bool = False
     created_by: dict
     created_at: str
 
