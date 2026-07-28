@@ -17,6 +17,65 @@
   gap: 22px;
   align-items: start;
 }
+
+.absence-day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.absence-day-event {
+  background: var(--clay-soft);
+  color: #8a4a2f;
+  font: 600 9px "IBM Plex Sans", sans-serif;
+  padding: 1px 5px;
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  text-align: left;
+}
+
+.absence-day-event.is-more {
+  background: transparent;
+  color: var(--muted);
+}
+
+.absence-meeting-row {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.absence-meeting-row:hover {
+  background: var(--sage-soft);
+}
+
+.absence-meeting-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--clay-soft);
+  color: #8a4a2f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.meeting-editor-grid-compact {
+  grid-template-columns: 1fr 1fr;
+}
+
+.meeting-preview-compact {
+  max-height: 160px;
+  font-size: 12px;
+  padding: 10px;
+}
 .calm-primary-button.is-secondary {
   background: var(--sage-soft);
   border-color: #cadccf;
