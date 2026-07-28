@@ -15,10 +15,13 @@ from models.staff import (
     MeetingSummary,
     MeetingSummaryCreate,
     MeetingSummaryUpdate,
+    QuarterlyPeriod,
+    QuarterlyPeriodCreate,
     QuarterlyTask,
     QuarterlyTaskCreate,
-    QuarterlyTaskUpdate,
 )
+from dateutil.relativedelta import relativedelta
+from datetime import date
 from models.ticket import AuthenticatedHelper
 from services.auth_service import current_responsable, current_staff
 from services.storage_service import extension_from_filename, get_object, put_object_from_file
