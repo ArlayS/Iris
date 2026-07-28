@@ -30,7 +30,6 @@
     "@tiptap/extension-text-style": "^2.10.0",
     "@tiptap/extension-color": "^2.10.0",
     "tiptap-markdown": "^0.8.10",
-    "tiptap-slash-react": "^1.0.0",
     "@radix-ui/react-label": "2.1.4",
     "@radix-ui/react-menubar": "1.1.12",
     "@radix-ui/react-navigation-menu": "1.2.10",
