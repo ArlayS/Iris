@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-
+import { ArrowLeft, Calendar, Save } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 import TiptapSummaryEditor from "../components/TiptapSummaryEditor";
-
 
 export default function MeetingSummaryEditorPage() {
   const { meetingId } = useParams();
@@ -20,7 +19,8 @@ export default function MeetingSummaryEditorPage() {
 
   useEffect(() => {
     if (isNew) return;
-    api.get(`/staff/meetings/${meetingId}`)
+    api
+      .get(`/staff/meetings/${meetingId}`)
       .then((response) => {
         setTitle(response.data.title);
         setAgenda(response.data.agenda || "");
@@ -45,7 +45,11 @@ export default function MeetingSummaryEditorPage() {
         toast.success("Résumé créé.");
         navigate(`/staff/meetings/${response.data.id}`, { replace: true });
       } else {
-        await api.put(`/staff/meetings/${meetingId}`, { title, agenda, content_markdown: content });
+        await api.put(`/staff/meetings/${meetingId}`, {
+          title,
+          agenda,
+          content_markdown: content,
+        });
         toast.success("Résumé mis à jour.");
       }
     } catch (error) {
@@ -55,50 +59,88 @@ export default function MeetingSummaryEditorPage() {
     }
   };
 
-  if (loading) return <p className="page-content">Chargement…</p>;
+  if (loading) {
+    return (
+      <div className="dashboard-page">
+        <p className="dashboard-loading">Chargement…</p>
+      </div>
+    );
+  }
 
   return (
-    <section className="page-content staff-page" data-testid="meeting-summary-editor-page">
-      <header className="page-header">
+    <div className="dashboard-page">
+      <div className="dashboard-header">
         <div>
-          <p className="eyebrow">ESPACE STAFF</p>
-          <h1>{isNew ? "Nouveau résumé" : "Modifier le résumé"}</h1>
+          <span className="dashboard-eyebrow">Espace Helpers</span>
+          <h1 className="dashboard-title">
+            {isNew ? "Nouveau résumé" : title || "Résumé de réunion"}
+          </h1>
         </div>
-      </header>
+        <button type="button" className="btn-ghost" onClick={() => navigate("/staff/meetings")}>
+          <ArrowLeft size={16} />
+          Retour aux résumés
+        </button>
+      </div>
 
-      <form className="meeting-editor" onSubmit={save}>
-        <input
-          className="meeting-title-input"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Titre de la réunion"
-          maxLength={160}
-          required
-        />
-        <div className="meeting-editor-meta">
-          <label>
-            Date de la réunion
+      <form onSubmit={save} className="summary-form">
+        <div className="dashboard-card summary-meta-card">
+          <div className="summary-field">
+            <label htmlFor="title">Titre</label>
             <input
-              type="date"
-              value={meetingDate}
-              onChange={(event) => setMeetingDate(event.target.value)}
+              id="title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Titre de la réunion"
               required
             />
-          </label>
+          </div>
+
+          <div className="summary-field">
+            <label htmlFor="meeting-date">
+              <Calendar size={14} />
+              Date
+            </label>
+            <input
+              id="meeting-date"
+              type="date"
+              value={meetingDate}
+              onChange={(e) => setMeetingDate(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="summary-field summary-field-full">
+            <label htmlFor="agenda">Ordre du jour</label>
+            <textarea
+              id="agenda"
+              value={agenda}
+              onChange={(e) => setAgenda(e.target.value)}
+              placeholder="Points abordés, décisions à prendre…"
+              rows={2}
+            />
+          </div>
         </div>
-        <textarea
-          className="meeting-agenda-input"
-          value={agenda}
-          onChange={(event) => setAgenda(event.target.value)}
-          placeholder="Raison / ordre du jour"
-          maxLength={4000}
-          rows={2}
-        />
-        <TiptapSummaryEditor value={content} onChange={setContent} />
-        <button className="calm-primary-button" type="submit" disabled={saving}>
-          {saving ? "Enregistrement…" : "Enregistrer"}
-        </button>
+
+        <div className="dashboard-card summary-editor-card">
+          <div className="summary-editor-label">Résumé</div>
+          <TiptapSummaryEditor
+            value={content}
+            onChange={setContent}
+            placeholder="Rédiger le résumé… (tapez / pour les commandes)"
+          />
+        </div>
+
+        <div className="summary-actions">
+          <button type="button" className="btn-ghost" onClick={() => navigate("/staff/meetings")}>
+            Annuler
+          </button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            <Save size={16} />
+            {saving ? "Enregistrement…" : "Enregistrer le résumé"}
+          </button>
+        </div>
       </form>
-    </section>
+    </div>
   );
 }
