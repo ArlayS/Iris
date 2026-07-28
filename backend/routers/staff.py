@@ -19,6 +19,7 @@ from models.staff import (
     QuarterlyPeriodCreate,
     QuarterlyTask,
     QuarterlyTaskCreate,
+    VolunteerRating,
 )
 from dateutil.relativedelta import relativedelta
 from datetime import date
