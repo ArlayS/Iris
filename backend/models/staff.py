@@ -4,7 +4,9 @@ from pydantic import BaseModel, Field
 
 from models.ticket import HelperIdentity
 
-
+class VolunteerRating(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    note: str = Field(default="", max_length=500)
 class AbsenceEntry(BaseModel):
     id: str
     helper: HelperIdentity
