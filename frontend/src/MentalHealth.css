@@ -17,7 +17,86 @@
   gap: 22px;
   align-items: start;
 }
+.meeting-inline-form {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
+.meeting-inline-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ink);
+  font: 600 14px "Manrope", sans-serif;
+  text-transform: capitalize;
+}
+
+.meeting-inline-input,
+.meeting-inline-textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--ink);
+  font: 15px "IBM Plex Sans", sans-serif;
+  padding: 16px 18px;
+  width: 100%;
+}
+
+.meeting-inline-input::placeholder,
+.meeting-inline-textarea::placeholder {
+  color: #9aa39c;
+}
+
+.meeting-inline-textarea {
+  resize: vertical;
+  min-height: 130px;
+  line-height: 1.55;
+}
+
+.meeting-inline-input:focus,
+.meeting-inline-textarea:focus {
+  outline: 0;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(74, 103, 92, 0.14);
+}
+
+.meeting-inline-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: var(--sage);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font: 600 15px "Manrope", sans-serif;
+  padding: 14px 18px;
+  width: 100%;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.meeting-inline-submit:hover {
+  background: #3d5749;
+}
+
+.meeting-inline-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.absence-meeting-info-row {
+  align-items: center;
+}
+
+.absence-meeting-open {
+  margin-left: auto;
+  flex-shrink: 0;
+}
 .absence-day-events {
   display: flex;
   flex-direction: column;
