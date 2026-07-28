@@ -33,6 +33,8 @@ class QuarterlyPeriod(BaseModel):
     created_at: str
 
 
+from typing import Literal
+
 class QuarterlyTaskCreate(BaseModel):
     period_id: str
     name: str = Field(min_length=1, max_length=160)
@@ -40,6 +42,7 @@ class QuarterlyTaskCreate(BaseModel):
     explanation: str = Field(default="", max_length=2000)
     task_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
     end_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    target_role: Literal["staff", "helper", "tous"] = "tous"
 
 
 class QuarterlyTask(BaseModel):
@@ -50,6 +53,7 @@ class QuarterlyTask(BaseModel):
     explanation: str
     task_date: str
     end_date: str | None = None
+    target_role: Literal["staff", "helper", "tous"] = "tous"
     created_by: dict
     volunteers: list[dict] = []
     created_at: str
