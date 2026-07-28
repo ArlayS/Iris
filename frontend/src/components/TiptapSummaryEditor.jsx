@@ -20,7 +20,6 @@ export default function TiptapSummaryEditor({
   placeholder = "Rédiger le résumé…",
   autoFocus = false,
 }) {
-  // Toujours forcer une string valide, jamais undefined/null/objet
   const safeValue = typeof value === "string" ? value : "";
 
   const editor = useEditor({
@@ -31,7 +30,7 @@ export default function TiptapSummaryEditor({
     ],
     content: safeValue,
     autofocus: autoFocus ? "end" : false,
-    immediatelyRender: false, // évite les problèmes SSR/hydratation
+    immediatelyRender: false,
     onUpdate: ({ editor: current }) => {
       try {
         onChange(current.storage.markdown.getMarkdown());
@@ -42,7 +41,9 @@ export default function TiptapSummaryEditor({
   });
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor) {
+      return;
+    }
     try {
       const currentMarkdown = editor.storage.markdown.getMarkdown();
       if (safeValue !== currentMarkdown) {
@@ -51,10 +52,11 @@ export default function TiptapSummaryEditor({
     } catch (err) {
       console.error("Erreur setContent Tiptap:", err, "value reçue:", value);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, safeValue]);
 
-  if (!editor) return null;
+  if (!editor) {
+    return null;
+  }
 
   return (
     <div className="tiptap-editor">
@@ -67,6 +69,7 @@ export default function TiptapSummaryEditor({
         >
           <Bold size={15} />
         </button>
+
         <button
           type="button"
           className={editor.isActive("italic") ? "is-active" : ""}
@@ -75,6 +78,7 @@ export default function TiptapSummaryEditor({
         >
           <Italic size={15} />
         </button>
+
         <button
           type="button"
           className={editor.isActive("heading", { level: 2 }) ? "is-active" : ""}
@@ -83,6 +87,7 @@ export default function TiptapSummaryEditor({
         >
           <Heading2 size={15} />
         </button>
+
         <button
           type="button"
           className={editor.isActive("bulletList") ? "is-active" : ""}
@@ -91,6 +96,7 @@ export default function TiptapSummaryEditor({
         >
           <List size={15} />
         </button>
+
         <button
           type="button"
           className={editor.isActive("orderedList") ? "is-active" : ""}
@@ -99,6 +105,7 @@ export default function TiptapSummaryEditor({
         >
           <ListOrdered size={15} />
         </button>
+
         <button
           type="button"
           className={editor.isActive("blockquote") ? "is-active" : ""}
@@ -107,5 +114,27 @@ export default function TiptapSummaryEditor({
         >
           <Quote size={15} />
         </button>
+
         <span className="tiptap-toolbar-divider" />
-        <button type="button" 
+
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().undo().run()}
+          aria-label="Annuler"
+        >
+          <Undo2 size={15} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().redo().run()}
+          aria-label="Rétablir"
+        >
+          <Redo2 size={15} />
+        </button>
+      </div>
+
+      <EditorContent editor={editor} className="tiptap-editor-content" />
+    </div>
+  );
+}
