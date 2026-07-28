@@ -11,7 +11,10 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
-
+.status-dot.pending {
+  background: #fdf3e0;
+  color: #b8860b;
+}
 .tiptap-readonly .bn-container {
   padding: 0;
 }
