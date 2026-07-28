@@ -167,7 +167,19 @@ async def update_meeting(
     )
     return existing
 
-
+@router.delete("/tasks/period/{period_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_period(
+    period_id: str,
+    _: AuthenticatedHelper = Depends(current_responsable),
+) -> None:
+    existing = await db.quarterly_periods.find_one({"id": period_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Période introuvable.")
+    if not existing.get("is_archived", False):
+        raise HTTPException(status_code=403, detail="Seule une période archivée peut être supprimée.")
+    await db.quarterly_tasks.delete_many({"period_id": period_id})
+    await db.quarterly_periods.delete_one({"id": period_id})
+    
 @router.delete("/meetings/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_meeting(
     meeting_id: str,
