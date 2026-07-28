@@ -1,7 +1,10 @@
+import asyncio
+import os
+import tempfile
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from database import db
 from models.staff import (
@@ -13,9 +16,12 @@ from models.staff import (
 )
 from models.ticket import AuthenticatedHelper
 from services.auth_service import current_responsable, current_staff
-
+from services.storage_service import extension_from_filename, put_object_from_file
 
 router = APIRouter(prefix="/staff", tags=["staff"])
+
+MEETING_IMAGE_TYPES = {"jpg", "jpeg", "png", "webp", "gif"}
+MAX_MEETING_IMAGE_SIZE = 10 * 1024 * 1024  # 10 Mo
 
 
 def _meeting_status(content_markdown: str) -> str:
@@ -142,3 +148,42 @@ async def delete_meeting(
     result = await db.meeting_summaries.delete_one({"id": meeting_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Résumé introuvable.")
+
+
+@router.post("/meetings/upload-image")
+async def upload_meeting_image(
+    file: UploadFile = File(...),
+    _: AuthenticatedHelper = Depends(current_staff),
+) -> dict:
+    if not file.filename:
+        raise HTTPException(status_code=422, detail="Choisissez une image à envoyer.")
+
+    extension = extension_from_filename(file.filename)
+    if extension not in MEETING_IMAGE_TYPES:
+        raise HTTPException(status_code=422, detail="Format d'image non autorisé.")
+
+    temp_path: str | None = None
+    total_size = 0
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_path = temp_file.name
+            while chunk := await file.read(1024 * 1024):
+                total_size += len(chunk)
+                if total_size > MAX_MEETING_IMAGE_SIZE:
+                    raise HTTPException(status_code=413, detail="Image trop volumineuse (max 10 Mo).")
+                temp_file.write(chunk)
+
+        image_id = str(uuid4())
+        content_type = f"image/{extension if extension != 'jpg' else 'jpeg'}"
+        storage_result = await asyncio.to_thread(
+            put_object_from_file,
+            f"meeting-images/{image_id}.{extension}",
+            temp_path,
+            content_type,
+        )
+
+        return {"url": storage_result["url"]}
+    finally:
+        await file.close()
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
