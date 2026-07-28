@@ -16,6 +16,7 @@ from config import (
     DISCORD_GUILD_ID,
     DISCORD_ADMIN_ROLE_ID,
     DISCORD_HELPER_ROLE_ID,
+    DISCORD_STAFF_ROLE_ID,
     DISCORD_REDIRECT_URI,
     missing_oauth_settings,
 )
@@ -89,7 +90,7 @@ async def exchange_code(code: str) -> AuthenticatedHelper:
             status_code=403,
             detail="Votre compte Discord ne fait pas partie du serveur Iris.",
         )
-    if not await has_iris_access(profile["id"]):
+    if not await has_any_access(profile["id"]):
         raise HTTPException(
             status_code=403,
             detail="Votre compte Discord ne possède pas un rôle autorisé pour Iris.",
@@ -172,11 +173,23 @@ async def is_admin_helper(helper_id: str) -> bool:
     return await DiscordService().member_has_role(helper_id, DISCORD_ADMIN_ROLE_ID)
 
 
+async def is_staff_helper(helper_id: str) -> bool:
+    if not DISCORD_STAFF_ROLE_ID:
+        return False
+    return await DiscordService().member_has_role(helper_id, DISCORD_STAFF_ROLE_ID)
+
+
+async def has_any_access(helper_id: str) -> bool:
+    if await has_iris_access(helper_id):
+        return True
+    return await is_staff_helper(helper_id)
+
+
 async def current_helper(request: Request) -> AuthenticatedHelper:
     helper = parse_session(request.cookies.get(SESSION_COOKIE))
     if not helper or helper.mode != "discord":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Connexion requise.")
-    if not await has_iris_access(helper.id):
+    if not await has_any_access(helper.id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Votre rôle Discord ne permet plus d’accéder à Iris.")
     return helper
 
@@ -188,6 +201,12 @@ async def current_admin(request: Request) -> AuthenticatedHelper:
     return helper
 
 
+async def current_staff(request: Request) -> AuthenticatedHelper:
+    helper = await current_helper(request)
+    if not await is_staff_helper(helper.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Staff requis.")
+    return helper
+
+
 def create_state() -> str:
     return secrets.token_urlsafe(32)
-
