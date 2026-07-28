@@ -18,6 +18,10 @@ from services.auth_service import current_responsable, current_staff
 router = APIRouter(prefix="/staff", tags=["staff"])
 
 
+def _meeting_status(content_markdown: str) -> str:
+    return "redige" if content_markdown.strip() else "en_attente_resume"
+
+
 @router.get("/absences", response_model=list[AbsenceEntry])
 async def list_absences(_: AuthenticatedHelper = Depends(current_staff)) -> list[AbsenceEntry]:
     return await db.absences.find({}, {"_id": 0}).sort("start_date", 1).to_list(1000)
@@ -59,7 +63,7 @@ async def delete_absence(
 
 @router.get("/meetings", response_model=list[MeetingSummary])
 async def list_meetings(_: AuthenticatedHelper = Depends(current_staff)) -> list[MeetingSummary]:
-    return await db.meeting_summaries.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return await db.meeting_summaries.find({}, {"_id": 0}).sort("meeting_date", -1).to_list(500)
 
 
 @router.get("/meetings/{meeting_id}", response_model=MeetingSummary)
@@ -82,7 +86,9 @@ async def create_meeting(
     meeting = MeetingSummary(
         id=str(uuid4()),
         title=payload.title.strip(),
+        agenda=payload.agenda.strip(),
         content_markdown=payload.content_markdown,
+        status=_meeting_status(payload.content_markdown),
         meeting_date=payload.meeting_date,
         author={
             "id": helper.id,
@@ -107,19 +113,22 @@ async def update_meeting(
     if not existing:
         raise HTTPException(status_code=404, detail="Résumé introuvable.")
     updated_at = datetime.now(timezone.utc).isoformat()
+    new_status = _meeting_status(payload.content_markdown)
     await db.meeting_summaries.update_one(
         {"id": meeting_id},
         {"$set": {
             "title": payload.title.strip(),
+            "agenda": payload.agenda.strip(),
             "content_markdown": payload.content_markdown,
-            "meeting_date": payload.meeting_date,
+            "status": new_status,
             "updated_at": updated_at,
         }},
     )
     existing.update(
         title=payload.title.strip(),
+        agenda=payload.agenda.strip(),
         content_markdown=payload.content_markdown,
-        meeting_date=payload.meeting_date,
+        status=new_status,
         updated_at=updated_at,
     )
     return existing
