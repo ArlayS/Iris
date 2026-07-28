@@ -64,7 +64,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
   const [reason, setReason] = useState("");
   const [meetingDay, setMeetingDay] = useState(null);
   const [meetingTitle, setMeetingTitle] = useState("");
-  const [meetingContent, setMeetingContent] = useState("");
+  const [meetingAgenda, setMeetingAgenda] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
     setReason("");
     setMeetingDay(null);
     setMeetingTitle("");
-    setMeetingContent("");
+    setMeetingAgenda("");
   };
 
   const enterAbsenceMode = () => {
@@ -199,7 +199,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
     try {
       const response = await api.post("/staff/meetings", {
         title: meetingTitle,
-        content_markdown: meetingContent,
+        agenda: meetingAgenda,
         meeting_date: toIsoDate(meetingDay),
       });
       setMeetings((current) => [response.data, ...current]);
@@ -368,7 +368,10 @@ export default function AbsenceCalendarPage({ isResponsable }) {
                           <div>
                             <strong>{meeting.title}</strong>
                             <small>Par {meeting.author.display_name || meeting.author.username}</small>
-                            {meeting.content_markdown && <p>{meeting.content_markdown}</p>}
+                            {meeting.agenda && <p>{meeting.agenda}</p>}
+                            <span className={`meeting-status-badge ${meeting.status === "en_attente_resume" ? "is-pending" : "is-done"}`}>
+                              {meeting.status === "en_attente_resume" ? "En attente de résumé" : "Rédigé"}
+                            </span>
                           </div>
                           <Link className="icon-button absence-meeting-open" to={`/staff/meetings/${meeting.id}`} aria-label="Ouvrir la réunion" title="Ouvrir">
                             <ArrowUpRight size={16} />
@@ -418,11 +421,12 @@ export default function AbsenceCalendarPage({ isResponsable }) {
               />
               <textarea
                 className="meeting-inline-textarea"
-                value={meetingContent}
-                onChange={(event) => setMeetingContent(event.target.value)}
-                placeholder="Rédiger le résumé de la réunion…"
-                rows={6}
+                value={meetingAgenda}
+                onChange={(event) => setMeetingAgenda(event.target.value)}
+                placeholder="Raison / ordre du jour (optionnel)"
+                rows={4}
               />
+              <p className="meeting-inline-hint">Le résumé détaillé se rédige ensuite depuis la page « Résumés de réunions ».</p>
               <button className="meeting-inline-submit" type="button" onClick={submitMeeting} disabled={submitting}>
                 <FilePlus2 size={17} /> {submitting ? "Enregistrement…" : "Ajouter la réunion"}
               </button>
