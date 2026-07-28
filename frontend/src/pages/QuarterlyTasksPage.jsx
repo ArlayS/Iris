@@ -86,15 +86,7 @@ function VolunteerBadge({ volunteer, taskId, isResponsable, onRate, onRemove }) 
         </span>
         {isResponsable && (
           <>
-            <button
-              type="button"
-              className="icon-btn-danger"
-              onClick={() => setEditing((c) => !c)}
-              aria-label="Noter"
-              style={{ padding: "4px" }}
-            >
-              <Star size={14} />
-            </button>
+           
             <button
               type="button"
               className="icon-btn-danger"
@@ -179,19 +171,14 @@ function TaskCard({
           >
             {task.name}
           </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "13px",
-              color: "var(--muted)",
-              marginTop: "4px",
-            }}
-          >
-            <Calendar size={14} />
-            <span>{formatDate(task.task_date)}</span>
-          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--muted)", marginTop: "4px" }}>
+  <Calendar size={14} />
+  <span>
+    {task.end_date
+      ? `${formatDate(task.task_date)} → ${formatDate(task.end_date)}`
+      : formatDate(task.task_date)}
+  </span>
+</div>
         </div>
         {isResponsable && onRemove && (
           <button
