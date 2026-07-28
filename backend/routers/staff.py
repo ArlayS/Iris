@@ -190,6 +190,15 @@ async def list_tasks(
     return await db.quarterly_tasks.find({"period_id": period_id}, {"_id": 0}).sort("task_date", 1).to_list(500)
 
 
+import unicodedata
+
+def normalize_text(value: str) -> str:
+    return "".join(
+        c for c in unicodedata.normalize("NFD", value)
+        if unicodedata.category(c) != "Mn"
+    ).lower()
+
+
 @router.post("/tasks", response_model=QuarterlyTask, status_code=status.HTTP_201_CREATED)
 async def create_task(
     payload: QuarterlyTaskCreate,
@@ -199,12 +208,18 @@ async def create_task(
     if not period:
         raise HTTPException(status_code=404, detail="Période introuvable.")
 
-    is_event = "event" in payload.category.strip().lower()
-    if is_event:
+    normalized_category = normalize_text(payload.category.strip())
+    is_event = "event" in normalized_category
+    is_redactionnel = "redactionnel" in normalized_category
+
+    if is_event and not is_redactionnel:
         if not payload.end_date:
             raise HTTPException(status_code=422, detail="Une date de fin est requise pour un événement.")
         if payload.end_date < payload.task_date:
             raise HTTPException(status_code=422, detail="La date de fin doit suivre la date de début.")
+    elif not is_redactionnel:
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", payload.task_date):
+            raise HTTPException(status_code=422, detail="Format de date invalide.")
 
     now = datetime.now(timezone.utc).isoformat()
     task = QuarterlyTask(
@@ -213,8 +228,8 @@ async def create_task(
         name=payload.name.strip(),
         category=payload.category.strip(),
         explanation=payload.explanation.strip(),
-        task_date=payload.task_date,
-        end_date=payload.end_date if is_event else None,
+        task_date=payload.task_date.strip(),
+        end_date=payload.end_date if (is_event and not is_redactionnel) else None,
         target_role=payload.target_role,
         created_by={
             "id": helper.id,
