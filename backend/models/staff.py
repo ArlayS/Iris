@@ -13,7 +13,19 @@ class AbsenceEntry(BaseModel):
     reason: str = ""
     created_at: str
 
+class QuarterlyTaskCreate(BaseModel):
+    title: str
 
+class QuarterlyTaskUpdate(BaseModel):
+    is_done: bool
+
+class QuarterlyTask(BaseModel):
+    id: str
+    title: str
+    is_done: bool
+    created_by: dict
+    created_at: str
+    updated_at: str
 class AbsenceCreate(BaseModel):
     start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
     end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
