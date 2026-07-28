@@ -15,11 +15,21 @@ import {
   subMonths,
 } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarPlus, ChevronLeft, ChevronRight, Plus, RadioTower, Trash2, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  CalendarPlus,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Plus,
+  RadioTower,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { api, getErrorMessage } from "../api/client";
+import { renderMarkdown } from "../utils/markdown";
 
 const WEEKDAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
@@ -39,22 +49,28 @@ function HelperAvatar({ helper, size = 20 }) {
     </span>
   );
 }
+
 export default function AbsenceCalendarPage({ isResponsable }) {
   const [absences, setAbsences] = useState([]);
+  const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [mode, setMode] = useState("view"); // "view" | "add"
+  const [mode, setMode] = useState("view"); // "view" | "absence" | "meeting"
   const [selection, setSelection] = useState(null);
   const [viewedDay, setViewedDay] = useState(null);
   const [reason, setReason] = useState("");
+  const [meetingDay, setMeetingDay] = useState(null);
+  const [meetingTitle, setMeetingTitle] = useState("");
+  const [meetingContent, setMeetingContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
-    api
-      .get("/staff/absences")
-      .then((response) => {
-        if (isMounted) setAbsences(response.data);
+    Promise.all([api.get("/staff/absences"), api.get("/staff/meetings")])
+      .then(([absencesResponse, meetingsResponse]) => {
+        if (!isMounted) return;
+        setAbsences(absencesResponse.data);
+        setMeetings(meetingsResponse.data);
       })
       .catch((error) => {
         toast.error(getErrorMessage(error));
@@ -89,9 +105,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
           isWithinInterval(day, { start, end }) || isSameDay(day, start) || isSameDay(day, end);
         if (withinRange) {
           const key = toIsoDate(day);
-          if (!map.has(key)) {
-            map.set(key, []);
-          }
+          if (!map.has(key)) map.set(key, []);
           map.get(key).push(entry);
         }
       }
@@ -99,22 +113,48 @@ export default function AbsenceCalendarPage({ isResponsable }) {
     return map;
   }, [absences, days]);
 
-  const enterAddMode = () => {
-    setMode("add");
-    setViewedDay(null);
+  const meetingsByDay = useMemo(() => {
+    const map = new Map();
+    for (const meeting of meetings) {
+      if (!meeting.meeting_date) continue;
+      if (!map.has(meeting.meeting_date)) map.set(meeting.meeting_date, []);
+      map.get(meeting.meeting_date).push(meeting);
+    }
+    return map;
+  }, [meetings]);
+
+  const resetPanels = () => {
     setSelection(null);
     setReason("");
+    setMeetingDay(null);
+    setMeetingTitle("");
+    setMeetingContent("");
   };
 
-  const cancelAddMode = () => {
+  const enterAbsenceMode = () => {
+    setMode("absence");
+    setViewedDay(null);
+    resetPanels();
+  };
+
+  const enterMeetingMode = () => {
+    setMode("meeting");
+    setViewedDay(null);
+    resetPanels();
+  };
+
+  const cancelMode = () => {
     setMode("view");
-    setSelection(null);
-    setReason("");
+    resetPanels();
   };
 
   const handleDayClick = (day) => {
     if (mode === "view") {
       setViewedDay(day);
+      return;
+    }
+    if (mode === "meeting") {
+      setMeetingDay(day);
       return;
     }
     if (!selection || !selection.start) {
@@ -129,9 +169,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
   };
 
   const submitAbsence = async () => {
-    if (!selection) {
-      return;
-    }
+    if (!selection) return;
     setSubmitting(true);
     try {
       const response = await api.post("/staff/absences", {
@@ -140,8 +178,30 @@ export default function AbsenceCalendarPage({ isResponsable }) {
         reason,
       });
       setAbsences((current) => [...current, response.data]);
-      cancelAddMode();
+      cancelMode();
       toast.success("Absence enregistrée.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submitMeeting = async () => {
+    if (!meetingDay || !meetingTitle.trim()) {
+      toast.error("Ajoutez au moins un titre.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const response = await api.post("/staff/meetings", {
+        title: meetingTitle,
+        content_markdown: meetingContent,
+        meeting_date: toIsoDate(meetingDay),
+      });
+      setMeetings((current) => [response.data, ...current]);
+      cancelMode();
+      toast.success("Réunion ajoutée.");
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -160,6 +220,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
 
   const upcoming = [...absences].sort((a, b) => a.start_date.localeCompare(b.start_date));
   const viewedDayAbsences = viewedDay ? absencesByDay.get(toIsoDate(viewedDay)) || [] : [];
+  const viewedDayMeetings = viewedDay ? meetingsByDay.get(toIsoDate(viewedDay)) || [] : [];
 
   return (
     <section className="page-content staff-page" data-testid="absence-calendar-page">
@@ -169,17 +230,18 @@ export default function AbsenceCalendarPage({ isResponsable }) {
           <h1>Calendrier des absences</h1>
         </div>
         <div className="dashboard-actions">
-          {isResponsable && (
-            <Link className="calm-primary-button is-secondary" to="/staff/meetings/new" data-testid="add-meeting-shortcut-button">
+          {mode === "view" && isResponsable && (
+            <button className="calm-primary-button is-secondary" type="button" onClick={enterMeetingMode} data-testid="enter-meeting-mode-button">
               <Plus size={17} /> Ajouter une réunion
-            </Link>
+            </button>
           )}
-          {mode === "view" ? (
-            <button className="calm-primary-button" type="button" onClick={enterAddMode} data-testid="enter-absence-mode-button">
+          {mode === "view" && (
+            <button className="calm-primary-button" type="button" onClick={enterAbsenceMode} data-testid="enter-absence-mode-button">
               <CalendarPlus size={17} /> Entrer une absence
             </button>
-          ) : (
-            <button className="calm-primary-button is-cancel" type="button" onClick={cancelAddMode}>
+          )}
+          {mode !== "view" && (
+            <button className="calm-primary-button is-cancel" type="button" onClick={cancelMode}>
               <X size={17} /> Annuler
             </button>
           )}
@@ -191,28 +253,23 @@ export default function AbsenceCalendarPage({ isResponsable }) {
           <div className="absence-calendar-header">
             <h2>{capitalize(format(currentMonth, "MMMM yyyy", { locale: fr }))}</h2>
             <div className="absence-calendar-nav">
-              <button
-                type="button"
-                onClick={() => setCurrentMonth((current) => subMonths(current, 1))}
-                aria-label="Mois précédent"
-              >
+              <button type="button" onClick={() => setCurrentMonth((current) => subMonths(current, 1))} aria-label="Mois précédent">
                 <ChevronLeft size={16} />
               </button>
               <button type="button" onClick={() => setCurrentMonth(new Date())}>
                 Aujourd’hui
               </button>
-              <button
-                type="button"
-                onClick={() => setCurrentMonth((current) => addMonths(current, 1))}
-                aria-label="Mois suivant"
-              >
+              <button type="button" onClick={() => setCurrentMonth((current) => addMonths(current, 1))} aria-label="Mois suivant">
                 <ChevronRight size={16} />
               </button>
             </div>
           </div>
 
-          {mode === "add" && (
+          {mode === "absence" && (
             <p className="absence-mode-hint">Sélectionnez une date de début, puis une date de fin (ou cliquez le même jour pour une absence d’un jour).</p>
+          )}
+          {mode === "meeting" && (
+            <p className="absence-mode-hint">Cliquez sur le jour de la réunion à ajouter.</p>
           )}
 
           <div className="absence-calendar-weekdays">
@@ -225,27 +282,25 @@ export default function AbsenceCalendarPage({ isResponsable }) {
             {days.map((day) => {
               const key = toIsoDate(day);
               const dayAbsences = absencesByDay.get(key) || [];
+              const dayMeetings = meetingsByDay.get(key) || [];
               const inCurrentMonth = isSameMonth(day, currentMonth);
               const isToday = isSameDay(day, new Date());
               const isSelected =
-                mode === "add" &&
+                mode === "absence" &&
                 selection &&
                 isWithinInterval(day, { start: selection.start, end: selection.end });
+              const isMeetingPicked = mode === "meeting" && meetingDay && isSameDay(day, meetingDay);
               const isViewed = mode === "view" && viewedDay && isSameDay(day, viewedDay);
 
               const classNames = ["absence-day"];
               if (!inCurrentMonth) classNames.push("is-outside");
               if (isToday) classNames.push("is-today");
               if (isSelected) classNames.push("is-selected");
+              if (isMeetingPicked) classNames.push("is-selected");
               if (isViewed) classNames.push("is-viewed");
 
               return (
-                <button
-                  type="button"
-                  key={key}
-                  className={classNames.join(" ")}
-                  onClick={() => handleDayClick(day)}
-                >
+                <button type="button" key={key} className={classNames.join(" ")} onClick={() => handleDayClick(day)}>
                   <span className="absence-day-number">{format(day, "d")}</span>
                   <span className="absence-day-chips">
                     {dayAbsences.slice(0, 3).map((entry) => (
@@ -253,6 +308,16 @@ export default function AbsenceCalendarPage({ isResponsable }) {
                     ))}
                     {dayAbsences.length > 3 && <span className="absence-day-chip is-more">+{dayAbsences.length - 3}</span>}
                   </span>
+                  {dayMeetings.length > 0 && (
+                    <span className="absence-day-events">
+                      {dayMeetings.slice(0, 2).map((meeting) => (
+                        <span className="absence-day-event" key={meeting.id} title={meeting.title}>
+                          {meeting.title}
+                        </span>
+                      ))}
+                      {dayMeetings.length > 2 && <span className="absence-day-event is-more">+{dayMeetings.length - 2}</span>}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -266,54 +331,95 @@ export default function AbsenceCalendarPage({ isResponsable }) {
                   <X size={15} />
                 </button>
               </div>
-              {viewedDayAbsences.length === 0 ? (
-                <p className="resources-empty">Personne n’est absent ce jour.</p>
+
+              {viewedDayAbsences.length === 0 && viewedDayMeetings.length === 0 ? (
+                <p className="resources-empty">Rien de prévu ce jour.</p>
               ) : (
-                <div className="absence-detail-list">
-                  {viewedDayAbsences.map((entry) => (
-                    <div className="absence-detail-row" key={entry.id}>
-                      <HelperAvatar helper={entry.helper} size={30} />
-                      <div>
-                        <strong>{entry.helper.display_name || entry.helper.username}</strong>
-                        <small>
-                          {entry.start_date === entry.end_date
-                            ? entry.start_date
-                            : `${entry.start_date} → ${entry.end_date}`}
-                        </small>
-                        {entry.reason && <p>{entry.reason}</p>}
-                      </div>
+                <>
+                  {viewedDayAbsences.length > 0 && (
+                    <div className="absence-detail-list">
+                      {viewedDayAbsences.map((entry) => (
+                        <div className="absence-detail-row" key={entry.id}>
+                          <HelperAvatar helper={entry.helper} size={30} />
+                          <div>
+                            <strong>{entry.helper.display_name || entry.helper.username}</strong>
+                            <small>
+                              {entry.start_date === entry.end_date
+                                ? entry.start_date
+                                : `${entry.start_date} → ${entry.end_date}`}
+                            </small>
+                            {entry.reason && <p>{entry.reason}</p>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+
+                  {viewedDayMeetings.length > 0 && (
+                    <div className="absence-detail-list">
+                      {viewedDayMeetings.map((meeting) => (
+                        <Link className="absence-detail-row absence-meeting-row" to={`/staff/meetings/${meeting.id}`} key={meeting.id}>
+                          <span className="absence-meeting-icon">
+                            <FileText size={16} />
+                          </span>
+                          <div>
+                            <strong>{meeting.title}</strong>
+                            <small>Par {meeting.author.display_name || meeting.author.username}</small>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
 
-          {mode === "add" && selection && (
+          {mode === "absence" && selection && (
             <div className="absence-confirm-panel">
               <div>
                 <strong>
                   {isSameDay(selection.start, selection.end)
                     ? format(selection.start, "d MMMM yyyy", { locale: fr })
-                    : `${format(selection.start, "d MMM", { locale: fr })} → ${format(
-                        selection.end,
-                        "d MMMM yyyy",
-                        { locale: fr }
-                      )}`}
+                    : `${format(selection.start, "d MMM", { locale: fr })} → ${format(selection.end, "d MMMM yyyy", { locale: fr })}`}
                 </strong>
                 <button type="button" className="icon-button" onClick={() => setSelection(null)} aria-label="Réinitialiser la sélection">
                   <X size={15} />
                 </button>
               </div>
-              <textarea
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                placeholder="Motif (optionnel)"
-                maxLength={500}
-                rows={2}
-              />
+              <textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Motif (optionnel)" maxLength={500} rows={2} />
               <button className="calm-primary-button" type="button" onClick={submitAbsence} disabled={submitting}>
                 {submitting ? "Enregistrement…" : "Ajouter l’absence"}
+              </button>
+            </div>
+          )}
+
+          {mode === "meeting" && meetingDay && (
+            <div className="absence-confirm-panel">
+              <div>
+                <strong>{capitalize(format(meetingDay, "EEEE d MMMM yyyy", { locale: fr }))}</strong>
+                <button type="button" className="icon-button" onClick={() => setMeetingDay(null)} aria-label="Réinitialiser la sélection">
+                  <X size={15} />
+                </button>
+              </div>
+              <input
+                className="meeting-title-input"
+                value={meetingTitle}
+                onChange={(event) => setMeetingTitle(event.target.value)}
+                placeholder="Titre de la réunion"
+                maxLength={160}
+              />
+              <div className="meeting-editor-grid meeting-editor-grid-compact">
+                <textarea
+                  value={meetingContent}
+                  onChange={(event) => setMeetingContent(event.target.value)}
+                  placeholder={"# Points abordés\n- ...\n**Décisions :**"}
+                  rows={7}
+                />
+                <div className="meeting-preview meeting-preview-compact" dangerouslySetInnerHTML={{ __html: renderMarkdown(meetingContent) }} />
+              </div>
+              <button className="calm-primary-button" type="button" onClick={submitMeeting} disabled={submitting}>
+                {submitting ? "Enregistrement…" : "Ajouter la réunion"}
               </button>
             </div>
           )}
@@ -338,12 +444,7 @@ export default function AbsenceCalendarPage({ isResponsable }) {
                   </small>
                   {entry.reason && <p>{entry.reason}</p>}
                 </div>
-                <button
-                  type="button"
-                  className="icon-button"
-                  onClick={() => removeAbsence(entry.id)}
-                  aria-label="Supprimer l’absence"
-                >
+                <button type="button" className="icon-button" onClick={() => removeAbsence(entry.id)} aria-label="Supprimer l’absence">
                   <Trash2 size={15} />
                 </button>
               </div>
