@@ -64,7 +64,8 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isResponsable }) {
         <Route path="/staff/absences" element={isStaff ? <AbsenceCalendarPage isResponsable={isResponsable} /> : <Navigate to="/" replace />} />
         <Route path="/staff/meetings" element={isStaff ? <MeetingSummariesPage isResponsable={isResponsable} /> : <Navigate to="/" replace />} />
         <Route path="/staff/meetings/new" element={isStaff && isResponsable ? <MeetingSummaryEditorPage /> : <Navigate to="/staff/meetings" replace />} />
-        <Route path="/staff/meetings/:meetingId" element={isStaff ? <MeetingSummaryEditorPage /> : <Navigate to="/" replace />} />
+        <Route path="/staff/meetings/:meetingId" element={<MeetingSummaryEditorPage isResponsable={isResponsable} />} />
+                                                          
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
