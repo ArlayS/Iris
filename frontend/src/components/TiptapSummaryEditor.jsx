@@ -3,16 +3,8 @@ import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
+import { api } from "../api/client";
 
-export default function TiptapSummaryEditor({ value, onChange, placeholder = "Rédiger le résumé…" }) {
-  const editor = useCreateBlockNote();
-  const hasLoadedInitialContent = useRef(false);
-
-  useEffect(() => {
-    if (!editor || hasLoadedInitialContent.current) {
-      return;
-    }
-    hasLoadedInitialContent.current = true;
 async function uploadFile(file) {
   const formData = new FormData();
   formData.append("file", file);
@@ -23,6 +15,24 @@ async function uploadFile(file) {
 
   return response.data.url;
 }
+
+export default function TiptapSummaryEditor({
+  value,
+  onChange,
+  placeholder = "Rédiger le résumé…",
+}) {
+  const editor = useCreateBlockNote({
+    uploadFile,
+  });
+
+  const hasLoadedInitialContent = useRef(false);
+
+  useEffect(() => {
+    if (!editor || hasLoadedInitialContent.current) {
+      return;
+    }
+    hasLoadedInitialContent.current = true;
+
     const loadContent = async () => {
       if (value && typeof value === "string" && value.trim().length > 0) {
         try {
