@@ -61,7 +61,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isResponsable }) {
         <Route path="/admin" element={isAdmin ? <AdminDashboardPage /> : <Navigate to="/" replace />} />
         <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
         <Route path="/resources" element={<ResourcesPage isAdmin={isAdmin} />} />
-        <Route path="/staff/absences" element={isStaff ? <AbsenceCalendarPage isResponsable={isResponsable} /> : <Navigate to="/" replace />} />
+        <Route path="/staff/calendrier" element={isStaff ? <AbsenceCalendarPage isResponsable={isResponsable} /> : <Navigate to="/" replace />} />
         <Route path="/staff/meetings" element={isStaff ? <MeetingSummariesPage isResponsable={isResponsable} /> : <Navigate to="/" replace />} />
         <Route path="/staff/meetings/new" element={isStaff && isResponsable ? <MeetingSummaryEditorPage /> : <Navigate to="/staff/meetings" replace />} />
         <Route path="/staff/meetings/:meetingId" element={<MeetingSummaryEditorPage isResponsable={isResponsable} />} />
