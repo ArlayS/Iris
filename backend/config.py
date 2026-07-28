@@ -22,6 +22,7 @@ DISCORD_ADMIN_ROLE_ID = os.environ.get("DISCORD_ADMIN_ROLE_ID")
 DISCORD_TICKET_CATEGORY_ID = os.environ.get("DISCORD_TICKET_CATEGORY_ID")
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
 DISCORD_STAFF_ROLE_ID = os.environ.get("DISCORD_STAFF_ROLE_ID")
+DISCORD_RESPONSABLE_ROLE_ID = os.environ.get("DISCORD_RESPONSABLE_ROLE_ID")
 
 
 def missing_discord_bot_settings() -> list[str]:
