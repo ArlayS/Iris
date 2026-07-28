@@ -13,9 +13,12 @@ import LoginPage from "./pages/LoginPage";
 import NewTicketPage from "./pages/NewTicketPage";
 import ResourcesPage from "./pages/ResourcesPage";
 import TicketWorkspacePage from "./pages/TicketWorkspacePage";
+import AbsenceCalendarPage from "./pages/AbsenceCalendarPage";
+import MeetingSummariesPage from "./pages/MeetingSummariesPage";
+import MeetingSummaryEditorPage from "./pages/MeetingSummaryEditorPage";
 
 
-function AuthenticatedApp({ helper, isAdmin }) {
+function AuthenticatedApp({ helper, isAdmin, isStaff }) {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ active_count: 0, archived_count: 0, total_messages: 0 });
 
@@ -49,7 +52,7 @@ function AuthenticatedApp({ helper, isAdmin }) {
   };
 
   return (
-    <AppShell helper={helper} tickets={tickets} onLogout={logout} isAdmin={isAdmin}>
+    <AppShell helper={helper} tickets={tickets} onLogout={logout} isAdmin={isAdmin} isStaff={isStaff}>
       <Routes>
         <Route path="/" element={<DashboardPage stats={stats} tickets={tickets} />} />
         <Route path="/new" element={<NewTicketPage onCreated={updateTicket} />} />
@@ -58,6 +61,9 @@ function AuthenticatedApp({ helper, isAdmin }) {
         <Route path="/admin" element={isAdmin ? <AdminDashboardPage /> : <Navigate to="/" replace />} />
         <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
         <Route path="/resources" element={<ResourcesPage isAdmin={isAdmin} />} />
+        <Route path="/staff/absences" element={isStaff ? <AbsenceCalendarPage /> : <Navigate to="/" replace />} />
+        <Route path="/staff/meetings" element={isStaff ? <MeetingSummariesPage /> : <Navigate to="/" replace />} />
+        <Route path="/staff/meetings/:meetingId" element={isStaff ? <MeetingSummaryEditorPage /> : <Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
@@ -84,7 +90,7 @@ function App() {
   return (
     <div className="App" data-testid="iris-app">
       <BrowserRouter>
-        {session.authenticated ? <AuthenticatedApp helper={session.helper} isAdmin={session.is_admin} /> : <LoginPage />}
+        {session.authenticated ? <AuthenticatedApp helper={session.helper} isAdmin={session.is_admin} isStaff={session.is_staff} /> : <LoginPage />}
         <Toaster theme="light" position="bottom-right" />
       </BrowserRouter>
     </div>
