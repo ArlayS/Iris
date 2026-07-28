@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api, getErrorMessage } from "../api/client";
 
 
-export default function MeetingSummariesPage() {
+export default function MeetingSummariesPage({ isResponsable }) {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,9 +41,11 @@ export default function MeetingSummariesPage() {
           <p className="eyebrow">ESPACE STAFF</p>
           <h1>Résumés de réunions</h1>
         </div>
-        <Link className="calm-primary-button" to="/staff/meetings/new">
-          <Plus size={17} /> Nouveau résumé
-        </Link>
+        {isResponsable && (
+          <Link className="calm-primary-button" to="/staff/meetings/new" data-testid="add-meeting-button">
+            <Plus size={17} /> Ajouter une réunion
+          </Link>
+        )}
       </header>
 
       {loading ? (
