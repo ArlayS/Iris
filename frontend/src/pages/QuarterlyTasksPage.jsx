@@ -1,59 +1,262 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Archive, Calendar, ChevronDown, Plus, Trash2, UserMinus, UserCheck, UserPlus } from "lucide-react";
+import {
+  Archive,
+  Calendar,
+  ChevronDown,
+  Plus,
+  Star,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 
 function formatDate(value) {
-  return new Date(value).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return new Date(value).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
-function TaskCard({ task, isResponsable, onRemove, onToggleSignup, isSignedUp }) {
+function NominateSelect({ task, members, onNominate }) {
+  const [selected, setSelected] = useState("");
+  const available = members.filter(
+    (m) => !task.volunteers.some((v) => v.id === m.id)
+  );
+
+  const handleNominate = async () => {
+    if (!selected) return;
+    await onNominate(task.id, selected);
+    setSelected("");
+  };
+
+  if (available.length === 0) return null;
+
   return (
-    <div className="meeting-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "10px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+    <div style={{ display: "flex", gap: "6px" }}>
+      <select
+        value={selected}
+        onChange={(e) => setSelected(e.target.value)}
+        className="meeting-inline-input"
+        style={{ padding: "6px 10px", width: "180px" }}
+      >
+        <option value="">Nommer un membre…</option>
+        {available.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.display_name || m.username}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="btn-ghost"
+        onClick={handleNominate}
+        disabled={!selected}
+        style={{ padding: "6px 12px" }}
+      >
+        <UserPlus size={14} />
+      </button>
+    </div>
+  );
+}
+
+function VolunteerBadge({ volunteer, taskId, isResponsable, onRate, onRemove }) {
+  const [editing, setEditing] = useState(false);
+  const [rating, setRating] = useState(volunteer.rating || 0);
+  const [note, setNote] = useState(volunteer.note || "");
+
+  const save = async () => {
+    await onRate(taskId, volunteer.id, rating, note);
+    setEditing(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <span className="status-badge status-done">
+          {volunteer.display_name || volunteer.username}
+          {volunteer.rating ? ` · ${volunteer.rating}/5` : ""}
+        </span>
+        {isResponsable && (
+          <>
+            <button
+              type="button"
+              className="icon-btn-danger"
+              onClick={() => setEditing((c) => !c)}
+              aria-label="Noter"
+              style={{ padding: "4px" }}
+            >
+              <Star size={14} />
+            </button>
+            <button
+              type="button"
+              className="icon-btn-danger"
+              onClick={() => onRemove(taskId, volunteer.id)}
+              aria-label="Retirer"
+              style={{ padding: "4px" }}
+            >
+              <X size={14} />
+            </button>
+          </>
+        )}
+      </div>
+      {editing && (
+        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          <select
+            value={rating}
+            onChange={(e) => setRating(Number(e.target.value))}
+            className="meeting-inline-input"
+            style={{ width: "70px", padding: "4px 6px" }}
+          >
+            <option value={0}>–</option>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                {n}/5
+              </option>
+            ))}
+          </select>
+          <input
+            className="meeting-inline-input"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Note / commentaire"
+            style={{ flex: 1, padding: "4px 8px" }}
+          />
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={save}
+            style={{ padding: "4px 10px" }}
+          >
+            OK
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TaskCard({
+  task,
+  isResponsable,
+  members,
+  onRemove,
+  onToggleSignup,
+  isSignedUp,
+  onRateVolunteer,
+  onRemoveVolunteer,
+  onNominate,
+}) {
+  return (
+    <div
+      className="meeting-row"
+      style={{ flexDirection: "column", alignItems: "stretch", gap: "10px" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "12px",
+        }}
+      >
         <div style={{ minWidth: 0, flex: 1 }}>
           <span className="category-badge">{task.category}</span>
-          <div style={{ fontWeight: 700, fontSize: "20px", marginTop: "8px", color: "var(--ink)" }}>{task.name}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--muted)", marginTop: "4px" }}>
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: "20px",
+              marginTop: "8px",
+              color: "var(--ink)",
+            }}
+          >
+            {task.name}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "13px",
+              color: "var(--muted)",
+              marginTop: "4px",
+            }}
+          >
             <Calendar size={14} />
             <span>{formatDate(task.task_date)}</span>
           </div>
         </div>
         {isResponsable && onRemove && (
-          <button type="button" className="icon-btn-danger" onClick={() => onRemove(task.id)} aria-label="Supprimer">
+          <button
+            type="button"
+            className="icon-btn-danger"
+            onClick={() => onRemove(task.id)}
+            aria-label="Supprimer"
+          >
             <Trash2 size={16} />
           </button>
         )}
       </div>
 
       {task.explanation && (
-        <p style={{ fontSize: "13px", color: "var(--muted)", margin: 0, lineHeight: 1.6, wordBreak: "break-word", overflowWrap: "anywhere" }}>
+        <p
+          style={{
+            fontSize: "13px",
+            color: "var(--muted)",
+            margin: 0,
+            lineHeight: 1.6,
+            wordBreak: "break-word",
+            overflowWrap: "anywhere",
+          }}
+        >
           {task.explanation}
         </p>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px", flexWrap: "wrap", gap: "10px" }}>
-        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginTop: "6px",
+          flexWrap: "wrap",
+          gap: "10px",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
           {task.volunteers.length === 0 ? (
-            <span style={{ fontSize: "12px", color: "var(--muted)" }}>Personne inscrit pour l'instant.</span>
+            <span style={{ fontSize: "12px", color: "var(--muted)" }}>
+              Personne inscrit pour l'instant.
+            </span>
           ) : (
             task.volunteers.map((v) => (
-              <span key={v.id} className="status-badge status-done">
-                {v.display_name || v.username}
-              </span>
+              <VolunteerBadge
+                key={v.id}
+                volunteer={v}
+                taskId={task.id}
+                isResponsable={isResponsable}
+                onRate={onRateVolunteer}
+                onRemove={onRemoveVolunteer}
+              />
             ))
           )}
+          {isResponsable && members && (
+            <NominateSelect task={task} members={members} onNominate={onNominate} />
+          )}
         </div>
-       {onToggleSignup && (
-  <button
-    type="button"
-    className={`btn-ghost ${isSignedUp ? "btn-locked" : ""}`}
-    onClick={() => onToggleSignup(task)}
-  >
-    {isSignedUp ? <UserMinus size={16} /> : <UserPlus size={16} />}
-    {isSignedUp ? "Se désinscrire" : "S'inscrire"}
-  </button>
-)}
+        {onToggleSignup && (
+          <button
+            type="button"
+            className={`btn-ghost ${isSignedUp ? "btn-locked" : ""}`}
+            onClick={() => onToggleSignup(task)}
+          >
+            {isSignedUp ? <UserMinus size={16} /> : <UserPlus size={16} />}
+            {isSignedUp ? "Se désinscrire" : "S'inscrire"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -67,7 +270,9 @@ function ArchivedPeriodRow({ period, isOpen, onToggle, isResponsable, onDelete }
     if (tasks.length > 0) return;
     setLoading(true);
     try {
-      const response = await api.get("/staff/tasks", { params: { period_id: period.id } });
+      const response = await api.get("/staff/tasks", {
+        params: { period_id: period.id },
+      });
       setTasks(response.data);
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -100,7 +305,13 @@ function ArchivedPeriodRow({ period, isOpen, onToggle, isResponsable, onDelete }
           <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)" }}>
             {formatDate(period.start_date)} → {formatDate(period.end_date)}
           </span>
-          <ChevronDown size={16} style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
+          <ChevronDown
+            size={16}
+            style={{
+              transform: isOpen ? "rotate(180deg)" : "none",
+              transition: "transform 0.15s ease",
+            }}
+          />
         </button>
         {isResponsable && (
           <button
@@ -133,12 +344,12 @@ function ArchivedPeriodRow({ period, isOpen, onToggle, isResponsable, onDelete }
   );
 }
 
-
 export default function QuarterlyTasksPage({ isResponsable, helper }) {
   const [period, setPeriod] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [archivedPeriods, setArchivedPeriods] = useState([]);
   const [openArchiveId, setOpenArchiveId] = useState(null);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [periodStart, setPeriodStart] = useState(() => new Date().toISOString().slice(0, 10));
   const [creatingPeriod, setCreatingPeriod] = useState(false);
@@ -160,7 +371,9 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
       setPeriod(periodResponse.data);
       setArchivedPeriods(archivedResponse.data);
       if (periodResponse.data) {
-        const tasksResponse = await api.get("/staff/tasks", { params: { period_id: periodResponse.data.id } });
+        const tasksResponse = await api.get("/staff/tasks", {
+          params: { period_id: periodResponse.data.id },
+        });
         setTasks(tasksResponse.data);
       } else {
         setTasks([]);
@@ -175,17 +388,16 @@ export default function QuarterlyTasksPage({ isResponsable, helper }) {
   useEffect(() => {
     load();
   }, []);
-  
-const removePeriod = async (periodId) => {
-  try {
-    await api.delete(`/staff/tasks/period/${periodId}`);
-    setArchivedPeriods((current) => current.filter((p) => p.id !== periodId));
-    if (openArchiveId === periodId) setOpenArchiveId(null);
-    toast.success("Période supprimée.");
-  } catch (error) {
-    toast.error(getErrorMessage(error));
-  }
-};
+
+  useEffect(() => {
+    if (isResponsable) {
+      api
+        .get("/staff/members")
+        .then((res) => setMembers(res.data))
+        .catch(() => {});
+    }
+  }, [isResponsable]);
+
   const declarePeriod = async (event) => {
     event.preventDefault();
     setCreatingPeriod(true);
@@ -212,6 +424,17 @@ const removePeriod = async (periodId) => {
       toast.error(getErrorMessage(error));
     } finally {
       setArchiving(false);
+    }
+  };
+
+  const removePeriod = async (periodId) => {
+    try {
+      await api.delete(`/staff/tasks/period/${periodId}`);
+      setArchivedPeriods((current) => current.filter((p) => p.id !== periodId));
+      if (openArchiveId === periodId) setOpenArchiveId(null);
+      toast.success("Période supprimée.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -251,13 +474,53 @@ const removePeriod = async (periodId) => {
   const toggleSignup = async (task) => {
     try {
       const response = await api.post(`/staff/tasks/${task.id}/signup`);
-      setTasks((current) => current.map((item) => (item.id === task.id ? response.data : item)));
+      setTasks((current) =>
+        current.map((item) => (item.id === task.id ? response.data : item))
+      );
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
   };
 
-  const isSignedUp = (task) => helper && task.volunteers.some((v) => v.id === helper.id);
+  const rateVolunteer = async (taskId, helperId, rating, note) => {
+    try {
+      const response = await api.put(
+        `/staff/tasks/${taskId}/volunteers/${helperId}/rate`,
+        { rating, note }
+      );
+      setTasks((current) =>
+        current.map((item) => (item.id === taskId ? response.data : item))
+      );
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const removeVolunteer = async (taskId, helperId) => {
+    try {
+      const response = await api.delete(`/staff/tasks/${taskId}/volunteers/${helperId}`);
+      setTasks((current) =>
+        current.map((item) => (item.id === taskId ? response.data : item))
+      );
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const nominateVolunteer = async (taskId, helperId) => {
+    try {
+      const response = await api.post(`/staff/tasks/${taskId}/nominate/${helperId}`);
+      setTasks((current) =>
+        current.map((item) => (item.id === taskId ? response.data : item))
+      );
+      toast.success("Membre nommé à la tâche.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const isSignedUp = (task) =>
+    helper && task.volunteers.some((v) => v.id === helper.id);
 
   return (
     <section className="page-content dashboard-page" data-testid="quarterly-tasks-page">
@@ -352,9 +615,13 @@ const removePeriod = async (periodId) => {
                     key={task.id}
                     task={task}
                     isResponsable={isResponsable}
+                    members={members}
                     onRemove={removeTask}
                     onToggleSignup={toggleSignup}
                     isSignedUp={isSignedUp(task)}
+                    onRateVolunteer={rateVolunteer}
+                    onRemoveVolunteer={removeVolunteer}
+                    onNominate={nominateVolunteer}
                   />
                 ))}
               </div>
@@ -367,18 +634,22 @@ const removePeriod = async (periodId) => {
             </div>
             <div className="meetings-list-card dashboard-card" style={{ padding: 0 }}>
               {archivedPeriods.length === 0 ? (
-                <p className="dashboard-empty" style={{ padding: "24px" }}>Aucune période archivée.</p>
+                <p className="dashboard-empty" style={{ padding: "24px" }}>
+                  Aucune période archivée.
+                </p>
               ) : (
-              archivedPeriods.map((archivedPeriod) => (
-  <ArchivedPeriodRow
-    key={archivedPeriod.id}
-    period={archivedPeriod}
-    isOpen={openArchiveId === archivedPeriod.id}
-    onToggle={(id) => setOpenArchiveId((current) => (current === id ? null : id))}
-    isResponsable={isResponsable}
-    onDelete={removePeriod}
-  />
-))
+                archivedPeriods.map((archivedPeriod) => (
+                  <ArchivedPeriodRow
+                    key={archivedPeriod.id}
+                    period={archivedPeriod}
+                    isOpen={openArchiveId === archivedPeriod.id}
+                    onToggle={(id) =>
+                      setOpenArchiveId((current) => (current === id ? null : id))
+                    }
+                    isResponsable={isResponsable}
+                    onDelete={removePeriod}
+                  />
+                ))
               )}
             </div>
           </div>
