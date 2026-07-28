@@ -17,7 +17,47 @@
   gap: 6px;
   margin-bottom: 16px;
 }
+.meeting-row-full {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 2fr auto auto;
+  align-items: start;
+  gap: 16px;
+  padding: 18px 20px;
+}
 
+.meeting-agenda-full {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: initial;
+}
+
+.meeting-row-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-consult {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sage-soft);
+  color: var(--sage);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-consult:hover {
+  background: var(--sage);
+  color: #fff;
+}
 .summary-field label {
   display: flex;
   align-items: center;
