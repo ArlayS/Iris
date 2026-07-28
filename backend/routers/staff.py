@@ -2,9 +2,11 @@ import asyncio
 import os
 import tempfile
 from datetime import datetime, timezone
+from io import BytesIO
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import StreamingResponse
 
 from database import db
 from models.staff import (
@@ -16,7 +18,7 @@ from models.staff import (
 )
 from models.ticket import AuthenticatedHelper
 from services.auth_service import current_responsable, current_staff
-from services.storage_service import extension_from_filename, put_object_from_file
+from services.storage_service import extension_from_filename, get_object, put_object_from_file
 
 router = APIRouter(prefix="/staff", tags=["staff"])
 
@@ -174,16 +176,27 @@ async def upload_meeting_image(
                 temp_file.write(chunk)
 
         image_id = str(uuid4())
+        image_filename = f"{image_id}.{extension}"
+        image_path = f"iris/meeting-images/{image_filename}"
         content_type = f"image/{extension if extension != 'jpg' else 'jpeg'}"
-        storage_result = await asyncio.to_thread(
-            put_object_from_file,
-            f"meeting-images/{image_id}.{extension}",
-            temp_path,
-            content_type,
-        )
+        await asyncio.to_thread(put_object_from_file, image_path, temp_path, content_type)
 
-        return {"url": storage_result["url"]}
+        return {"url": f"/api/staff/meetings/images/{image_filename}"}
     finally:
         await file.close()
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)
+
+
+@router.get("/meetings/images/{filename}")
+async def get_meeting_image(
+    filename: str,
+    _: AuthenticatedHelper = Depends(current_staff),
+) -> StreamingResponse:
+    extension = filename.rsplit(".", 1)[-1].lower()
+    content_type = f"image/{extension if extension != 'jpg' else 'jpeg'}"
+    try:
+        content, _unused = await asyncio.to_thread(get_object, f"iris/meeting-images/{filename}")
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Image introuvable.") from error
+    return StreamingResponse(BytesIO(content), media_type=content_type)
