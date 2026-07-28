@@ -198,7 +198,15 @@ async def create_task(
     period = await db.quarterly_periods.find_one({"id": payload.period_id}, {"_id": 0})
     if not period:
         raise HTTPException(status_code=404, detail="Période introuvable.")
-    now = _now()
+
+    is_event = "event" in payload.category.strip().lower()
+    if is_event:
+        if not payload.end_date:
+            raise HTTPException(status_code=422, detail="Une date de fin est requise pour un événement.")
+        if payload.end_date < payload.task_date:
+            raise HTTPException(status_code=422, detail="La date de fin doit suivre la date de début.")
+
+    now = datetime.now(timezone.utc).isoformat()
     task = QuarterlyTask(
         id=str(uuid4()),
         period_id=payload.period_id,
@@ -206,7 +214,13 @@ async def create_task(
         category=payload.category.strip(),
         explanation=payload.explanation.strip(),
         task_date=payload.task_date,
-        created_by=_helper_identity(helper),
+        end_date=payload.end_date if is_event else None,
+        created_by={
+            "id": helper.id,
+            "username": helper.username,
+            "display_name": helper.global_name,
+            "avatar_url": helper.avatar_url,
+        },
         volunteers=[],
         created_at=now,
         updated_at=now,
