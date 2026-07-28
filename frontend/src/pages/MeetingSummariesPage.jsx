@@ -107,35 +107,37 @@ export default function MeetingSummariesPage() {
             </div>
           ) : (
             <div className="ticket-table">
-              {meetings.map((meeting) => (
-                <Link to={`/staff/meetings/${meeting.id}`} className="ticket-table-row" key={meeting.id}>
-                  <span className="ticket-table-person">
-                    <strong>{meeting.title}</strong>
-                  </span>
-                  <span>
-                    {new Date(meeting.meeting_date).toLocaleDateString("fr-FR", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <span>{meeting.agenda || "—"}</span>
-                  <span className={`status-dot ${meeting.status === "redige" ? "active" : "archived"}`}>
-                    {meeting.status === "redige" ? "RÉDIGÉ" : "À RÉDIGER"}
-                  </span>
-                  <button
-                    type="button"
-                    className="icon-btn-danger"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleDelete(meeting.id);
-                    }}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </Link>
-              ))}
-            </div>
+  {meetings.map((meeting) => (
+    <div className="ticket-table-row meeting-row-full" key={meeting.id}>
+      <span className="ticket-table-person">
+        <strong>{meeting.title}</strong>
+      </span>
+      <span>
+        {new Date(meeting.meeting_date).toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}
+      </span>
+      <span className="meeting-agenda-full">{meeting.agenda || "Aucun ordre du jour renseigné."}</span>
+      <span className={`status-dot ${meeting.status === "redige" ? "active" : "archived"}`}>
+        {meeting.status === "redige" ? "RÉDIGÉ" : "À RÉDIGER"}
+      </span>
+      <div className="meeting-row-buttons">
+        <Link to={`/staff/meetings/${meeting.id}`} className="btn-consult">
+          Consulter <ArrowRight size={14} />
+        </Link>
+        <button
+          type="button"
+          className="icon-btn-danger"
+          onClick={() => handleDelete(meeting.id)}
+        >
+          <Trash2 size={15} />
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
           )}
         </section>
 
