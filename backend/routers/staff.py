@@ -15,6 +15,9 @@ from models.staff import (
     MeetingSummary,
     MeetingSummaryCreate,
     MeetingSummaryUpdate,
+    QuarterlyTask,
+    QuarterlyTaskCreate,
+    QuarterlyTaskUpdate,
 )
 from models.ticket import AuthenticatedHelper
 from services.auth_service import current_responsable, current_staff
@@ -174,6 +177,57 @@ async def delete_meeting(
         raise HTTPException(status_code=403, detail="Ce résumé est verrouillé.")
     await db.meeting_summaries.delete_one({"id": meeting_id})
 
+@router.get("/tasks", response_model=list[QuarterlyTask])
+async def list_tasks(_: AuthenticatedHelper = Depends(current_staff)) -> list[QuarterlyTask]:
+    return await db.quarterly_tasks.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+@router.post("/tasks", response_model=QuarterlyTask, status_code=status.HTTP_201_CREATED)
+async def create_task(
+    payload: QuarterlyTaskCreate,
+    helper: AuthenticatedHelper = Depends(current_responsable),
+) -> QuarterlyTask:
+    now = datetime.now(timezone.utc).isoformat()
+    task = QuarterlyTask(
+        id=str(uuid4()),
+        title=payload.title.strip(),
+        is_done=False,
+        created_by={
+            "id": helper.id,
+            "username": helper.username,
+            "display_name": helper.global_name,
+            "avatar_url": helper.avatar_url,
+        },
+        created_at=now,
+        updated_at=now,
+    )
+    await db.quarterly_tasks.insert_one(task.model_dump())
+    return task
+
+@router.put("/tasks/{task_id}", response_model=QuarterlyTask)
+async def update_task(
+    task_id: str,
+    payload: QuarterlyTaskUpdate,
+    _: AuthenticatedHelper = Depends(current_staff),
+) -> QuarterlyTask:
+    existing = await db.quarterly_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
+    updated_at = datetime.now(timezone.utc).isoformat()
+    await db.quarterly_tasks.update_one(
+        {"id": task_id},
+        {"$set": {"is_done": payload.is_done, "updated_at": updated_at}},
+    )
+    existing.update(is_done=payload.is_done, updated_at=updated_at)
+    return existing
+
+@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_task(
+    task_id: str,
+    _: AuthenticatedHelper = Depends(current_responsable),
+) -> None:
+    result = await db.quarterly_tasks.delete_one({"id": task_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
 
 @router.post("/meetings/{meeting_id}/lock", response_model=MeetingSummary)
 async def toggle_meeting_lock(
