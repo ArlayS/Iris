@@ -59,6 +59,12 @@ export default function ProjectCalendarPage() {
     return result;
   }, [currentMonth]);
 
+  
+const today = toIsoDate(new Date());
+const upcomingProjects = [...projects]
+  .filter((project) => !project.end_date || project.end_date >= today)
+  .sort((a, b) => a.start_date.localeCompare(b.start_date))
+  .slice(0, 8);
 const projectsByDay = useMemo(() => {
     const map = new Map();
     for (const project of projects) {
@@ -218,7 +224,29 @@ const projectsByDay = useMemo(() => {
             </div>
           )}
         </div>
-
+<aside className="absence-upcoming">
+  <p className="eyebrow">PROJETS EN COURS</p>
+  {loading ? (
+    <p className="resources-empty">Chargement…</p>
+  ) : upcomingProjects.length === 0 ? (
+    <p className="resources-empty">Aucun projet actif.</p>
+  ) : (
+    upcomingProjects.map((project) => (
+      <Link
+        key={project.id}
+        to={`/animateur/projects/${project.id}`}
+        className="absence-upcoming-row"
+        style={{ textDecoration: "none" }}
+      >
+        <span className="absence-meeting-icon"><FolderKanban size={16} /></span>
+        <div>
+          <strong>{project.title}</strong>
+          <small>{project.start_date} → {project.end_date || "…"}</small>
+        </div>
+      </Link>
+    ))
+  )}
+</aside>
         <aside className="absence-upcoming">
           <p className="eyebrow">TÂCHES À VENIR</p>
           {loading ? (
