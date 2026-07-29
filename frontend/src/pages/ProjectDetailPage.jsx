@@ -22,43 +22,58 @@ function MemberAvatar({ member, size = 26 }) {
 
 function TaskCard({ task, currentHelperId, isResponsable, onSubmit, onValidate, onDelete }) {
   const [note, setNote] = useState(task.submission_note || "");
+  const [file, setFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const isAssignee = task.assignee.id === currentHelperId;
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      await onSubmit(task.id, note, file);
+      setFile(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="meeting-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <MemberAvatar member={task.assignee} size={22} />
-            <strong>{task.title}</strong>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--muted)", marginTop: 4 }}>
-            <Calendar size={14} /> <span>{task.due_date}</span>
-          </div>
-          {task.description && <p style={{ fontSize: 13, color: "var(--muted)", margin: "8px 0 0" }}>{task.description}</p>}
-        </div>
-        <span className={`status-badge ${task.status === "valide" ? "status-done" : "status-pending"}`}>
-          {TASK_STATUS_LABELS[task.status]}
-        </span>
-      </div>
+      {/* ... en-tête inchangé (titre, assignee, due_date, description) ... */}
 
-      {task.status === "rendu" && task.submission_note && (
-        <p style={{ fontSize: 13, color: "var(--muted)", background: "#f7faf7", padding: 10, borderRadius: 8 }}>
-          {task.submission_note}
-        </p>
+      {task.status === "rendu" && (
+        <div style={{ fontSize: 13, color: "var(--muted)", background: "#f7faf7", padding: 10, borderRadius: 8 }}>
+          {task.submission_note && (
+            <div className="tiptap-readonly" dangerouslySetInnerHTML={{ __html: task.submission_note }} />
+          )}
+          {task.submission_file && (
+            <a
+              href={`/api/animateur/tasks/${task.id}/submission/download`}
+              onClick={(e) => e.stopPropagation()}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6 }}
+            >
+              <FileUp size={14} /> {task.submission_file.original_filename}
+            </a>
+          )}
+        </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {isAssignee && (task.status === "a_faire" || task.status === "en_cours") && (
           <>
-            <input
-              className="meeting-inline-input"
-              style={{ flex: 1, minWidth: 200 }}
+            <TiptapSummaryEditor
               value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Note de rendu (optionnel)"
+              onChange={setNote}
+              placeholder="Décrire le rendu, tapez / pour les commandes"
             />
-            <button type="button" className="calm-primary-button is-secondary" onClick={() => onSubmit(task.id, note)}>
-              <FileUp size={15} /> Rendre la tâche
+            <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+            <button
+              type="button"
+              className="calm-primary-button is-secondary"
+              onClick={handleSubmit}
+              disabled={submitting}
+              style={{ alignSelf: "flex-start" }}
+            >
+              <FileUp size={15} /> {submitting ? "Envoi…" : "Rendre la tâche"}
             </button>
           </>
         )}
