@@ -219,7 +219,9 @@ const deleteProject = async (project) => {
     toast.error(getErrorMessage(error));
   }
 };
-
+const filteredProjects = projects.filter((project) =>
+  viewMode === "archives" ? project.status === "archive" : project.status !== "archive"
+);
   return (
     <section className="page-content resources-page" data-testid="projects-list-page">
       <header className="page-header">
