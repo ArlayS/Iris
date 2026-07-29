@@ -2,7 +2,13 @@
 from datetime import date
 from typing import Literal
 from pydantic import BaseModel, Field
+from typing import Literal
+from pydantic import BaseModel, Field
 
+class ProjectMemberAdd(BaseModel):
+    member_id: str = Field(pattern=r"\d{15,22}")
+    role: Literal["membre", "responsable"] = "membre"
+    
 class ProjectMember(BaseModel):
     id: str
     username: str
