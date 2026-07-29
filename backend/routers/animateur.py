@@ -16,7 +16,7 @@ from models.project import (
     Project, ProjectCreate, ProjectUpdate, ProjectTask, ProjectTaskCreate,
     ProjectResource, ProjectMember,
 )
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request, status
 from fastapi.responses import Response
 from services.auth_service import current_animateur
 from database import db
