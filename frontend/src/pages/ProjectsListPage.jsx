@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Archive, ArchiveRestore, Calendar, FolderKanban, Plus, Users, X } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
-
+const isResponsable = profile?.is_responsable === true;
 const STATUS_LABELS = { en_cours: "En cours", termine: "Terminé", archive: "Archivé" };
 const STATUS_CLASSES = { en_cours: "status-pending", termine: "status-done", archive: "status-archived" };
 
@@ -28,7 +28,7 @@ function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, 
   const isArchiving = archivingId === project.id;
   const isArchived = project.status === "archive";
   const canArchive = profile?.is_responsable === true || project.created_by?.id === helper?.id;
-  const isResponsable = profile?.is_responsable === true;
+  
 
   const handleJoin = (event) => {
     event.preventDefault();
