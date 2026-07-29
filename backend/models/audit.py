@@ -16,3 +16,8 @@ class AuthLog(BaseModel):
     method: str | None = None
     status_code: int | None = None
     details: dict[str, Any] = Field(default_factory=dict)
+
+
+class AuthLogListResponse(BaseModel):
+    total: int
+    items: list[AuthLog]
