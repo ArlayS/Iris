@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
 from models.ticket import AuthSession
+from services.audit_service import log_auth_event
 from services.auth_service import (
     SESSION_COOKIE,
     STATE_COOKIE,
@@ -27,8 +28,17 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.get("/discord/login")
-async def discord_login() -> RedirectResponse:
+async def discord_login(request: Request) -> RedirectResponse:
     state = create_state()
+
+    await log_auth_event(
+        "auth.login.started",
+        request,
+        helper=None,
+        status_code=302,
+        details={"provider": "discord"},
+    )
+
     response = RedirectResponse(create_oauth_url(state), status_code=302)
     response.set_cookie(
         STATE_COOKIE,
@@ -45,12 +55,39 @@ async def discord_login() -> RedirectResponse:
 @router.get("/discord/callback")
 async def discord_callback(code: str, state: str, request: Request) -> RedirectResponse:
     if state != request.cookies.get(STATE_COOKIE):
-        return RedirectResponse(f"{FRONTEND_URL}/?auth_error=Session+expir%C3%A9e%2C+r%C3%A9essayez.", status_code=302)
+        await log_auth_event(
+            "auth.login.failure",
+            request,
+            helper=None,
+            status_code=302,
+            details={"provider": "discord", "reason": "invalid_oauth_state"},
+        )
+        return RedirectResponse(
+            f"{FRONTEND_URL}/?auth_error=Session+expir%C3%A9e%2C+r%C3%A9essayez.",
+            status_code=302,
+        )
+
     try:
         helper = await exchange_code(code)
     except HTTPException as error:
+        await log_auth_event(
+            "auth.login.failure",
+            request,
+            helper=None,
+            status_code=error.status_code,
+            details={"provider": "discord", "reason": str(error.detail)},
+        )
         message = quote(str(error.detail))
         return RedirectResponse(f"{FRONTEND_URL}/?auth_error={message}", status_code=302)
+
+    await log_auth_event(
+        "auth.login.success",
+        request,
+        helper=helper,
+        status_code=302,
+        details={"provider": "discord", "mode": helper.mode},
+    )
+
     response = RedirectResponse(FRONTEND_URL, status_code=302)
     response.set_cookie(
         SESSION_COOKIE,
@@ -83,6 +120,13 @@ async def session(request: Request, response: Response) -> AuthSession:
     )
 
     if raw_session and not helper:
+        await log_auth_event(
+            "auth.session.invalid",
+            request,
+            helper=None,
+            status_code=200,
+            details={"reason": "invalid_or_expired_cookie"},
+        )
         response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
         response.delete_cookie(SESSION_COOKIE)
         return empty
@@ -101,13 +145,27 @@ async def session(request: Request, response: Response) -> AuthSession:
             is_animateur = await is_animateur_helper(helper.id)
 
             if not has_access and not is_staff and not is_responsable and not is_animateur:
+                await log_auth_event(
+                    "authz.forbidden",
+                    request,
+                    helper=helper,
+                    status_code=200,
+                    details={"reason": "role_removed_or_not_allowed"},
+                )
                 response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
                 response.delete_cookie(SESSION_COOKIE)
                 return empty
 
             is_admin = await is_admin_helper(helper.id)
             is_helper = has_access
-        except HTTPException:
+        except HTTPException as error:
+            await log_auth_event(
+                "auth.session.check_failed",
+                request,
+                helper=helper,
+                status_code=error.status_code,
+                details={"reason": str(error.detail)},
+            )
             response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
             response.delete_cookie(SESSION_COOKIE)
             return empty
@@ -124,7 +182,17 @@ async def session(request: Request, response: Response) -> AuthSession:
 
 
 @router.post("/logout", response_model=AuthSession)
-async def logout(response: Response) -> AuthSession:
+async def logout(request: Request, response: Response) -> AuthSession:
+    helper = parse_session(request.cookies.get(SESSION_COOKIE))
+
+    await log_auth_event(
+        "auth.logout",
+        request,
+        helper=helper,
+        status_code=200,
+        details={"had_session": helper is not None},
+    )
+
     response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
     response.delete_cookie(SESSION_COOKIE)
     return AuthSession(
