@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 import TiptapSummaryEditor from "../components/TiptapSummaryEditor";
+import AddMemberModal from "../components/AddMemberModal";
 
 const TASK_STATUS_LABELS = { a_faire: "À faire", en_cours: "En cours", rendu: "Rendue", valide: "Validée" };
 
@@ -87,6 +88,7 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
   const [isEditingContent, setIsEditingContent] = useState(false);
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
 
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
@@ -119,14 +121,19 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
     }
   };
 
-  useEffect(() => { load(); }, [projectId]);
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   const saveContent = async () => {
     setSaving(true);
     try {
       const response = await api.put(`/animateur/projects/${projectId}`, {
-        title: project.title, description: project.description,
-        content_markdown: content, end_date: project.end_date,
+        title: project.title,
+        description: project.description,
+        content_markdown: content,
+        end_date: project.end_date,
       });
       setProject(response.data);
       setIsEditingContent(false);
@@ -147,11 +154,16 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
     setCreatingTask(true);
     try {
       const response = await api.post(`/animateur/projects/${projectId}/tasks`, {
-        project_id: projectId, assignee_id: taskAssigneeId,
-        title: taskTitle, description: taskDescription, due_date: taskDueDate,
+        project_id: projectId,
+        assignee_id: taskAssigneeId,
+        title: taskTitle,
+        description: taskDescription,
+        due_date: taskDueDate,
       });
       setTasks((current) => [...current, response.data]);
-      setTaskTitle(""); setTaskDescription(""); setTaskAssigneeId("");
+      setTaskTitle("");
+      setTaskDescription("");
+      setTaskAssigneeId("");
       toast.success("Tâche ajoutée.");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -204,7 +216,8 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setResources((current) => [response.data, ...current]);
-      setResourceTitle(""); setResourceFile(null);
+      setResourceTitle("");
+      setResourceFile(null);
       toast.success("Ressource ajoutée.");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -213,7 +226,23 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
     }
   };
 
-  if (loading) return <section className="page-content dashboard-page"><p className="dashboard-loading">Chargement…</p></section>;
+  const removeMember = async (memberId) => {
+    try {
+      const response = await api.delete(`/animateur/projects/${projectId}/members/${memberId}`);
+      setProject(response.data);
+      toast.success("Membre retiré du projet.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="page-content dashboard-page">
+        <p className="dashboard-loading">Chargement…</p>
+      </section>
+    );
+  }
   if (!project) return null;
 
   return (
@@ -241,7 +270,14 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
               </button>
             ) : (
               <div style={{ display: "flex", gap: 8 }}>
-                <button type="button" className="btn-ghost" onClick={() => { setContent(project.content_markdown || ""); setIsEditingContent(false); }}>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    setContent(project.content_markdown || "");
+                    setIsEditingContent(false);
+                  }}
+                >
                   <X size={15} /> Annuler
                 </button>
                 <button type="button" className="btn-primary" onClick={saveContent} disabled={saving}>
@@ -252,28 +288,60 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
           </div>
           <div style={{ padding: 20 }}>
             {isEditingContent ? (
-              <TiptapSummaryEditor value={content} onChange={setContent} placeholder="Décrire le projet, tapez / pour les commandes" autoFocus />
+              <TiptapSummaryEditor
+                value={content}
+                onChange={setContent}
+                placeholder="Décrire le projet, tapez / pour les commandes"
+                autoFocus
+              />
+            ) : project.content_markdown ? (
+              <div className="tiptap-readonly" dangerouslySetInnerHTML={{ __html: project.content_markdown }} />
             ) : (
-              <div className="tiptap-readonly">
-                {project.content_markdown ? <div dangerouslySetInnerHTML={{ __html: project.content_markdown }} /> : <p className="resources-empty">Aucun contenu pour l'instant.</p>}
-              </div>
+              <p className="resources-empty">Aucun contenu pour l'instant.</p>
             )}
           </div>
 
-          <div className="section-heading"><span>TÂCHES INTERNES</span></div>
+          <div className="section-heading">
+            <span>TÂCHES INTERNES</span>
+          </div>
           <div style={{ padding: "0 20px 20px" }}>
             {isResponsable && (
               <form onSubmit={createTask} className="meeting-inline-form" style={{ marginBottom: 20 }}>
-                <div className="meeting-inline-form-header"><span>Assigner une tâche</span></div>
-                <input className="meeting-inline-input" value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="Titre de la tâche" maxLength={160} />
-                <textarea className="meeting-inline-textarea" value={taskDescription} onChange={(e) => setTaskDescription(e.target.value)} placeholder="Description (optionnel)" rows={2} />
-                <select className="meeting-inline-input" value={taskAssigneeId} onChange={(e) => setTaskAssigneeId(e.target.value)}>
+                <div className="meeting-inline-form-header">
+                  <span>Assigner une tâche</span>
+                </div>
+                <input
+                  className="meeting-inline-input"
+                  value={taskTitle}
+                  onChange={(e) => setTaskTitle(e.target.value)}
+                  placeholder="Titre de la tâche"
+                  maxLength={160}
+                />
+                <textarea
+                  className="meeting-inline-textarea"
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                  placeholder="Description (optionnel)"
+                  rows={2}
+                />
+                <select
+                  className="meeting-inline-input"
+                  value={taskAssigneeId}
+                  onChange={(e) => setTaskAssigneeId(e.target.value)}
+                >
                   <option value="">Choisir un membre</option>
                   {project.members.map((member) => (
-                    <option key={member.id} value={member.id}>{member.display_name || member.username}</option>
+                    <option key={member.id} value={member.id}>
+                      {member.display_name || member.username}
+                    </option>
                   ))}
                 </select>
-                <input type="date" className="meeting-inline-input" value={taskDueDate} onChange={(e) => setTaskDueDate(e.target.value)} />
+                <input
+                  type="date"
+                  className="meeting-inline-input"
+                  value={taskDueDate}
+                  onChange={(e) => setTaskDueDate(e.target.value)}
+                />
                 <button type="submit" className="meeting-inline-submit" disabled={creatingTask}>
                   <Plus size={16} /> {creatingTask ? "Ajout…" : "Ajouter la tâche"}
                 </button>
@@ -300,20 +368,41 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
         </div>
 
         <div className="intelligence-panel">
-          <div className="section-heading"><span>MEMBRES DU PROJET</span></div>
+          <div className="section-heading" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>MEMBRES DU PROJET</span>
+            {isResponsable && (
+              <button type="button" className="btn-ghost" onClick={() => setShowAddMember(true)}>
+                <UserPlus size={15} /> Ajouter
+              </button>
+            )}
+          </div>
           <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
             {project.members.map((member) => (
               <div key={member.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <MemberAvatar member={member} size={30} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong style={{ display: "block", fontSize: 13 }}>{member.display_name || member.username}</strong>
-                  <small style={{ color: "var(--muted)" }}>{member.role === "responsable" ? "Responsable" : "Membre"}</small>
+                  <small style={{ color: "var(--muted)" }}>
+                    {member.role === "responsable" ? "Responsable" : "Membre"}
+                  </small>
                 </div>
+                {isResponsable && member.id !== project.created_by.id && (
+                  <button
+                    type="button"
+                    className="icon-button"
+                    onClick={() => removeMember(member.id)}
+                    aria-label="Retirer"
+                  >
+                    <UserMinus size={15} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
 
-          <div className="section-heading"><span>RESSOURCES ANNEXES</span></div>
+          <div className="section-heading">
+            <span>RESSOURCES ANNEXES</span>
+          </div>
           <div style={{ padding: 16 }}>
             <form onSubmit={uploadResource} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
               <input
@@ -351,6 +440,15 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
           </div>
         </div>
       </div>
+
+      {showAddMember && (
+        <AddMemberModal
+          projectId={projectId}
+          existingIds={project.members.map((m) => m.id)}
+          onAdded={(updatedProject) => setProject(updatedProject)}
+          onClose={() => setShowAddMember(false)}
+        />
+      )}
     </section>
   );
 }
