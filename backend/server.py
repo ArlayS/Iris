@@ -29,6 +29,7 @@ app.include_router(animateur_calendar.router, prefix="/api")
 app.include_router(animateur.tasks_router, prefix="/api")
 app.include_router(animateur.resources_router, prefix="/api")
 app.include_router(animateur.router, prefix="/api")
+app.include_router(animateur.members_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
