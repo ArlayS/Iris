@@ -142,7 +142,21 @@ async def update_project(
 
     return project
 
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project(
+    project_id: str,
+    _: AuthenticatedHelper = Depends(current_responsable),
+) -> None:
+    existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Projet introuvable.")
 
+    await db.project_tasks.delete_many({"project_id": project_id})
+    await db.project_resources.delete_many({"project_id": project_id})
+
+    result = await db.projects.delete_one({"id": project_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Projet introuvable.")
 # ---------------------------------------------------------------------------
 # Membres du projet (inscription en toggle, comme /tasks/{id}/signup)
 # ---------------------------------------------------------------------------
