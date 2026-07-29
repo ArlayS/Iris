@@ -21,12 +21,6 @@ import ProjectsListPage from "./pages/ProjectsListPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import ProjectCalendarPage from "./pages/ProjectCalendarPage";
 
-
-
-
-
-
-
 function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, isAnimateur }) {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ active_count: 0, archived_count: 0, total_messages: 0 });
@@ -34,6 +28,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
   const canSeeHelper = isResponsable || isAdmin || isHelper;
   const canSeeAdmin = isResponsable || isAdmin;
   const canSeeStaff = isResponsable || isAdmin || isHelper || isStaff;
+  const canSeeAnimateur = isAnimateur || isResponsable;
 
   const refreshDashboard = async () => {
     const [ticketsResponse, statsResponse] = await Promise.all([api.get("/tickets"), api.get("/tickets/stats")]);
@@ -49,14 +44,16 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
 
   const updateTicket = (ticket) => {
     setTickets((current) => [ticket, ...current.filter((item) => item.id !== ticket.id)]);
-    api.get("/tickets/stats")
+    api
+      .get("/tickets/stats")
       .then((response) => setStats(response.data))
       .catch(() => undefined);
   };
 
   const deleteTicket = (ticketId) => {
     setTickets((current) => current.filter((ticket) => ticket.id !== ticketId));
-    api.get("/tickets/stats")
+    api
+      .get("/tickets/stats")
       .then((response) => setStats(response.data))
       .catch(() => undefined);
   };
@@ -88,9 +85,9 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
           path="/new"
           element={canSeeHelper ? <NewTicketPage onCreated={updateTicket} /> : <Navigate to="/staff/calendrier" replace />}
         />
-            <Route
-              path="/staff/taches"
-              element={isStaff ? <QuarterlyTasksPage isResponsable={isResponsable} /> : <Navigate to="/" replace />}
+        <Route
+          path="/staff/taches"
+          element={isStaff ? <QuarterlyTasksPage isResponsable={isResponsable} /> : <Navigate to="/" replace />}
         />
         <Route
           path="/tickets/:ticketId"
@@ -112,10 +109,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
             )
           }
         />
-        <Route
-          path="/admin"
-          element={canSeeAdmin ? <AdminDashboardPage /> : <Navigate to={defaultRoute} replace />}
-        />
+        <Route path="/admin" element={canSeeAdmin ? <AdminDashboardPage /> : <Navigate to={defaultRoute} replace />} />
         <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
         <Route
           path="/resources"
@@ -131,37 +125,34 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
         />
         <Route
           path="/staff/meetings/new"
-          element={
-            canSeeStaff && isResponsable ? <MeetingSummaryEditorPage /> : <Navigate to="/staff/meetings" replace />
-          }
+          element={canSeeStaff && isResponsable ? <MeetingSummaryEditorPage /> : <Navigate to="/staff/meetings" replace />}
         />
         <Route
           path="/staff/meetings/:meetingId"
           element={canSeeStaff ? <MeetingSummaryEditorPage isResponsable={isResponsable} /> : <Navigate to={defaultRoute} replace />}
         />
-            
-<Route
-  path="/animateur/projects"
-  element={(isAnimateur || isResponsable) ? <ProjectsListPage /> : <Navigate to="/" replace />}
-/>
-<Route
-  path="/animateur/projects/:projectId"
-  element={
-    (isAnimateur || isResponsable)
-      ? <ProjectDetailPage helper={helper} isResponsableGlobal={isResponsable} />
-      : <Navigate to="/" replace />
-  }
-/>
 
-            <Route
-  path="/animateur/calendrier"
-  element={
-    (isAnimateur || isResponsable)
-      ? <ProjectDetailPage helper={helper} isResponsableGlobal={isResponsable} />
-      : <Navigate to="/" replace />
-  }
-/>
-   
+        <Route path="/animateur/projects" element={canSeeAnimateur ? <ProjectsListPage /> : <Navigate to="/" replace />} />
+        <Route
+          path="/animateur/projects/:projectId"
+          element={
+            canSeeAnimateur ? (
+              <ProjectDetailPage helper={helper} isResponsableGlobal={isResponsable} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/animateur/calendrier"
+          element={
+            canSeeAnimateur ? (
+              <ProjectCalendarPage helper={helper} isResponsableGlobal={isResponsable} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
       </Routes>
     </AppShell>
   );
@@ -176,7 +167,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    api.get("/auth/session")
+    api
+      .get("/auth/session")
       .then((response) => setSession(response.data))
       .catch(() => setSession({ authenticated: false }));
   }, []);
@@ -195,7 +187,7 @@ function App() {
             isStaff={session.is_staff}
             isHelper={session.is_helper}
             isResponsable={session.is_responsable}
-            isAnimateur={session.isanimateur}
+            isAnimateur={session.is_animateur}
           />
         ) : (
           <LoginPage />
