@@ -140,9 +140,28 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
           element={canSeeStaff ? <MeetingSummaryEditorPage isResponsable={isResponsable} /> : <Navigate to={defaultRoute} replace />}
         />
             
-    <Route path="/animateur/projects" element={isAnimateur ? <ProjectsListPage /> : <Navigate to="/" replace />} />
-    <Route path="/animateur/projects/:projectId" element={isAnimateur ? <ProjectDetailPage /> : <Navigate to="/" replace />} />
-    <Route path="/animateur/calendrier" element={isAnimateur ? <ProjectCalendarPage /> : <Navigate to="/" replace />} />
+<Route
+  path="/animateur/projects"
+  element={(isAnimateur || isResponsable) ? <ProjectsListPage /> : <Navigate to="/" replace />}
+/>
+<Route
+  path="/animateur/projects/:projectId"
+  element={
+    (isAnimateur || isResponsable)
+      ? <ProjectDetailPage helper={helper} isResponsableGlobal={isResponsable} />
+      : <Navigate to="/" replace />
+  }
+/>
+
+            <Route
+  path="/animateur/calendrier"
+  element={
+    (isAnimateur || isResponsable)
+      ? <ProjectDetailPage helper={helper} isResponsableGlobal={isResponsable} />
+      : <Navigate to="/" replace />
+  }
+/>
+   
       </Routes>
     </AppShell>
   );
