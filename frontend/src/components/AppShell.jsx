@@ -1,6 +1,6 @@
 import {
   Archive, BookOpenText, CalendarDays, ChevronDown, FileStack,
-  FolderKanban, Grid2X2, LayoutDashboard, LogOut, RadioTower, Users,
+  FolderKanban, Grid2X2, ClipboardList, LayoutDashboard, LogOut, RadioTower, Users,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
