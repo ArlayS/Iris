@@ -24,7 +24,7 @@ app.include_router(resources.router, prefix="/api")
 app.include_router(members.router, prefix="/api")
 app.include_router(tickets.router, prefix="/api")
 app.include_router(staff.router, prefix="/api")
-app.include_router(animateur_projects.router, prefix="/api")
+app.include_router(animateur.router, prefix="/api")
 app.include_router(animateur_calendar.router, prefix="/api")
 
 app.add_middleware(
