@@ -17,7 +17,7 @@ from models.project import (
 )
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import Response
-from services.auth_service import current_animateur, current_responsable_projet
+from services.auth_service import current_animateur
 from database import db
 from models.ticket import AuthenticatedHelper
 from services.auth_service import current_staff, current_responsable
