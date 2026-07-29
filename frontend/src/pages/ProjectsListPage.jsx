@@ -5,6 +5,7 @@ import { FolderKanban, Plus, Users, X } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 
 const STATUS_LABELS = { en_cours: "En cours", termine: "Terminé", archive: "Archivé" };
+
 function ProjectCard({ project, helper, onJoin, joiningId }) {
   const isMember = project.members.some((member) => member.id === helper?.id);
   const isJoining = joiningId === project.id;
@@ -42,11 +43,12 @@ function ProjectCard({ project, helper, onJoin, joiningId }) {
   );
 }
 
-export default function ProjectsListPage() {
+export default function ProjectsListPage({ helper }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [joiningId, setJoiningId] = useState(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
@@ -89,6 +91,23 @@ export default function ProjectsListPage() {
       toast.error(getErrorMessage(error));
     } finally {
       setCreating(false);
+    }
+  };
+
+  const joinProject = async (projectId) => {
+    if (!helper?.id) {
+      toast.error("Impossible d'identifier votre profil.");
+      return;
+    }
+    setJoiningId(projectId);
+    try {
+      const response = await api.post(`/animateur/projects/${projectId}/members`, { member_id: helper.id });
+      setProjects((current) => current.map((project) => (project.id === projectId ? response.data : project)));
+      toast.success("Vous avez rejoint le projet.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setJoiningId(null);
     }
   };
 
@@ -151,7 +170,9 @@ export default function ProjectsListPage() {
         <p className="resources-empty">Aucun projet pour l'instant.</p>
       ) : (
         <div className="resource-grid">
-          {projects.map((project) => <ProjectCard key={project.id} project={project} />)}
+          {projects.map((project) => (
+            <ProjectCard key={project.id} project={project} helper={helper} onJoin={joinProject} joiningId={joiningId} />
+          ))}
         </div>
       )}
     </section>
