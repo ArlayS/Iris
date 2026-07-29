@@ -17,6 +17,7 @@ import AbsenceCalendarPage from "./pages/AbsenceCalendarPage";
 import MeetingSummariesPage from "./pages/MeetingSummariesPage";
 import MeetingSummaryEditorPage from "./pages/MeetingSummaryEditorPage";
 import QuarterlyTasksPage from "./pages/QuarterlyTasksPage";
+import ProjectCalendarPage from "./pages/ProjectCalendarPage";
 
 function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable }) {
   const [tickets, setTickets] = useState([]);
@@ -129,6 +130,9 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable })
           path="/staff/meetings/:meetingId"
           element={canSeeStaff ? <MeetingSummaryEditorPage isResponsable={isResponsable} /> : <Navigate to={defaultRoute} replace />}
         />
+            
+
+<Route path="/animateur/calendrier" element={isStaff ? <ProjectCalendarPage /> : <Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>
     </AppShell>
