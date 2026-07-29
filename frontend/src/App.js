@@ -176,7 +176,7 @@ function App() {
             isStaff={session.is_staff}
             isHelper={session.is_helper}
             isResponsable={session.is_responsable}
-      isAnimateur={session.isanimateur}
+            isAnimateur={session.isanimateur}
           />
         ) : (
           <LoginPage />
