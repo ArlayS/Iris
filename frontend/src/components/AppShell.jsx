@@ -19,6 +19,7 @@ export default function AppShell({
   children, helper, tickets, onLogout,
   isAdmin, isStaff, isResponsable, isAnimateur, isHelper,
 }) {
+    const [isResponsableMenuOpen, setIsResponsableMenuOpen] = useState(true);
   const [isHelperMenuOpen, setIsHelperMenuOpen] = useState(true);
   const [isStaffMenuOpen, setIsStaffMenuOpen] = useState(true);
   const [isAnimateurMenuOpen, setIsAnimateurMenuOpen] = useState(true);
@@ -33,6 +34,31 @@ export default function AppShell({
         </Link>
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
+
+
+{(isResponsable) && (
+  <div className="menu-group" data-testid="staff-menu-group">
+    <button
+      className="helper-menu-trigger"
+      type="button"
+      onClick={() => setIsResponsableMenuOpen((current) => !current)}
+      aria-expanded={isResponsableMenuOpen}
+      data-testid="staff-menu-toggle"
+    >
+      <Users size={18} />
+      <span>Responsable</span>
+      <ChevronDown className={isResponsableMenuOpen ? "is-open" : ""} size={16} />
+    </button>
+    <div className={`helper-menu-links ${isResponsableMenuOpen ? "is-open" : ""}`} data-testid="responsable-menu-links">
+      <NavLink className="nav-link" to="/responsable/auth-logs" data-testid="responsable-logs" title="Logs">
+        <FileStack size={18} /> <span>Logs</span>
+      </NavLink>
+    </div>
+  </div>
+)}
+
+
+          
           {(isStaff || isResponsable) && (
   <div className="menu-group" data-testid="staff-menu-group">
     <button
