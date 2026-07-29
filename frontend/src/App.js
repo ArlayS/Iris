@@ -27,7 +27,7 @@ import ProjectCalendarPage from "./pages/ProjectCalendarPage";
 
 
 
-function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable }) {
+function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, isAnimateur }) {
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({ active_count: 0, archived_count: 0, total_messages: 0 });
 
