@@ -18,6 +18,7 @@ from config import (
     DISCORD_HELPER_ROLE_ID,
     DISCORD_HELPER_ROLE2_ID,
     DISCORD_STAFF_ROLE_ID,
+    DISCORD_ANIMATEUR_ROLE_ID,
     DISCORD_RESPONSABLE_ROLE_ID,
     DISCORD_REDIRECT_URI,
     missing_oauth_settings,
@@ -192,11 +193,17 @@ async def is_responsable_helper(helper_id: str) -> bool:
         return False
     return await DiscordService().member_has_role(helper_id, DISCORD_RESPONSABLE_ROLE_ID)
 
-
+async def is_animateur_helper(helper_id: str) -> bool:
+    if not DISCORD_ANIMATEUR_ROLE_ID:
+        return False
+    return await DiscordService.member_has_role(helper_id, DISCORD_ANIMATEUR_ROLE_ID)
+    
 async def has_any_access(helper_id: str) -> bool:
-    if await has_iris_access(helper_id):
+    if await has_iris_access_helper(helper_id):
         return True
     if await is_staff_helper(helper_id):
+        return True
+    if await is_animateur_helper(helper_id):
         return True
     return await is_responsable_helper(helper_id)
 
