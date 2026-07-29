@@ -6,17 +6,17 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import logo from "../assets/logo.png";
 
-function highestRoleLabel({ isAdmin, isStaff, isResponsable, isAnimateur }) {
-  if (isAdmin) return "Coordinateur";
+function highestRoleLabel({ isResponsable, isAdmin, isAnimateur, isHelper, isStaff }) {
   if (isResponsable) return "Responsable";
-  if (isStaff) return "Staff";
+  if (isAdmin) return "Coordinateur";
   if (isAnimateur) return "Animateur";
-  return "Helper";
+  if (isHelper) return "Helper";
+  return "Staff";
 }
 
 export default function AppShell({
   children, helper, tickets, onLogout,
-  isAdmin, isStaff, isResponsable, isAnimateur,
+  isAdmin, isStaff, isResponsable, isAnimateur,isHelper
 }) {
   const [isHelperMenuOpen, setIsHelperMenuOpen] = useState(true);
   const [isStaffMenuOpen, setIsStaffMenuOpen] = useState(true);
@@ -56,7 +56,7 @@ export default function AppShell({
             </>
           )}
 
-          {isAnimateur && (
+          {(isAnimateur || isResponsable) && (
             <>
               <button
                 className="helper-menu-trigger"
@@ -76,7 +76,7 @@ export default function AppShell({
               </div>
             </>
           )}
-
+{(isHelper || isResponsable) && (
           <button
             className="helper-menu-trigger"
             type="button"
@@ -105,7 +105,7 @@ export default function AppShell({
             )}
           </div>
         </nav>
-
+ )}
         <div className="sidebar-bottom">
           <div className="helper-identity" data-testid="helper-identity">
             <Link className="helper-account-link" to="/profile" data-testid="helper-profile-link" title="Ouvrir mon profil">
