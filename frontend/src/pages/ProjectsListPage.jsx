@@ -21,13 +21,21 @@ function MemberStack({ members }) {
   );
 }
 
-function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, onArchive, archivingId, isResponsable }) {
+function ProjectCard({
+  project,
+  helper,
+  isResponsableGlobal,
+  onJoin,
+  joiningId,
+  onArchive,
+  archivingId,
+  onDelete,
+}) {
   const isMember = project.members.some((member) => member.id === helper?.id);
   const isJoining = joiningId === project.id;
   const isArchiving = archivingId === project.id;
   const isArchived = project.status === "archive";
   const canArchive = isResponsableGlobal || project.created_by?.id === helper?.id;
-  
 
   const handleJoin = (event) => {
     event.preventDefault();
@@ -41,6 +49,12 @@ function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, 
     onArchive(project, !isArchived);
   };
 
+  const handleDelete = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onDelete(project);
+  };
+
   return (
     <Link
       to={`/animateur/projects/${project.id}`}
@@ -48,14 +62,18 @@ function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, 
       style={{ textDecoration: "none" }}
     >
       <div className="project-card-top">
-        <span className="resource-type"><FolderKanban size={18} /></span>
+        <span className="resource-type">
+          <FolderKanban size={18} />
+        </span>
         <span className={`status-badge ${STATUS_CLASSES[project.status]}`}>
           {STATUS_LABELS[project.status]}
         </span>
       </div>
 
       <h2 className="project-card-title">{project.title}</h2>
-      <p className="project-card-description">{project.description || "Aucune description."}</p>
+      <p className="project-card-description">
+        {project.description || "Aucune description."}
+      </p>
 
       <div className="project-card-footer">
         <MemberStack members={project.members} />
@@ -75,15 +93,17 @@ function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, 
             {isJoining ? "Inscription…" : "S'inscrire"}
           </button>
         )}
-        {isResponsable && (
-  <button
-    type="button"
-    onClick={() => deleteProject(project)}
-    className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-  >
-    Supprimer
-  </button>
-)}
+
+        {canArchive && (
+          <button
+            type="button"
+            className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+            onClick={handleDelete}
+          >
+            Supprimer
+          </button>
+        )}
+
         {canArchive && (
           <button
             type="button"
@@ -99,7 +119,6 @@ function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, 
     </Link>
   );
 }
-
 export default function ProjectsListPage({ helper, isResponsableGlobal, isResponsable }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
