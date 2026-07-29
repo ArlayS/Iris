@@ -34,28 +34,31 @@ export default function AppShell({
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
           {(isStaff || isResponsable) && (
-            <div className="menu-group" data-testid="staff-menu-group">
-              <button
-                className="helper-menu-trigger"
-                type="button"
-                onClick={() => setIsStaffMenuOpen((current) => !current)}
-                aria-expanded={isStaffMenuOpen}
-                data-testid="staff-menu-toggle"
-              >
-                <Users size={18} />
-                <span>Staff</span>
-                <ChevronDown className={isStaffMenuOpen ? "is-open" : ""} size={16} />
-              </button>
-              <div className={`helper-menu-links ${isStaffMenuOpen ? "is-open" : ""}`} data-testid="staff-menu-links">
-                <NavLink className="nav-link" to="/staff/calendrier" data-testid="staff-absences-link" title="Calendrier">
-                  <CalendarDays size={18} /> <span>Calendrier</span>
-                </NavLink>
-                <NavLink className="nav-link" to="/staff/meetings" data-testid="staff-meetings-link" title="Résumés de réunions">
-                  <FileStack size={18} /> <span>Réunions</span>
-                </NavLink>
-              </div>
-            </div>
-          )}
+  <div className="menu-group" data-testid="staff-menu-group">
+    <button
+      className="helper-menu-trigger"
+      type="button"
+      onClick={() => setIsStaffMenuOpen((current) => !current)}
+      aria-expanded={isStaffMenuOpen}
+      data-testid="staff-menu-toggle"
+    >
+      <Users size={18} />
+      <span>Staff</span>
+      <ChevronDown className={isStaffMenuOpen ? "is-open" : ""} size={16} />
+    </button>
+    <div className={`helper-menu-links ${isStaffMenuOpen ? "is-open" : ""}`} data-testid="staff-menu-links">
+      <NavLink className="nav-link" to="/staff/calendrier" data-testid="staff-absences-link" title="Calendrier">
+        <CalendarDays size={18} /> <span>Calendrier</span>
+      </NavLink>
+      <NavLink className="nav-link" to="/staff/meetings" data-testid="staff-meetings-link" title="Résumés de réunions">
+        <FileStack size={18} /> <span>Réunions</span>
+      </NavLink>
+      <NavLink className="nav-link" to="/staff/tasks" data-testid="staff-tasks-link" title="Tâches trimestrielles">
+        <ClipboardList size={18} /> <span>Tâches</span>
+      </NavLink>
+    </div>
+  </div>
+)}
 
           {(isAnimateur || isResponsable) && (
             <div className="menu-group" data-testid="animateur-menu-group">
