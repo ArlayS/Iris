@@ -16,6 +16,7 @@ from services.auth_service import (
     is_admin_helper,
     is_responsable_helper,
     is_staff_helper,
+    is_animateur_helper
     parse_session,
 )
 
@@ -87,6 +88,7 @@ async def session(request: Request, response: Response) -> AuthSession:
         try:
             has_access = await has_iris_access(helper.id)
             is_staff = await is_staff_helper(helper.id)
+            
             is_responsable = await is_responsable_helper(helper.id)
             if not has_access and not is_staff and not is_responsable:
                 response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
