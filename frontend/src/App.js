@@ -137,7 +137,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
           path="/animateur/projects/:projectId"
           element={
             canSeeAnimateur ? (
-              <ProjectDetailPage helper={helper} isResponsableGlobal={isResponsable} />
+              <ProjectDetailPage isResponsable={isResponsable} helper={helper} isResponsableGlobal={isResponsable} />
             ) : (
               <Navigate to="/" replace />
             )
@@ -147,7 +147,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
           path="/animateur/calendrier"
           element={
             canSeeAnimateur ? (
-              <ProjectCalendarPage helper={helper} isResponsableGlobal={isResponsable} />
+              <ProjectCalendarPage isResponsable={isResponsable} helper={helper} isResponsableGlobal={isResponsable} />
             ) : (
               <Navigate to="/" replace />
             )
