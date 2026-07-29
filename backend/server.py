@@ -5,7 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 import logging
 from config import CORS_ORIGINS
 from database import client, initialize_indexes
-from routers import admin, auth, members, profiles, resources, staff, tickets
+from routers import admin, auth, members, profiles, resources, staff, tickets, animateur_projects, animateur_calendar
 from services.storage_service import init_storage
 
 
@@ -24,6 +24,8 @@ app.include_router(resources.router, prefix="/api")
 app.include_router(members.router, prefix="/api")
 app.include_router(tickets.router, prefix="/api")
 app.include_router(staff.router, prefix="/api")
+app.include_router(animateur_projects.router, prefix="/api")
+app.include_router(animateur_calendar.router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,7 +35,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -48,6 +49,7 @@ async def startup() -> None:
         await asyncio.to_thread(init_storage)
     except Exception as error:
         logger.warning("Stockage de ressources indisponible au démarrage : %s", error)
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
