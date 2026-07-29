@@ -27,7 +27,8 @@ function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, 
   const isJoining = joiningId === project.id;
   const isArchiving = archivingId === project.id;
   const isArchived = project.status === "archive";
-  const canArchive = isResponsableGlobal || project.created_by?.id === helper?.id;
+  const canArchive = profile?.is_responsable === true || project.created_by?.id === helper?.id;
+  const isResponsable = profile?.is_responsable === true;
 
   const handleJoin = (event) => {
     event.preventDefault();
