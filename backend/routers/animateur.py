@@ -99,8 +99,8 @@ async def create_project(
         "description": (payload.get("description") or "").strip(),
         "content_markdown": "",
         "status": "en_cours",
-        "start_date": start_date,
-        "end_date": end_date,
+        "start_date": start_date.isoformat() if hasattr(start_date, "isoformat") else start_date,
+        "end_date": end_date.isoformat() if end_date else None,
         "members": [identity],
         "created_by": identity,
         "created_at": now,
@@ -117,22 +117,40 @@ async def current_project_editor(request: Request) -> AuthenticatedHelper:
     if await is_responsable_helper(helper.id):
         return helper
     raise HTTPException(status_code=403, detail="Rôle Animateur ou Responsable requis.")
-@router.put("/{project_id}")
+
+
+@router.put("/{project_id}", response_model=Project)
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
-):
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_project_editor),
+) -> Project:
+    existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Projet introuvable.")
+
+    title_after = (payload.title or "").strip()
+    description_after = (payload.description or "").strip()
+    content_after = payload.content_markdown or ""
+    end_date_value = payload.end_date.isoformat() if payload.end_date else None
+    status_value = payload.status or existing.get("status", "en_cours")
+
+    previous_content = existing.get("content_markdown", "")
+    previous_description = existing.get("description", "")
+    previous_end_date = existing.get("end_date")
+
     updated_at = _now()
 
     result = await db.projects.update_one(
         {"id": project_id},
         {
             "$set": {
-                "title": (payload.title or "").strip(),
-                "description": (payload.description or "").strip(),
-                "content_markdown": payload.content_markdown or "",
-                "end_date": payload.end_date,
-                "status": payload.status or "en_cours",
+                "title": title_after,
+                "description": description_after,
+                "content_markdown": content_after,
+                "end_date": end_date_value,
+                "status": status_value,
                 "updated_at": updated_at,
             }
         },
@@ -142,7 +160,31 @@ async def update_project(
         raise HTTPException(status_code=404, detail="Projet introuvable.")
 
     updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
-    return updated
+    if not updated:
+        raise HTTPException(status_code=404, detail="Projet introuvable après mise à jour.")
+
+    content_changed = previous_content != content_after
+    description_changed = previous_description != description_after
+    end_date_changed = previous_end_date != end_date_value
+
+    if content_changed or description_changed or end_date_changed:
+        await log_auth_event(
+            "project.content.updated",
+            request,
+            helper=helper,
+            status_code=200,
+            details={
+                "project_id": project_id,
+                "title": title_after,
+                "content_changed": content_changed,
+                "description_changed": description_changed,
+                "end_date_changed": end_date_changed,
+                "before_length": len(previous_content or ""),
+                "after_length": len(content_after or ""),
+            },
+        )
+
+    return Project(**updated)
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
