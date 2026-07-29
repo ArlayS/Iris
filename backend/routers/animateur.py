@@ -18,10 +18,16 @@ from models.project import (
 )
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request, status
 from fastapi.responses import Response
-from services.auth_service import current_animateur
 from database import db
 from models.ticket import AuthenticatedHelper
-from services.auth_service import current_staff, current_responsable
+from services.auth_service import (
+    current_animateur,
+    current_staff,
+    current_responsable,
+    current_helper,
+    is_animateur_helper,
+    is_responsable_helper,
+)
 from services.storage_service import extension_from_filename, get_object, put_object_from_file
 
 router = APIRouter(prefix="/animateur/projects", tags=["animateur-projects"])
@@ -133,9 +139,9 @@ async def update_project(
         {"id": project_id},
         {
             "$set": {
-                "title": payload.title.strip(),
-                "description": payload.description.strip(),
-                "content_markdown": payload.content_markdown,
+                "title": (payload.title or "").strip(),
+                "description": (payload.description or "").strip(),
+                "content_markdown": payload.content_markdown or "",
                 "end_date": payload.end_date,
                 "updated_at": updated_at,
             }
