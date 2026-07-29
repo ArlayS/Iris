@@ -23,3 +23,8 @@ async def initialize_indexes() -> None:
     await db.meeting_summaries.create_index("created_at")
     await db.meeting_summaries.create_index("meeting_date")
     await db.meeting_summaries.create_index("status")
+    await db.auth_logs.create_index("created_at")
+await db.auth_logs.create_index("event_type")
+await db.auth_logs.create_index("helper_id")
+await db.auth_logs.create_index([("helper_id", 1), ("created_at", -1)])
+await db.auth_logs.create_index([("event_type", 1), ("created_at", -1)])
