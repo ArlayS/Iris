@@ -7,7 +7,7 @@ import time
 from urllib.parse import urlencode
 from uuid import uuid4
 from datetime import datetime, timezone
-
+from services.audit_service import log_auth_event
 from database import db
 import httpx
 from fastapi import HTTPException, Request, status
@@ -217,9 +217,28 @@ async def has_any_access(helper_id: str) -> bool:
 async def current_helper(request: Request) -> AuthenticatedHelper:
     helper = parse_session(request.cookies.get(SESSION_COOKIE))
     if not helper or helper.mode != "discord":
+        await log_auth_event(
+            "auth.session.invalid",
+            request,
+            helper=None,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            details={"reason": "missing_or_invalid_session"},
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Connexion requise.")
+
     if not await has_any_access(helper.id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Votre rôle Discord ne permet plus d'accéder à Iris.")
+        await log_auth_event(
+            "authz.forbidden",
+            request,
+            helper=helper,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details={"reason": "role_removed_or_not_allowed"},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Votre rôle Discord ne permet plus d'accéder à Iris.",
+        )
+
     return helper
 
 
