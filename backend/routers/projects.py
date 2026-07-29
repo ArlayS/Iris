@@ -49,12 +49,18 @@ async def update_project(project_id: str, payload: ProjectUpdate, helper: Authen
     if not existing:
         raise HTTPException(404, "Projet introuvable.")
     updated_at = datetime.now(timezone.utc).isoformat()
-    await db.projects.update_one({"id": project_id}, {"$set": {
-        "title": payload.title.strip(), "description": payload.description.strip(),
-        "content_markdown": payload.content_markdown, "end_date": payload.end_date,
+    update_fields = {
+        "title": payload.title.strip(),
+        "description": payload.description.strip(),
+        "content_markdown": payload.content_markdown,
+        "end_date": payload.end_date,
         "updated_at": updated_at,
-    }})
-    existing.update(payload.model_dump(mode="json")); existing["updated_at"] = updated_at
+    }
+    if payload.status is not None:
+        update_fields["status"] = payload.status
+
+    await db.projects.update_one({"id": project_id}, {"$set": update_fields})
+    existing.update(update_fields)
     return existing
 
 @router.post("/projects/{project_id}/members/{helper_id}", response_model=Project)
