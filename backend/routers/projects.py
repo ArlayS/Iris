@@ -52,12 +52,17 @@ async def get_project(project_id: str, helper: AuthenticatedHelper = Depends(cur
     if not project:
         raise HTTPException(404, "Projet introuvable.")
     return project
-@router.put("/projects/{project_id}", response_model=Project)
+
+
+
+
+
+@router.put("/animateur/projects/{project_id}", response_model=Project)
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
     request: Request,
-    helper: AuthenticatedHelper = Depends(current_animateur),
+    helper: AuthenticatedHelper = Depends(current_project_editor)
 ) -> Project:
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
