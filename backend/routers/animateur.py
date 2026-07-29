@@ -78,7 +78,7 @@ async def get_project(
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_project(
-    payload: dict,
+    payload: ProjectCreate,
     helper: AuthenticatedHelper = Depends(current_staff),
 ):
     title = (payload.get("title") or "").strip()
@@ -117,7 +117,6 @@ async def current_project_editor(request: Request) -> AuthenticatedHelper:
     if await is_responsable_helper(helper.id):
         return helper
     raise HTTPException(status_code=403, detail="Rôle Animateur ou Responsable requis.")
-
 
 @router.put("/{project_id}", response_model=Project)
 async def update_project(
@@ -182,7 +181,7 @@ async def update_project(
             },
         )
 
-    return Project(updated)
+    return Project(**updated)
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
     project_id: str,
