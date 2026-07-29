@@ -53,7 +53,7 @@ export default function AppShell({
       <NavLink className="nav-link" to="/staff/meetings" data-testid="staff-meetings-link" title="Résumés de réunions">
         <FileStack size={18} /> <span>Réunions</span>
       </NavLink>
-      <NavLink className="nav-link" to="/staff/tasks" data-testid="staff-tasks-link" title="Tâches trimestrielles">
+      <NavLink className="nav-link" to="/staff/taches" data-testid="staff-tasks-link" title="Tâches trimestrielles">
         <ClipboardList size={18} /> <span>Tâches</span>
       </NavLink>
     </div>
