@@ -77,6 +77,9 @@ export default function AppShell({
                 <NavLink className="nav-link" to="/animateur/projects" data-testid="animateur-projects-link" title="Projets">
                   <FolderKanban size={18} /> <span>Projets</span>
                 </NavLink>
+                <NavLink className="nav-link" to="/animateur/calendrier" data-testid="animateur-projects-link" title="Calendrier">
+                  <FolderKanban size={18} /> <span>Calendrier</span>
+                </NavLink>
               </div>
             </div>
           )}
