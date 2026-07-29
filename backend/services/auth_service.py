@@ -5,7 +5,10 @@ import json
 import secrets
 import time
 from urllib.parse import urlencode
+from uuid import uuid4
+from datetime import datetime, timezone
 
+from database import db
 import httpx
 from fastapi import HTTPException, Request, status
 
@@ -247,6 +250,31 @@ async def current_responsable(request: Request) -> AuthenticatedHelper:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Responsable requis.")
     return helper
 
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
+async def log_auth_event(
+    event_type: str,
+    request,
+    helper=None,
+    status_code: int | None = None,
+    details: dict | None = None,
+) -> None:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else None)
+
+    await db.auth_logs.insert_one({
+        "id": str(uuid4()),
+        "created_at": _now(),
+        "event_type": event_type,
+        "helper_id": getattr(helper, "id", None),
+        "username": getattr(helper, "username", None),
+        "ip": ip,
+        "user_agent": request.headers.get("user-agent"),
+        "path": request.url.path,
+        "method": request.method,
+        "status_code": status_code,
+        "details": details or {},
+    })
 def create_state() -> str:
     return secrets.token_urlsafe(32)
