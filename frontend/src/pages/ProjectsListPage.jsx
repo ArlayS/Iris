@@ -188,7 +188,14 @@ export default function ProjectsListPage({ helper, isResponsableGlobal }) {
       setArchivingId(null);
     }
   };
+const deleteProject = async (project) => {
+  const confirmed = window.confirm(`Supprimer définitivement "${project.title}" ?`);
+  if (!confirmed) return;
 
+  await api.delete(`/animateur/projects/${project.id}`, { withCredentials: true });
+
+  setProjects((current) => current.filter((item) => item.id !== project.id));
+};
   const filteredProjects = projects.filter((project) =>
     viewMode === "archives" ? project.status === "archive" : project.status !== "archive"
   );
