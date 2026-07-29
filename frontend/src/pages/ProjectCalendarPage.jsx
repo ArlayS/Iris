@@ -210,7 +210,7 @@ const projectsByDay = useMemo(() => {
                       <div>
                         <strong>{task.title}</strong>
                         <small>Assigné à {task.assignee.display_name || task.assignee.username}</small>
-                        <span className={`meeting-status-badge ${task.status === "valide" ? "is-done" : "is-pending"}`}>
+                        <span style="display: block"className={`meeting-status-badge ${task.status === "valide" ? "is-done" : "is-pending"}`}>
                           {TASK_LABELS[task.status]}
                         </span>
                       </div>
