@@ -104,8 +104,9 @@ export default function AppShell({
               </NavLink>
             )}
           </div>
+         )}
         </nav>
- )}
+
         <div className="sidebar-bottom">
           <div className="helper-identity" data-testid="helper-identity">
             <Link className="helper-account-link" to="/profile" data-testid="helper-profile-link" title="Ouvrir mon profil">
