@@ -128,52 +128,44 @@ async def update_project(
 # Membres du projet (inscription en toggle, comme /tasks/{id}/signup)
 # ---------------------------------------------------------------------------
 
-@router.post("/{project_id}/signup")
-async def signup_project(
+@router.post("/{project_id}/members")
+async def add_member(
     project_id: str,
-    helper: AuthenticatedHelper = Depends(current_staff),
+    payload: dict,
+    _: AuthenticatedHelper = Depends(current_staff),
 ):
-    existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
-    if not existing:
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
         raise HTTPException(status_code=404, detail="Projet introuvable.")
 
-    members = existing.get("members", [])
-    updated_at = _now()
+    member_id = payload.get("member_id")
+    if not member_id:
+        raise HTTPException(status_code=422, detail="member_id requis.")
+    if any(m["id"] == member_id for m in project.get("members", [])):
+        raise HTTPException(status_code=409, detail="Ce membre fait déjà partie du projet.")
 
-    if any(m["id"] == helper.id for m in members):
-        members = [m for m in members if m["id"] != helper.id]
-    else:
-        members.append(_helper_identity(helper))
+    if not DISCORD_ANIMATEUR_ROLE_ID:
+        raise HTTPException(status_code=503, detail="Rôle animateur non configuré.")
+    discord = DiscordService()
+    candidates = await discord.fetch_helpers(DISCORD_ANIMATEUR_ROLE_ID)
+    member = next((m for m in candidates if m.id == member_id), None)
+    if not member:
+        raise HTTPException(status_code=404, detail="Membre introuvable parmi les animateurs.")
 
-    await db.projects.update_one(
-        {"id": project_id},
-        {"$set": {"members": members, "updated_at": updated_at}},
-    )
-    existing["members"] = members
-    existing["updated_at"] = updated_at
-    return existing
-
-
-@router.delete("/{project_id}/members/{member_id}")
-async def remove_member(
-    project_id: str,
-    member_id: str,
-    _: AuthenticatedHelper = Depends(current_responsable),
-):
-    existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Projet introuvable.")
-    members = [m for m in existing.get("members", []) if m["id"] != member_id]
+    identity = {
+        "id": member.id,
+        "username": member.username,
+        "display_name": member.display_name,
+        "avatar_url": member.avatar_url,
+    }
     updated_at = _now()
     await db.projects.update_one(
         {"id": project_id},
-        {"$set": {"members": members, "updated_at": updated_at}},
+        {"$push": {"members": identity}, "$set": {"updated_at": updated_at}},
     )
-    existing["members"] = members
-    existing["updated_at"] = updated_at
-    return existing
-
-
+    project["members"].append(identity)
+    project["updated_at"] = updated_at
+    return project
 # ---------------------------------------------------------------------------
 # Tâches du projet
 # ---------------------------------------------------------------------------
