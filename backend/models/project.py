@@ -38,7 +38,7 @@ class ProjectUpdate(BaseModel):
     description: str = ""
     content_markdown: str = ""
     end_date: date | None = None
-    status: str | None = None
+    status: Literal["en_cours", "termine", "archive"] | None = None
 
 
 class Project(BaseModel):
@@ -63,6 +63,13 @@ class ProjectTaskCreate(BaseModel):
     due_date: date
 
 
+class ProjectSubmissionFile(BaseModel):
+    original_filename: str
+    content_type: str | None = None
+    size: int = 0
+    storage_path: str | None = None
+
+
 class ProjectTask(BaseModel):
     id: str
     project_id: str
@@ -73,3 +80,19 @@ class ProjectTask(BaseModel):
     status: Literal["a_faire", "en_cours", "rendu", "valide"] = "a_faire"
     submission_note: str = ""
     submission_file_url: str | None = None
+    submission_file: ProjectSubmissionFile | None = None
+    submitted_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProjectResource(BaseModel):
+    id: str
+    project_id: str
+    title: str
+    original_filename: str
+    content_type: str | None = None
+    size: int = 0
+    storage_path: str
+    uploaded_by: ProjectMember
+    created_at: datetime
