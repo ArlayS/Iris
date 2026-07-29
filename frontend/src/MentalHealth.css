@@ -14,7 +14,17 @@
 .meeting-editor-main .section-heading {
   margin-bottom: 20px;
 }
-
+.absence-day-chip.is-project {
+  background: #4a5a9c;
+}
+.absence-day-event.is-task {
+  background: #e3ecfb;
+  color: #2c4c8a;
+}
+.absence-day-event.is-task.is-done {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
 .meeting-editor-main .summary-field {
   margin-bottom: 18px;
 }
