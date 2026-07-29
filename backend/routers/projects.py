@@ -35,6 +35,15 @@ async def create_project(payload: ProjectCreate, helper: AuthenticatedHelper = D
     )
     await db.projects.insert_one(project.model_dump(mode="json"))
     return project
+    
+async def current_project_editor(request: Request) -> AuthenticatedHelper:
+    helper = await current_helper(request)
+    if await is_animateur_helper(helper.id):
+        return helper
+    if await is_responsable_helper(helper.id):
+        return helper
+    raise HTTPException(status_code=403, detail="Rôle Animateur ou Responsable requis.")
+
 
 @router.get("/projects/{project_id}", response_model=Project)
 async def get_project(project_id: str, helper: AuthenticatedHelper = Depends(current_animateur)):
@@ -43,12 +52,13 @@ async def get_project(project_id: str, helper: AuthenticatedHelper = Depends(cur
         raise HTTPException(404, "Projet introuvable.")
     return project
 
-@router.put("/{project_id}", response_model=Project)
+@router.put("/animateur/projects/{project_id}", response_model=Project)
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
-    _: AuthenticatedHelper = Depends(current_responsable),
+    helper: AuthenticatedHelper = Depends(current_project_editor)
 ):
+
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Projet introuvable.")
