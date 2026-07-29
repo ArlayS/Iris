@@ -118,7 +118,7 @@ async def current_project_editor(request: Request) -> AuthenticatedHelper:
         return helper
     raise HTTPException(status_code=403, detail="Rôle Animateur ou Responsable requis.")
 
-@router.put("/{project_id}", response_model=Project)
+@router.put("/{project_id}")
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
