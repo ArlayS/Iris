@@ -132,7 +132,17 @@ async def validate_task(task_id: str, helper: AuthenticatedHelper = Depends(curr
     await db.project_tasks.update_one({"id": task_id}, {"$set": {"status": "valide", "updated_at": updated_at}})
     existing.update(status="valide", updated_at=updated_at)
     return existing
-
+    
+async def current_project_responsable(project_id: str, helper: AuthenticatedHelper = Depends(current_animateur)) -> AuthenticatedHelper:
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0, "created_by": 1})
+    if not project:
+        raise HTTPException(404, "Projet introuvable.")
+    is_creator = project["created_by"]["id"] == helper.id
+    is_global_responsable = await is_responsable_helper(helper.id)
+    if not (is_creator or is_global_responsable):
+        raise HTTPException(403, "Seul le responsable du projet peut effectuer cette action.")
+    return helper
+    
 @router.post("/projects/{project_id}/resources", response_model=ProjectResource, status_code=201)
 async def upload_project_resource(project_id: str, title: str, file: UploadFile = File(...),
                                     helper: AuthenticatedHelper = Depends(current_animateur)):
