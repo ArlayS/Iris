@@ -57,7 +57,7 @@ async def get_project(project_id: str, helper: AuthenticatedHelper = Depends(cur
 
 
 
-@router.put("/animateur/projects/{project_id}", response_model=Project)
+@router.put("/projects/{project_id}", response_model=Project)
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
