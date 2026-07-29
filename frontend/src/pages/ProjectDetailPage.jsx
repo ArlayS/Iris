@@ -212,7 +212,26 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
       setSaving(false);
     }
   };
-
+const downloadTaskFile = async (taskId, submissionFile) => {
+  setDownloadingTaskFileId(taskId);
+  try {
+    const response = await api.get(`/animateur/tasks/${taskId}/submission/download`, {
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(response.data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = submissionFile.original_filename || "fichier";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    toast.error(getErrorMessage(error));
+  } finally {
+    setDownloadingTaskFileId(null);
+  }
+};
   const createTask = async (event) => {
     event.preventDefault();
     if (!taskTitle.trim() || !taskAssigneeId) {
