@@ -117,7 +117,7 @@ async def update_project(
     project_id: str,
     payload: ProjectUpdate,
     request: Request,
-    helper: AuthenticatedHelper = Depends(current_project_editor),
+    helper: AuthenticatedHelper = Depends(current_project_editor)
 ) -> Project:
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
