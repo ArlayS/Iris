@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Search, RefreshCw, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Search,
+  RefreshCw,
+  Shield,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 
 const EVENT_LABELS = {
@@ -11,7 +17,18 @@ const EVENT_LABELS = {
   "auth.session.invalid": "Session invalide",
   "auth.session.check_failed": "Vérification session échouée",
   "authz.forbidden": "Accès refusé",
-  "project.content.updated": "Contenu projet modifié",
+
+  "project.viewed": "Projet consulté",
+  "project.created": "Projet créé",
+  "project.content.updated": "Projet modifié",
+  "project.deleted": "Projet supprimé",
+  "project.member.added": "Membre ajouté",
+  "project.task.created": "Tâche créée",
+  "project.task.submitted": "Tâche rendue",
+  "project.task.validated": "Tâche validée",
+  "project.task.deleted": "Tâche supprimée",
+  "project.resource.uploaded": "Ressource ajoutée",
+  "project.resource.deleted": "Ressource supprimée",
 };
 
 function formatDateTime(value) {
@@ -28,19 +45,38 @@ function formatDateTime(value) {
 
 function EventBadge({ eventType }) {
   const colorClass =
-    eventType === "auth.login.success"
+    eventType === "auth.login.success" ||
+    eventType === "project.created" ||
+    eventType === "project.task.created" ||
+    eventType === "project.task.validated" ||
+    eventType === "project.resource.uploaded"
       ? "status-done"
-      : eventType === "auth.logout"
+      : eventType === "auth.logout" ||
+        eventType === "project.viewed" ||
+        eventType === "project.content.updated" ||
+        eventType === "project.member.added" ||
+        eventType === "project.task.submitted"
       ? "status-pending"
-      : eventType === "project.content.updated"
-      ? "status-pending"
-      : eventType === "auth.login.failure" || eventType === "authz.forbidden"
+      : eventType === "auth.login.failure" ||
+        eventType === "authz.forbidden" ||
+        eventType === "project.deleted" ||
+        eventType === "project.task.deleted" ||
+        eventType === "project.resource.deleted"
       ? "status-bad"
       : "";
 
   return (
     <span className={`status-badge ${colorClass}`}>
       {EVENT_LABELS[eventType] || eventType}
+    </span>
+  );
+}
+
+function DetailLine({ label, value }) {
+  if (value === undefined || value === null || value === "") return null;
+  return (
+    <span style={{ fontSize: 12, color: "var(--muted)" }}>
+      {label} : {String(value)}
     </span>
   );
 }
@@ -128,9 +164,9 @@ export default function ResponsableAuthLogsPage() {
       <header className="page-header">
         <div>
           <p className="eyebrow">ESPACE RESPONSABLE</p>
-          <h1>Logs de connexion</h1>
+          <h1>Logs de plateforme</h1>
           <p style={{ color: "var(--muted)", marginTop: 6 }}>
-            Historique des connexions, déconnexions, sessions invalides et accès refusés.
+            Historique des connexions, accès refusés et actions sur les projets.
           </p>
         </div>
       </header>
@@ -152,9 +188,10 @@ export default function ResponsableAuthLogsPage() {
               setEventType(e.target.value);
               setPage(1);
             }}
-            style={{ minWidth: 240 }}
+            style={{ minWidth: 260 }}
           >
             <option value="">Tous les événements</option>
+
             <option value="auth.login.started">Connexion démarrée</option>
             <option value="auth.login.success">Connexion réussie</option>
             <option value="auth.login.failure">Connexion échouée</option>
@@ -162,7 +199,18 @@ export default function ResponsableAuthLogsPage() {
             <option value="auth.session.invalid">Session invalide</option>
             <option value="auth.session.check_failed">Vérification session échouée</option>
             <option value="authz.forbidden">Accès refusé</option>
-            <option value="project.content.updated">Contenu projet modifié</option>
+
+            <option value="project.viewed">Projet consulté</option>
+            <option value="project.created">Projet créé</option>
+            <option value="project.content.updated">Projet modifié</option>
+            <option value="project.deleted">Projet supprimé</option>
+            <option value="project.member.added">Membre ajouté</option>
+            <option value="project.task.created">Tâche créée</option>
+            <option value="project.task.submitted">Tâche rendue</option>
+            <option value="project.task.validated">Tâche validée</option>
+            <option value="project.task.deleted">Tâche supprimée</option>
+            <option value="project.resource.uploaded">Ressource ajoutée</option>
+            <option value="project.resource.deleted">Ressource supprimée</option>
           </select>
 
           <input
@@ -192,11 +240,7 @@ export default function ResponsableAuthLogsPage() {
             <Search size={16} /> Rechercher
           </button>
 
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={resetFilters}
-          >
+          <button type="button" className="btn-ghost" onClick={resetFilters}>
             <RefreshCw size={16} /> Réinitialiser
           </button>
         </div>
@@ -207,7 +251,7 @@ export default function ResponsableAuthLogsPage() {
           className="section-heading"
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
         >
-          <span>JOURNAL D’AUTHENTIFICATION</span>
+          <span>JOURNAL D’ACTIVITÉ</span>
           <span style={{ color: "var(--muted)", fontSize: 13 }}>
             {total} entrée{total > 1 ? "s" : ""}
           </span>
@@ -261,47 +305,51 @@ export default function ResponsableAuthLogsPage() {
                       </td>
                       <td style={tdStyle}>{log.status_code ?? "—"}</td>
                       <td style={tdStyle}>
-  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-    {log.details?.reason && (
-      <span style={{ fontSize: 12, color: "var(--muted)" }}>
-        Raison : {String(log.details.reason)}
-      </span>
-    )}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <DetailLine label="Raison" value={log.details?.reason} />
+                          <DetailLine label="Provider" value={log.details?.provider} />
+                          <DetailLine label="Mode" value={log.details?.mode} />
+                          <DetailLine label="Projet" value={log.details?.title} />
+                          <DetailLine label="ID projet" value={log.details?.project_id} />
+                          <DetailLine label="ID tâche" value={log.details?.task_id} />
+                          <DetailLine label="ID ressource" value={log.details?.resource_id} />
+                          <DetailLine label="ID membre" value={log.details?.member_id} />
+                          <DetailLine label="Utilisateur membre" value={log.details?.member_username} />
+                          <DetailLine label="Fichier" value={log.details?.original_filename} />
+                          <DetailLine label="A un fichier" value={
+                            log.details?.has_file !== undefined
+                              ? log.details.has_file ? "Oui" : "Non"
+                              : undefined
+                          } />
+                          <DetailLine label="IP client" value={log.details?.client_ip} />
+                          <DetailLine label="User-Agent" value={log.details?.user_agent} />
 
-    {log.details?.provider && (
-      <span style={{ fontSize: 12, color: "var(--muted)" }}>
-        Provider : {String(log.details.provider)}
-      </span>
-    )}
+                          {(log.details?.before_length !== undefined ||
+                            log.details?.after_length !== undefined) && (
+                            <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                              Contenu : {log.details?.before_length ?? 0} → {log.details?.after_length ?? 0} caractères
+                            </span>
+                          )}
 
-    {log.details?.mode && (
-      <span style={{ fontSize: 12, color: "var(--muted)" }}>
-        Mode : {String(log.details.mode)}
-      </span>
-    )}
+                          {(log.details?.before?.content_length !== undefined ||
+                            log.details?.after?.content_length !== undefined) && (
+                            <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                              Contenu : {log.details?.before?.content_length ?? 0} → {log.details?.after?.content_length ?? 0} caractères
+                            </span>
+                          )}
 
-    {log.details?.title && (
-      <span style={{ fontSize: 12, color: "var(--muted)" }}>
-        Projet : {String(log.details.title)}
-      </span>
-    )}
+                          <DetailLine label="Avant - titre" value={log.details?.before?.title} />
+                          <DetailLine label="Après - titre" value={log.details?.after?.title} />
+                          <DetailLine label="Avant - description" value={log.details?.before?.description} />
+                          <DetailLine label="Après - description" value={log.details?.after?.description} />
+                          <DetailLine label="Avant - fin" value={log.details?.before?.end_date} />
+                          <DetailLine label="Après - fin" value={log.details?.after?.end_date} />
+                          <DetailLine label="Avant - statut" value={log.details?.before?.status} />
+                          <DetailLine label="Après - statut" value={log.details?.after?.status} />
 
-    {log.details?.project_id && (
-      <span style={{ fontSize: 12, color: "var(--muted)" }}>
-        ID projet : {String(log.details.project_id)}
-      </span>
-    )}
-
-    {(log.details?.before_length !== undefined ||
-      log.details?.after_length !== undefined) && (
-      <span style={{ fontSize: 12, color: "var(--muted)" }}>
-        Contenu : {log.details?.before_length ?? 0} → {log.details?.after_length ?? 0} caractères
-      </span>
-    )}
-
-    {(!log.details || Object.keys(log.details).length === 0) && "—"}
-  </div>
-</td>
+                          {(!log.details || Object.keys(log.details).length === 0) && "—"}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
