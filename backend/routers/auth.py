@@ -16,7 +16,7 @@ from services.auth_service import (
     is_admin_helper,
     is_responsable_helper,
     is_staff_helper,
-    is_animateur_helper
+    is_animateur_helper,
     parse_session,
 )
 
@@ -71,9 +71,17 @@ async def session(request: Request, response: Response) -> AuthSession:
     response.headers["Pragma"] = "no-cache"
     raw_session = request.cookies.get(SESSION_COOKIE)
     helper = parse_session(raw_session)
+
     empty = AuthSession(
-        authenticated=False, helper=None, is_admin=False, is_staff=False, is_helper=False, is_responsable=False
+        authenticated=False,
+        helper=None,
+        is_admin=False,
+        is_staff=False,
+        is_helper=False,
+        is_responsable=False,
+        is_animateur=False,
     )
+
     if raw_session and not helper:
         response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
         response.delete_cookie(SESSION_COOKIE)
@@ -83,17 +91,20 @@ async def session(request: Request, response: Response) -> AuthSession:
     is_staff = False
     is_helper = False
     is_responsable = False
+    is_animateur = False
 
     if helper:
         try:
             has_access = await has_iris_access(helper.id)
             is_staff = await is_staff_helper(helper.id)
-            
             is_responsable = await is_responsable_helper(helper.id)
-            if not has_access and not is_staff and not is_responsable:
+            is_animateur = await is_animateur_helper(helper.id)
+
+            if not has_access and not is_staff and not is_responsable and not is_animateur:
                 response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
                 response.delete_cookie(SESSION_COOKIE)
                 return empty
+
             is_admin = await is_admin_helper(helper.id)
             is_helper = has_access
         except HTTPException:
@@ -108,6 +119,7 @@ async def session(request: Request, response: Response) -> AuthSession:
         is_staff=is_staff,
         is_helper=is_helper,
         is_responsable=is_responsable,
+        is_animateur=is_animateur,
     )
 
 
@@ -116,5 +128,11 @@ async def logout(response: Response) -> AuthSession:
     response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
     response.delete_cookie(SESSION_COOKIE)
     return AuthSession(
-        authenticated=False, helper=None, is_admin=False, is_staff=False, is_helper=False, is_responsable=False
+        authenticated=False,
+        helper=None,
+        is_admin=False,
+        is_staff=False,
+        is_helper=False,
+        is_responsable=False,
+        is_animateur=False,
     )
