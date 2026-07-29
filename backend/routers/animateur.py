@@ -103,7 +103,7 @@ async def create_project(
     project.pop("_id", None)
     return project
 
-@router.put("/projects/{project_id}", response_model=Project)
+@router.put("/{project_id}", response_model=Project)
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
