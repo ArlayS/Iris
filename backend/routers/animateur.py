@@ -100,28 +100,44 @@ async def create_project(
     project.pop("_id", None)
     return project
 
-
-@router.put("/{project_id}")
+@router.put("/projects/{project_id}", response_model=Project)
 async def update_project(
     project_id: str,
-    payload: dict,
-    _: AuthenticatedHelper = Depends(current_staff),
+    payload: ProjectUpdate,
+    helper: AuthenticatedHelper = Depends(current_animateur),
 ):
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
-        raise HTTPException(status_code=404, detail="Projet introuvable.")
+        raise HTTPException(404, "Projet introuvable.")
 
-    updated_at = _now()
-    updates = {
-        "title": (payload.get("title") or existing["title"]).strip(),
-        "description": (payload.get("description") or "").strip(),
-        "content_markdown": payload.get("content_markdown", existing.get("content_markdown", "")),
-        "end_date": payload.get("end_date", existing.get("end_date")),
+    updated_at = datetime.now(timezone.utc).isoformat()
+
+    update_fields = {
+        "title": payload.title.strip(),
+        "description": payload.description.strip(),
+        "content_markdown": payload.content_markdown,
+        "end_date": payload.end_date,
         "updated_at": updated_at,
     }
-    await db.projects.update_one({"id": project_id}, {"$set": updates})
-    existing.update(updates)
-    return existing
+
+    if payload.status is not None:
+        update_fields["status"] = payload.status
+
+    result = await db.projects.update_one(
+        {"id": project_id},
+        {"$set": update_fields},
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(404, "Projet introuvable.")
+    if result.modified_count == 0 and payload.status is not None:
+        pass
+
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(404, "Projet introuvable.")
+
+    return project
 
 
 # ---------------------------------------------------------------------------
