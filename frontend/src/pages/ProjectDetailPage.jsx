@@ -462,7 +462,7 @@ const downloadResource = async (resource) => {
 ))}
           </div>
         </div>
-      </div>
+ 
 
       {showAddMember && (
         <AddMemberModal
