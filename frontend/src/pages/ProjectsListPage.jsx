@@ -5,8 +5,16 @@ import { FolderKanban, Plus, Users, X } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 
 const STATUS_LABELS = { en_cours: "En cours", termine: "Terminé", archive: "Archivé" };
+function ProjectCard({ project, helper, onJoin, joiningId }) {
+  const isMember = project.members.some((member) => member.id === helper?.id);
+  const isJoining = joiningId === project.id;
 
-function ProjectCard({ project }) {
+  const handleJoin = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onJoin(project.id);
+  };
+
   return (
     <Link to={`/animateur/projects/${project.id}`} className="resource-card" style={{ textDecoration: "none" }}>
       <span className="resource-type"><FolderKanban size={18} /></span>
@@ -19,6 +27,17 @@ function ProjectCard({ project }) {
         <span><Users size={14} /> {project.members.length} membre{project.members.length > 1 ? "s" : ""}</span>
         <span>{project.start_date} → {project.end_date || "…"}</span>
       </div>
+      {!isMember && (
+        <button
+          type="button"
+          className="calm-primary-button is-secondary"
+          onClick={handleJoin}
+          disabled={isJoining}
+          style={{ marginTop: 10 }}
+        >
+          {isJoining ? "Inscription…" : "S'inscrire"}
+        </button>
+      )}
     </Link>
   );
 }
