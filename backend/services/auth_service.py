@@ -229,7 +229,12 @@ async def current_staff(request: Request) -> AuthenticatedHelper:
     if not await is_staff_helper(helper.id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Staff requis.")
     return helper
-
+    
+async def current_animateur(request: Request) -> AuthenticatedHelper:
+    helper = await current_helper(request)
+    if not await is_animateur_helper(helper.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Animateur requis.")
+    return helper
 
 async def current_responsable(request: Request) -> AuthenticatedHelper:
     helper = await current_helper(request)
