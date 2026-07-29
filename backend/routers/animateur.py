@@ -218,22 +218,67 @@ async def create_project_task(
 @tasks_router.put("/{task_id}/submit")
 async def submit_task(
     task_id: str,
-    submission_note: str = "",
-    _: AuthenticatedHelper = Depends(current_staff),
+    submission_content: str = Form(""),
+    file: UploadFile | None = File(None),
+    helper: AuthenticatedHelper = Depends(current_staff),
 ):
     existing = await db.project_tasks.find_one({"id": task_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Tâche introuvable.")
+
+    submission_file = None
+    if file and file.filename:
+        extension = extension_from_filename(file.filename)
+        file_id = str(uuid4())
+        storage_path = f"iris/task-submissions/{file_id}.{extension}"
+
+        temp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                temp_path = temp_file.name
+                content = await file.read()
+                temp_file.write(content)
+            put_object_from_file(storage_path, temp_path, file.content_type or "application/octet-stream")
+        finally:
+            await file.close()
+            if temp_path and os.path.exists(temp_path):
+                os.unlink(temp_path)
+
+        submission_file = {
+            "id": file_id,
+            "original_filename": file.filename,
+            "content_type": file.content_type or "application/octet-stream",
+            "size": len(content),
+            "storage_path": storage_path,
+        }
+
     updated_at = _now()
-    await db.project_tasks.update_one(
-        {"id": task_id},
-        {"$set": {"status": "rendu", "submission_note": submission_note, "updated_at": updated_at}},
-    )
-    existing["status"] = "rendu"
-    existing["submission_note"] = submission_note
-    existing["updated_at"] = updated_at
+    updates = {
+        "status": "rendu",
+        "submission_note": submission_content,
+        "submission_file": submission_file,
+        "updated_at": updated_at,
+    }
+    await db.project_tasks.update_one({"id": task_id}, {"$set": updates})
+    existing.update(updates)
     return existing
 
+
+@tasks_router.get("/{task_id}/submission/download")
+async def download_submission(task_id: str, _: AuthenticatedHelper = Depends(current_staff)):
+    task = await db.project_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not task or not task.get("submission_file"):
+        raise HTTPException(status_code=404, detail="Aucun fichier pour cette tâche.")
+    submission_file = task["submission_file"]
+    try:
+        content, _unused = get_object(submission_file["storage_path"])
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Fichier introuvable sur le disque.") from error
+    return Response(
+        content=content,
+        media_type=submission_file.get("content_type", "application/octet-stream"),
+        headers={"Content-Disposition": f'attachment; filename="{submission_file.get("original_filename", "fichier")}"'},
+    )
 
 @tasks_router.put("/{task_id}/validate")
 async def validate_task(
