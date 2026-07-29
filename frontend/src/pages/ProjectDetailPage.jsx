@@ -188,15 +188,20 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
     }
   };
 
-  const submitTask = async (taskId, note) => {
-    try {
-      const response = await api.put(`/animateur/tasks/${taskId}/submit`, null, { params: { submission_note: note } });
-      setTasks((current) => current.map((task) => (task.id === taskId ? response.data : task)));
-      toast.success("Tâche rendue.");
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  };
+const submitTask = async (taskId, note, file) => {
+  try {
+    const formData = new FormData();
+    formData.append("submission_content", note);
+    if (file) formData.append("file", file);
+    const response = await api.put(`/animateur/tasks/${taskId}/submit`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    setTasks((current) => current.map((task) => (task.id === taskId ? response.data : task)));
+    toast.success("Tâche rendue.");
+  } catch (error) {
+    toast.error(getErrorMessage(error));
+  }
+};
 
   const validateTask = async (taskId) => {
     try {
