@@ -6,23 +6,24 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import logo from "../assets/logo.png";
 
-function highestRoleLabel({ isResponsable, isAdmin, isAnimateur, isHelper, isStaff }) {
+function highestRoleLabel({ isResponsable, isAdmin, isAnimateur, isStaff, isHelper }) {
   if (isResponsable) return "Responsable";
   if (isAdmin) return "Coordinateur";
   if (isAnimateur) return "Animateur";
   if (isHelper) return "Helper";
-  return "Staff";
+  if (isStaff) return "Staff";
+  return "Membre";
 }
 
 export default function AppShell({
   children, helper, tickets, onLogout,
-  isAdmin, isStaff, isResponsable, isAnimateur,isHelper
+  isAdmin, isStaff, isResponsable, isAnimateur, isHelper,
 }) {
   const [isHelperMenuOpen, setIsHelperMenuOpen] = useState(true);
   const [isStaffMenuOpen, setIsStaffMenuOpen] = useState(true);
   const [isAnimateurMenuOpen, setIsAnimateurMenuOpen] = useState(true);
 
-  const roleLabel = highestRoleLabel({ isAdmin, isStaff, isResponsable, isAnimateur });
+  const roleLabel = highestRoleLabel({ isAdmin, isStaff, isResponsable, isAnimateur, isHelper });
 
   return (
     <div className="app-shell" data-testid="iris-application">
@@ -33,7 +34,7 @@ export default function AppShell({
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
           {(isStaff || isResponsable) && (
-            <>
+            <div className="menu-group" data-testid="staff-menu-group">
               <button
                 className="helper-menu-trigger"
                 type="button"
@@ -53,11 +54,11 @@ export default function AppShell({
                   <FileStack size={18} /> <span>Réunions</span>
                 </NavLink>
               </div>
-            </>
+            </div>
           )}
 
           {(isAnimateur || isResponsable) && (
-            <>
+            <div className="menu-group" data-testid="animateur-menu-group">
               <button
                 className="helper-menu-trigger"
                 type="button"
@@ -74,37 +75,38 @@ export default function AppShell({
                   <FolderKanban size={18} /> <span>Projets</span>
                 </NavLink>
               </div>
-            </>
+            </div>
           )}
-{(isHelper || isResponsable) && (
-          <button
-            className="helper-menu-trigger"
-            type="button"
-            onClick={() => setIsHelperMenuOpen((current) => !current)}
-            aria-expanded={isHelperMenuOpen}
-            data-testid="helper-menu-toggle"
-          >
-            <RadioTower size={18} />
-            <span>Helper</span>
-            <ChevronDown className={isHelperMenuOpen ? "is-open" : ""} size={16} />
-          </button>
-          <div className={`helper-menu-links ${isHelperMenuOpen ? "is-open" : ""}`} data-testid="helper-menu-links">
-            <NavLink end className="nav-link" to="/" data-testid="active-tickets-link" title="Dossiers actifs">
-              <Grid2X2 size={18} /> <span>Suivis</span>
-            </NavLink>
-            <NavLink className="nav-link" to="/archives" data-testid="archives-link" title="Archives">
-              <Archive size={18} /> <span>Archives</span>
-            </NavLink>
-            <NavLink className="nav-link" to="/resources" data-testid="sidebar-resources-link" title="Ressources">
-              <BookOpenText size={18} /> <span>Ressources</span>
-            </NavLink>
-            {isAdmin && (
-              <NavLink className="nav-link" to="/admin" data-testid="admin-panel-link" title="Vue administrateur">
-                <LayoutDashboard size={18} /> <span>Coordination</span>
+
+          <div className="menu-group" data-testid="helper-menu-group">
+            <button
+              className="helper-menu-trigger"
+              type="button"
+              onClick={() => setIsHelperMenuOpen((current) => !current)}
+              aria-expanded={isHelperMenuOpen}
+              data-testid="helper-menu-toggle"
+            >
+              <RadioTower size={18} />
+              <span>Helper</span>
+              <ChevronDown className={isHelperMenuOpen ? "is-open" : ""} size={16} />
+            </button>
+            <div className={`helper-menu-links ${isHelperMenuOpen ? "is-open" : ""}`} data-testid="helper-menu-links">
+              <NavLink end className="nav-link" to="/" data-testid="active-tickets-link" title="Dossiers actifs">
+                <Grid2X2 size={18} /> <span>Suivis</span>
               </NavLink>
-            )}
+              <NavLink className="nav-link" to="/archives" data-testid="archives-link" title="Archives">
+                <Archive size={18} /> <span>Archives</span>
+              </NavLink>
+              <NavLink className="nav-link" to="/resources" data-testid="sidebar-resources-link" title="Ressources">
+                <BookOpenText size={18} /> <span>Ressources</span>
+              </NavLink>
+              {isAdmin && (
+                <NavLink className="nav-link" to="/admin" data-testid="admin-panel-link" title="Vue administrateur">
+                  <LayoutDashboard size={18} /> <span>Coordination</span>
+                </NavLink>
+              )}
+            </div>
           </div>
-         )}
         </nav>
 
         <div className="sidebar-bottom">
