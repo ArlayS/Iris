@@ -2,6 +2,7 @@
 import asyncio, os, tempfile
 from datetime import datetime, timezone
 from uuid import uuid4
+from services.audit_service import log_auth_event
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from database import db
 from models.project import (
@@ -51,47 +52,62 @@ async def get_project(project_id: str, helper: AuthenticatedHelper = Depends(cur
     if not project:
         raise HTTPException(404, "Projet introuvable.")
     return project
-
-@router.put("/animateur/projects/{project_id}", response_model=Project)
+@router.put("/projects/{project_id}", response_model=Project)
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
-    helper: AuthenticatedHelper = Depends(current_project_editor)
-):
-
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_animateur),
+) -> Project:
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Projet introuvable.")
 
+    previous_content = existing.get("content_markdown", "")
+    previous_description = existing.get("description", "")
+    previous_end_date = existing.get("end_date")
+
     updated_at = _now()
-
-    update_fields = {
-        "title": (payload.title or "").strip(),
-        "description": (payload.description or "").strip(),
-        "content_markdown": payload.content_markdown or "",
-        "end_date": payload.end_date,
-        "updated_at": updated_at,
-    }
-
-    if payload.status is not None:
-        update_fields["status"] = payload.status
 
     await db.projects.update_one(
         {"id": project_id},
-        {"$set": update_fields},
+        {
+            "$set": {
+                "title": payload.title.strip(),
+                "description": payload.description.strip(),
+                "content_markdown": payload.content_markdown,
+                "end_date": payload.end_date,
+                "updated_at": updated_at,
+            }
+        },
     )
 
-    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
-    if not project:
-        raise HTTPException(status_code=404, detail="Projet introuvable.")
+    updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not updated:
+        raise HTTPException(status_code=404, detail="Projet introuvable après mise à jour.")
 
-    project.setdefault("description", "")
-    project.setdefault("content_markdown", "")
-    project.setdefault("status", "en_cours")
-    project.setdefault("members", [])
-    project.setdefault("end_date", None)
+    content_changed = previous_content != payload.content_markdown
+    description_changed = previous_description != payload.description.strip()
+    end_date_changed = previous_end_date != payload.end_date
 
-    return project
+    if content_changed or description_changed or end_date_changed:
+        await log_auth_event(
+            "project.content.updated",
+            request,
+            helper=helper,
+            status_code=200,
+            details={
+                "project_id": project_id,
+                "title": payload.title.strip(),
+                "content_changed": content_changed,
+                "description_changed": description_changed,
+                "end_date_changed": end_date_changed,
+                "before_length": len(previous_content or ""),
+                "after_length": len(payload.content_markdown or ""),
+            },
+        )
+
+    return updated
 
 @router.post("/projects/{project_id}/members/{helper_id}", response_model=Project)
 async def add_member(project_id: str, helper_id: str, username: str, display_name: str,
