@@ -1,15 +1,17 @@
 """Router pour les evenements du calendrier animateur."""
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
-import models
-from database import get_db
+from database import client
 
 router = APIRouter(prefix="/animateur/calendar-events", tags=["animateur-calendar"])
+
+db = client.get_default_database()
+projects_collection = db["projects"]
+tasks_collection = db["project_tasks"]
 
 
 class CalendarEvent(BaseModel):
@@ -20,50 +22,67 @@ class CalendarEvent(BaseModel):
     project_id: str
     project_title: str
 
-    class Config:
-        orm_mode = True
+
+def _to_date(value) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return datetime.fromisoformat(str(value)).date()
 
 
 @router.get("", response_model=list[CalendarEvent])
-def list_calendar_events(db: Session = Depends(get_db)):
+async def list_calendar_events():
     events: list[CalendarEvent] = []
 
-    projects = db.query(models.Project).all()
-    project_titles = {project.id: project.title for project in projects}
+    projects_cursor = projects_collection.find({})
+    projects = [project async for project in projects_cursor]
+    project_titles = {str(project["_id"]): project.get("title", "") for project in projects}
 
     for project in projects:
-        events.append(
-            CalendarEvent(
-                id=f"project-start-{project.id}",
-                title=f"Debut : {project.title}",
-                date=project.start_date,
-                type="project_start",
-                project_id=str(project.id),
-                project_title=project.title,
-            )
-        )
-        if project.end_date:
+        project_id = str(project["_id"])
+        title = project.get("title", "")
+
+        start_date = project.get("start_date")
+        if start_date:
             events.append(
                 CalendarEvent(
-                    id=f"project-end-{project.id}",
-                    title=f"Fin : {project.title}",
-                    date=project.end_date,
-                    type="project_end",
-                    project_id=str(project.id),
-                    project_title=project.title,
+                    id=f"project-start-{project_id}",
+                    title=f"Debut : {title}",
+                    date=_to_date(start_date),
+                    type="project_start",
+                    project_id=project_id,
+                    project_title=title,
                 )
             )
 
-    tasks = db.query(models.ProjectTask).all()
-    for task in tasks:
+        end_date = project.get("end_date")
+        if end_date:
+            events.append(
+                CalendarEvent(
+                    id=f"project-end-{project_id}",
+                    title=f"Fin : {title}",
+                    date=_to_date(end_date),
+                    type="project_end",
+                    project_id=project_id,
+                    project_title=title,
+                )
+            )
+
+    tasks_cursor = tasks_collection.find({})
+    async for task in tasks_cursor:
+        due_date = task.get("due_date")
+        if not due_date:
+            continue
+        project_id = str(task.get("project_id", ""))
         events.append(
             CalendarEvent(
-                id=f"task-due-{task.id}",
-                title=f"Echeance : {task.title}",
-                date=task.due_date,
+                id=f"task-due-{task['_id']}",
+                title=f"Echeance : {task.get('title', '')}",
+                date=_to_date(due_date),
                 type="task_due",
-                project_id=str(task.project_id),
-                project_title=project_titles.get(task.project_id, ""),
+                project_id=project_id,
+                project_title=project_titles.get(project_id, ""),
             )
         )
 
