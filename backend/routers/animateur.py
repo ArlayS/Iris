@@ -107,18 +107,18 @@ async def create_project(
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
-    helper: AuthenticatedHelper = Depends(current_responsable),
+    _: AuthenticatedHelper = Depends(current_responsable),
 ):
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
-        raise HTTPException(404, "Projet introuvable.")
+        raise HTTPException(status_code=404, detail="Projet introuvable.")
 
-    updated_at = datetime.now(timezone.utc).isoformat()
+    updated_at = _now()
 
     update_fields = {
-        "title": payload.title.strip(),
-        "description": payload.description.strip(),
-        "content_markdown": payload.content_markdown,
+        "title": (payload.title or "").strip(),
+        "description": (payload.description or "").strip(),
+        "content_markdown": payload.content_markdown or "",
         "end_date": payload.end_date,
         "updated_at": updated_at,
     }
@@ -126,22 +126,22 @@ async def update_project(
     if payload.status is not None:
         update_fields["status"] = payload.status
 
-    result = await db.projects.update_one(
+    await db.projects.update_one(
         {"id": project_id},
         {"$set": update_fields},
     )
 
-    if result.matched_count == 0:
-        raise HTTPException(404, "Projet introuvable.")
-    if result.modified_count == 0 and payload.status is not None:
-        pass
-
     project = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not project:
-        raise HTTPException(404, "Projet introuvable.")
+        raise HTTPException(status_code=404, detail="Projet introuvable.")
+
+    project.setdefault("description", "")
+    project.setdefault("content_markdown", "")
+    project.setdefault("status", "en_cours")
+    project.setdefault("members", [])
+    project.setdefault("end_date", None)
 
     return project
-
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
     project_id: str,
