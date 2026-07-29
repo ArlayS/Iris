@@ -78,7 +78,17 @@ async def remove_member(project_id: str, helper_id: str, helper: AuthenticatedHe
     existing["members"] = [m for m in existing["members"] if m["id"] != helper_id]
     await db.projects.update_one({"id": project_id}, {"$set": {"members": existing["members"]}})
     return existing
-
+    
+# routers/animateur.py
+@router.get("/calendar-events")
+async def project_calendar_events(helper: AuthenticatedHelper = Depends(current_staff)):
+    projects = await db.projects.find(
+        {}, {"_id": 0, "id": 1, "title": 1, "start_date": 1, "end_date": 1, "status": 1}
+    ).to_list(500)
+    tasks = await db.project_tasks.find(
+        {}, {"_id": 0, "id": 1, "title": 1, "due_date": 1, "project_id": 1, "status": 1, "assignee": 1}
+    ).to_list(500)
+    return {"projects": projects, "tasks": tasks}
 @router.get("/projects/{project_id}/tasks", response_model=list[ProjectTask])
 async def list_tasks(project_id: str, helper: AuthenticatedHelper = Depends(current_animateur)):
     return await db.project_tasks.find({"project_id": project_id}, {"_id": 0}).sort("due_date", 1).to_list(500)
