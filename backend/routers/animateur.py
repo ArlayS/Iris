@@ -11,7 +11,10 @@ from models.ticket import HelperIdentity
 from services.discord_service import DiscordService
 from datetime import datetime, timezone
 from uuid import uuid4
-
+from models.project import (
+    Project, ProjectCreate, ProjectUpdate, ProjectTask, ProjectTaskCreate,
+    ProjectResource, ProjectMember,
+)
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import Response
 
