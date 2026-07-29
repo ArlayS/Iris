@@ -9,12 +9,7 @@ class ProjectMemberAdd(BaseModel):
     member_id: str = Field(pattern=r"\d{15,22}")
     role: Literal["membre", "responsable"] = "membre"
 
-class ProjectUpdate(BaseModel):
-    title: str
-    description: str
-    content_markdown: str | None = None
-    end_date: str | None = None
-    status: str | None = None
+
 class ProjectMember(BaseModel):
     id: str
     username: str
@@ -43,6 +38,7 @@ class ProjectUpdate(BaseModel):
     description: str = ""
     content_markdown: str = ""
     end_date: date | None = None
+    status: str | None = None
 
 
 class Project(BaseModel):
