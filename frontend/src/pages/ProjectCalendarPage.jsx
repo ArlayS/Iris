@@ -145,10 +145,15 @@ const projectsByDay = useMemo(() => {
                 >
                   <span className="absence-day-number">{format(day, "d")}</span>
                   {dayProjects?.length > 0 && (
-                    <span className="absence-day-chip is-project" title={dayProjects.map((p) => p.title).join(", ")}>
-                      {dayProjects.length}
-                    </span>
-                  )}
+  <span className="absence-day-events">
+    {dayProjects.slice(0, 2).map((project) => (
+      <span key={project.id} className="absence-day-event is-project" title={project.title}>
+        {project.title}
+      </span>
+    ))}
+    {dayProjects.length > 2 && <span className="absence-day-event is-more">+{dayProjects.length - 2}</span>}
+  </span>
+)}
                   {dayTasks?.length > 0 && (
                     <span className="absence-day-events">
                       {dayTasks.slice(0, 2).map((task) => (
