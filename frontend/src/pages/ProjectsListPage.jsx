@@ -211,13 +211,14 @@ const deleteProject = async (project) => {
   const confirmed = window.confirm(`Supprimer définitivement "${project.title}" ?`);
   if (!confirmed) return;
 
-  await api.delete(`/animateur/projects/${project.id}`, { withCredentials: true });
-
-  setProjects((current) => current.filter((item) => item.id !== project.id));
+  try {
+    await api.delete(`/animateur/projects/${project.id}`, { withCredentials: true });
+    setProjects((current) => current.filter((item) => item.id !== project.id));
+    toast.success("Projet supprimé.");
+  } catch (error) {
+    toast.error(getErrorMessage(error));
+  }
 };
-  const filteredProjects = projects.filter((project) =>
-    viewMode === "archives" ? project.status === "archive" : project.status !== "archive"
-  );
 
   return (
     <section className="page-content resources-page" data-testid="projects-list-page">
@@ -307,6 +308,7 @@ const deleteProject = async (project) => {
               joiningId={joiningId}
               onArchive={archiveProject}
               archivingId={archivingId}
+              onDelete={deleteProject}
             />
           ))}
         </div>
