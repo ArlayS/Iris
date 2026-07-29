@@ -43,25 +43,45 @@ async def get_project(project_id: str, helper: AuthenticatedHelper = Depends(cur
         raise HTTPException(404, "Projet introuvable.")
     return project
 
-@router.put("/projects/{project_id}", response_model=Project)
-async def update_project(project_id: str, payload: ProjectUpdate, helper: AuthenticatedHelper = Depends(current_project_responsable)):
+@router.put("/{project_id}", response_model=Project)
+async def update_project(
+    project_id: str,
+    payload: ProjectUpdate,
+    _: AuthenticatedHelper = Depends(current_responsable),
+):
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
-        raise HTTPException(404, "Projet introuvable.")
-    updated_at = datetime.now(timezone.utc).isoformat()
+        raise HTTPException(status_code=404, detail="Projet introuvable.")
+
+    updated_at = _now()
+
     update_fields = {
-        "title": payload.title.strip(),
-        "description": payload.description.strip(),
-        "content_markdown": payload.content_markdown,
+        "title": (payload.title or "").strip(),
+        "description": (payload.description or "").strip(),
+        "content_markdown": payload.content_markdown or "",
         "end_date": payload.end_date,
         "updated_at": updated_at,
     }
+
     if payload.status is not None:
         update_fields["status"] = payload.status
 
-    await db.projects.update_one({"id": project_id}, {"$set": update_fields})
-    existing.update(update_fields)
-    return existing
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": update_fields},
+    )
+
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet introuvable.")
+
+    project.setdefault("description", "")
+    project.setdefault("content_markdown", "")
+    project.setdefault("status", "en_cours")
+    project.setdefault("members", [])
+    project.setdefault("end_date", None)
+
+    return project
 
 @router.post("/projects/{project_id}/members/{helper_id}", response_model=Project)
 async def add_member(project_id: str, helper_id: str, username: str, display_name: str,
