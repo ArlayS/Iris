@@ -86,7 +86,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
           element={canSeeHelper ? <NewTicketPage onCreated={updateTicket} /> : <Navigate to="/staff/calendrier" replace />}
         />
         <Route
-          path="/staff/taches"
+          path="/staff/tasks"
           element={isStaff ? <QuarterlyTasksPage isResponsable={isResponsable} /> : <Navigate to="/" replace />}
         />
         <Route
