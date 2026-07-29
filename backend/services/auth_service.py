@@ -74,6 +74,7 @@ async def exchange_code(code: str) -> AuthenticatedHelper:
         if token_response.is_error:
             raise HTTPException(status_code=401, detail="Échange OAuth Discord refusé.")
         access_token = token_response.json()["access_token"]
+
         profile_response = await client.get(
             DISCORD_ME_URL,
             headers={"Authorization": f"Bearer {access_token}"},
@@ -193,13 +194,15 @@ async def is_responsable_helper(helper_id: str) -> bool:
         return False
     return await DiscordService().member_has_role(helper_id, DISCORD_RESPONSABLE_ROLE_ID)
 
+
 async def is_animateur_helper(helper_id: str) -> bool:
     if not DISCORD_ANIMATEUR_ROLE_ID:
         return False
-    return await DiscordService.member_has_role(helper_id, DISCORD_ANIMATEUR_ROLE_ID)
-    
+    return await DiscordService().member_has_role(helper_id, DISCORD_ANIMATEUR_ROLE_ID)
+
+
 async def has_any_access(helper_id: str) -> bool:
-    if await has_iris_access_helper(helper_id):
+    if await has_iris_access(helper_id):
         return True
     if await is_staff_helper(helper_id):
         return True
@@ -229,12 +232,14 @@ async def current_staff(request: Request) -> AuthenticatedHelper:
     if not await is_staff_helper(helper.id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Staff requis.")
     return helper
-    
+
+
 async def current_animateur(request: Request) -> AuthenticatedHelper:
     helper = await current_helper(request)
     if not await is_animateur_helper(helper.id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Animateur requis.")
     return helper
+
 
 async def current_responsable(request: Request) -> AuthenticatedHelper:
     helper = await current_helper(request)
