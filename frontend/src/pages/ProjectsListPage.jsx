@@ -21,12 +21,12 @@ function MemberStack({ members }) {
   );
 }
 
-function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, onArchive, archivingId }) {
+function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, onArchive, archivingId, isResponsable }) {
   const isMember = project.members.some((member) => member.id === helper?.id);
   const isJoining = joiningId === project.id;
   const isArchiving = archivingId === project.id;
   const isArchived = project.status === "archive";
-  const canArchive = isResponsable || project.created_by?.id === helper?.id;
+  const canArchive = isResponsableGlobal || project.created_by?.id === helper?.id;
   
 
   const handleJoin = (event) => {
@@ -100,7 +100,7 @@ function ProjectCard({ project, helper, isResponsableGlobal, onJoin, joiningId, 
   );
 }
 
-export default function ProjectsListPage({ helper, isResponsableGlobal }) {
+export default function ProjectsListPage({ helper, isResponsableGlobal, isResponsable }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
