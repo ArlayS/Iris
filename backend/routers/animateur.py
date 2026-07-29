@@ -118,16 +118,21 @@ async def current_project_editor(request: Request) -> AuthenticatedHelper:
         return helper
     raise HTTPException(status_code=403, detail="Rôle Animateur ou Responsable requis.")
 
-@router.put("/{project_id}")
+
+@router.put("/{project_id}", response_model=Project)
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
     request: Request,
-    helper: AuthenticatedHelper = Depends(current_project_editor)
+    helper: AuthenticatedHelper = Depends(current_project_editor),
 ) -> Project:
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Projet introuvable.")
+
+    title_after = (payload.title or "").strip()
+    description_after = (payload.description or "").strip()
+    content_after = payload.content_markdown or ""
 
     previous_content = existing.get("content_markdown", "")
     previous_description = existing.get("description", "")
@@ -139,10 +144,11 @@ async def update_project(
         {"id": project_id},
         {
             "$set": {
-                "title": (payload.title or "").strip(),
-                "description": (payload.description or "").strip(),
-                "content_markdown": payload.content_markdown or "",
+                "title": title_after,
+                "description": description_after,
+                "content_markdown": content_after,
                 "end_date": payload.end_date,
+                "status": payload.status or existing.get("status", "en_cours"),
                 "updated_at": updated_at,
             }
         },
@@ -155,8 +161,8 @@ async def update_project(
     if not updated:
         raise HTTPException(status_code=404, detail="Projet introuvable après mise à jour.")
 
-    content_changed = previous_content != payload.content_markdown
-    description_changed = previous_description != payload.description.strip()
+    content_changed = previous_content != content_after
+    description_changed = previous_description != description_after
     end_date_changed = previous_end_date != payload.end_date
 
     if content_changed or description_changed or end_date_changed:
@@ -167,16 +173,16 @@ async def update_project(
             status_code=200,
             details={
                 "project_id": project_id,
-                "title": payload.title.strip(),
+                "title": title_after,
                 "content_changed": content_changed,
                 "description_changed": description_changed,
                 "end_date_changed": end_date_changed,
                 "before_length": len(previous_content or ""),
-                "after_length": len(payload.content_markdown or ""),
+                "after_length": len(content_after or ""),
             },
         )
 
-    return updated
+    return Project(updated)
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
     project_id: str,
