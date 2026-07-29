@@ -59,12 +59,11 @@ export default function ProjectCalendarPage() {
     return result;
   }, [currentMonth]);
 
-  const projectsByDay = useMemo(() => {
+const projectsByDay = useMemo(() => {
     const map = new Map();
     for (const project of projects) {
-      if (!project.end_date) continue;
       const start = parseISO(project.start_date);
-      const end = parseISO(project.end_date);
+      const end = project.end_date ? parseISO(project.end_date) : start;
       for (const day of days) {
         const within = isWithinInterval(day, { start, end }) || isSameDay(day, start) || isSameDay(day, end);
         if (within) {
