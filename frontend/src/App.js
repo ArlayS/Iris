@@ -132,7 +132,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
           element={canSeeStaff ? <MeetingSummaryEditorPage isResponsable={isResponsable} /> : <Navigate to={defaultRoute} replace />}
         />
 
-        <Route path="/animateur/projects" element={canSeeAnimateur ? <ProjectsListPage /> : <Navigate to="/" replace />} />
+      <Route path="/animateur/projects" element={canSeeAnimateur ? <ProjectsListPage helper={helper} /> : <Navigate to="/" replace />} />
         <Route
           path="/animateur/projects/:projectId"
           element={
