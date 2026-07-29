@@ -105,6 +105,7 @@ async def create_project(
     return project
 
 
+
 @router.put("/{project_id}", response_model=Project)
 async def update_project(
     project_id: str,
@@ -122,7 +123,7 @@ async def update_project(
 
     updated_at = _now()
 
-    await db.projects.update_one(
+    result = await db.projects.update_one(
         {"id": project_id},
         {
             "$set": {
@@ -134,6 +135,9 @@ async def update_project(
             }
         },
     )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Projet introuvable.")
 
     updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not updated:
@@ -161,17 +165,6 @@ async def update_project(
         )
 
     return updated
-    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
-    if not project:
-        raise HTTPException(status_code=404, detail="Projet introuvable.")
-
-    project.setdefault("description", "")
-    project.setdefault("content_markdown", "")
-    project.setdefault("status", "en_cours")
-    project.setdefault("members", [])
-    project.setdefault("end_date", None)
-
-    return project
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
     project_id: str,
