@@ -99,6 +99,7 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
   const [resourceTitle, setResourceTitle] = useState("");
   const [resourceFile, setResourceFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const isResponsable = isResponsableGlobal || project?.created_by?.id === helper?.id;
 
@@ -200,26 +201,7 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
       toast.error(getErrorMessage(error));
     }
   };
-const downloadResource = async (resource) => {
-  setDownloadingId(resource.id);
-  try {
-    const response = await api.get(`/animateur/resources/${resource.id}/download`, {
-      responseType: "blob",
-    });
-    const url = window.URL.createObjectURL(response.data);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = resource.original_filename || resource.title;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    toast.error(getErrorMessage(error));
-  } finally {
-    setDownloadingId(null);
-  }
-};
+
   const uploadResource = async (event) => {
     event.preventDefault();
     if (!resourceFile) {
@@ -242,6 +224,27 @@ const downloadResource = async (resource) => {
       toast.error(getErrorMessage(error));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const downloadResource = async (resource) => {
+    setDownloadingId(resource.id);
+    try {
+      const response = await api.get(`/animateur/resources/${resource.id}/download`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = resource.original_filename || resource.title;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -440,29 +443,31 @@ const downloadResource = async (resource) => {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {resources.map((resource) => (
-  <div
-    key={resource.id}
-    onClick={() => downloadResource(resource)}
-    role="button"
-    tabIndex={0}
-    className="absence-meeting-row"
-    style={{
-      display: "flex", alignItems: "center", gap: 10, padding: 10,
-      borderRadius: 8, background: "#f7faf7", cursor: "pointer",
-      opacity: downloadingId === resource.id ? 0.6 : 1,
-    }}
-  >
-    <ClipboardList size={16} />
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <strong style={{ display: "block", fontSize: 13 }}>{resource.title}</strong>
-      <small style={{ color: "var(--muted)" }}>{resource.original_filename}</small>
-    </div>
-    <Download size={15} />
-  </div>
-))}
+                  <div
+                    key={resource.id}
+                    onClick={() => downloadResource(resource)}
+                    role="button"
+                    tabIndex={0}
+                    className="absence-meeting-row"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: 10,
+                      borderRadius: 8, background: "#f7faf7", cursor: "pointer",
+                      opacity: downloadingId === resource.id ? 0.6 : 1,
+                    }}
+                  >
+                    <ClipboardList size={16} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong style={{ display: "block", fontSize: 13 }}>{resource.title}</strong>
+                      <small style={{ color: "var(--muted)" }}>{resource.original_filename}</small>
+                    </div>
+                    <Download size={15} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
- 
+      </div>
 
       {showAddMember && (
         <AddMemberModal
