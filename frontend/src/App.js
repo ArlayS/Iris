@@ -17,7 +17,15 @@ import AbsenceCalendarPage from "./pages/AbsenceCalendarPage";
 import MeetingSummariesPage from "./pages/MeetingSummariesPage";
 import MeetingSummaryEditorPage from "./pages/MeetingSummaryEditorPage";
 import QuarterlyTasksPage from "./pages/QuarterlyTasksPage";
+import ProjectsListPage from "./pages/ProjectsListPage";
+import ProjectDetailPage from "./pages/ProjectDetailPage";
 import ProjectCalendarPage from "./pages/ProjectCalendarPage";
+
+
+
+
+
+
 
 function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable }) {
   const [tickets, setTickets] = useState([]);
@@ -69,6 +77,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable })
       isAdmin={isAdmin}
       isHelper={isHelper}
       isStaff={isStaff}
+      isAnimateur={isAnimateur}
     >
       <Routes>
         <Route
@@ -131,9 +140,9 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable })
           element={canSeeStaff ? <MeetingSummaryEditorPage isResponsable={isResponsable} /> : <Navigate to={defaultRoute} replace />}
         />
             
-
-<Route path="/animateur/calendrier" element={isStaff ? <ProjectCalendarPage /> : <Navigate to="/" replace />} />
-        <Route path="*" element={<Navigate to={defaultRoute} replace />} />
+    <Route path="/animateur/projects" element={isAnimateur ? <ProjectsListPage /> : <Navigate to="/" replace />} />
+    <Route path="/animateur/projects/:projectId" element={isAnimateur ? <ProjectDetailPage /> : <Navigate to="/" replace />} />
+    <Route path="/animateur/calendrier" element={isAnimateur ? <ProjectCalendarPage /> : <Navigate to="/" replace />} />
       </Routes>
     </AppShell>
   );
@@ -167,6 +176,7 @@ function App() {
             isStaff={session.is_staff}
             isHelper={session.is_helper}
             isResponsable={session.is_responsable}
+      isAnimateur={session.isanimateur}
           />
         ) : (
           <LoginPage />
