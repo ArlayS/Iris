@@ -107,7 +107,7 @@ async def create_project(
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
-    helper: AuthenticatedHelper = Depends(current_animateur),
+    helper: AuthenticatedHelper = Depends(current_responsable),
 ):
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
