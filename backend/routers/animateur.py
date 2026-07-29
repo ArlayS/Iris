@@ -6,6 +6,9 @@ signup en toggle comme /tasks/{id}/signup.
 """
 import os
 import tempfile
+from config import DISCORD_ANIMATEUR_ROLE_ID
+from models.ticket import HelperIdentity
+from services.discord_service import DiscordService
 from datetime import datetime, timezone
 from uuid import uuid4
 
