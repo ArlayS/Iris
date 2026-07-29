@@ -11,6 +11,7 @@ const EVENT_LABELS = {
   "auth.session.invalid": "Session invalide",
   "auth.session.check_failed": "Vérification session échouée",
   "authz.forbidden": "Accès refusé",
+  "project.content.updated": "Contenu projet modifié",
 };
 
 function formatDateTime(value) {
@@ -30,6 +31,8 @@ function EventBadge({ eventType }) {
     eventType === "auth.login.success"
       ? "status-done"
       : eventType === "auth.logout"
+      ? "status-pending"
+      : eventType === "project.content.updated"
       ? "status-pending"
       : eventType === "auth.login.failure" || eventType === "authz.forbidden"
       ? "status-bad"
@@ -159,6 +162,7 @@ export default function ResponsableAuthLogsPage() {
             <option value="auth.session.invalid">Session invalide</option>
             <option value="auth.session.check_failed">Vérification session échouée</option>
             <option value="authz.forbidden">Accès refusé</option>
+            <option value="project.content.updated">Contenu projet modifié</option>
           </select>
 
           <input
@@ -257,25 +261,47 @@ export default function ResponsableAuthLogsPage() {
                       </td>
                       <td style={tdStyle}>{log.status_code ?? "—"}</td>
                       <td style={tdStyle}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {log.details?.reason && (
-                            <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                              Raison : {String(log.details.reason)}
-                            </span>
-                          )}
-                          {log.details?.provider && (
-                            <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                              Provider : {String(log.details.provider)}
-                            </span>
-                          )}
-                          {log.details?.mode && (
-                            <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                              Mode : {String(log.details.mode)}
-                            </span>
-                          )}
-                          {(!log.details || Object.keys(log.details).length === 0) && "—"}
-                        </div>
-                      </td>
+  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    {log.details?.reason && (
+      <span style={{ fontSize: 12, color: "var(--muted)" }}>
+        Raison : {String(log.details.reason)}
+      </span>
+    )}
+
+    {log.details?.provider && (
+      <span style={{ fontSize: 12, color: "var(--muted)" }}>
+        Provider : {String(log.details.provider)}
+      </span>
+    )}
+
+    {log.details?.mode && (
+      <span style={{ fontSize: 12, color: "var(--muted)" }}>
+        Mode : {String(log.details.mode)}
+      </span>
+    )}
+
+    {log.details?.title && (
+      <span style={{ fontSize: 12, color: "var(--muted)" }}>
+        Projet : {String(log.details.title)}
+      </span>
+    )}
+
+    {log.details?.project_id && (
+      <span style={{ fontSize: 12, color: "var(--muted)" }}>
+        ID projet : {String(log.details.project_id)}
+      </span>
+    )}
+
+    {(log.details?.before_length !== undefined ||
+      log.details?.after_length !== undefined) && (
+      <span style={{ fontSize: 12, color: "var(--muted)" }}>
+        Contenu : {log.details?.before_length ?? 0} → {log.details?.after_length ?? 0} caractères
+      </span>
+    )}
+
+    {(!log.details || Object.keys(log.details).length === 0) && "—"}
+  </div>
+</td>
                     </tr>
                   ))}
                 </tbody>
