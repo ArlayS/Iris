@@ -8,6 +8,7 @@ import {
 import { api, getErrorMessage } from "../api/client";
 import TiptapSummaryEditor from "../components/TiptapSummaryEditor";
 import AddMemberModal from "../components/AddMemberModal";
+import SummaryReader from "../components/SummaryReader";
 
 const TASK_STATUS_LABELS = { a_faire: "À faire", en_cours: "En cours", rendu: "Rendue", valide: "Validée" };
 
@@ -56,9 +57,7 @@ function TaskCard({ task, currentHelperId, isResponsable, onSubmit, onValidate, 
 
       {task.status === "rendu" && (
         <div style={{ fontSize: 13, color: "var(--muted)", background: "#f7faf7", padding: 10, borderRadius: 8 }}>
-          {task.submission_note && (
-            <div className="tiptap-readonly" dangerouslySetInnerHTML={{ __html: task.submission_note }} />
-          )}
+          {task.submission_note && <SummaryReader content={task.submission_note} />}
           {task.submission_file && (
             <a
               href={`/api/animateur/tasks/${task.id}/submission/download`}
@@ -124,11 +123,9 @@ function ValidatedTaskRow({ task }) {
       </div>
 
       {task.submission_note && (
-        <div
-          className="tiptap-readonly"
-          style={{ fontSize: 13, color: "var(--muted)", background: "#f7faf7", padding: 10, borderRadius: 8 }}
-          dangerouslySetInnerHTML={{ __html: task.submission_note }}
-        />
+        <div style={{ fontSize: 13, color: "var(--muted)", background: "#f7faf7", padding: 10, borderRadius: 8 }}>
+          <SummaryReader content={task.submission_note} />
+        </div>
       )}
 
       {task.submission_file && (
@@ -392,7 +389,7 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
                 autoFocus
               />
             ) : project.content_markdown ? (
-              <div className="tiptap-readonly" dangerouslySetInnerHTML={{ __html: project.content_markdown }} />
+              <SummaryReader content={project.content_markdown} />
             ) : (
               <p className="resources-empty">Aucun contenu pour l'instant.</p>
             )}
