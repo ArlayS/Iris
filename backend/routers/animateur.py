@@ -36,7 +36,12 @@ def _helper_identity(helper: AuthenticatedHelper) -> dict:
         "display_name": helper.global_name,
         "avatar_url": helper.avatar_url,
     }
-
+@router.get("/members/search", response_model=list[HelperIdentity])
+async def search_animateur_members(_: AuthenticatedHelper = Depends(current_staff)):
+    if not DISCORD_ANIMATEUR_ROLE_ID:
+        raise HTTPException(status_code=503, detail="Rôle animateur non configuré.")
+    discord = DiscordService()
+    return await discord.fetch_helpers(DISCORD_ANIMATEUR_ROLE_ID)
 
 # ---------------------------------------------------------------------------
 # Projets
