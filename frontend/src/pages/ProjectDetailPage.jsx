@@ -459,21 +459,6 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
               </div>
             )}
           </div>
-
-          <div className="section-heading">
-            <span>TÂCHES VALIDÉES</span>
-          </div>
-          <div style={{ padding: "0 20px 20px" }}>
-            {validatedTasks.length === 0 ? (
-              <p className="resources-empty">Aucune tâche validée pour l'instant.</p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {validatedTasks.map((task) => (
-                  <ValidatedTaskRow key={task.id} task={task} />
-                ))}
-              </div>
-            )}
-          </div>
         </div>
 
         <div className="intelligence-panel">
@@ -553,6 +538,23 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="dashboard-card" style={{ marginTop: 24, padding: 0 }}>
+        <div className="section-heading">
+          <span>TÂCHES VALIDÉES</span>
+        </div>
+        <div style={{ padding: "0 20px 20px" }}>
+          {validatedTasks.length === 0 ? (
+            <p className="resources-empty">Aucune tâche validée pour l'instant.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {validatedTasks.map((task) => (
+                <ValidatedTaskRow key={task.id} task={task} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
