@@ -73,4 +73,3 @@ class ProjectTask(BaseModel):
     status: Literal["a_faire", "en_cours", "rendu", "valide"] = "a_faire"
     submission_note: str = ""
     submission_file_url: str | None = None
-    sub
