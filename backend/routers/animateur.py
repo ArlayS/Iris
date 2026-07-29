@@ -104,7 +104,13 @@ async def create_project(
     project.pop("_id", None)
     return project
 
-
+async def current_project_editor(request: Request) -> AuthenticatedHelper:
+    helper = await current_helper(request)
+    if await is_animateur_helper(helper.id):
+        return helper
+    if await is_responsable_helper(helper.id):
+        return helper
+    raise HTTPException(status_code=403, detail="Rôle Animateur ou Responsable requis.")
 
 @router.put("/{project_id}", response_model=Project)
 async def update_project(
