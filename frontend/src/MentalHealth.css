@@ -14,6 +14,35 @@
 .meeting-editor-main .section-heading {
   margin-bottom: 20px;
 }
+
+.project-card { display: flex; flex-direction: column; gap: 10px; }
+.project-card-archived { opacity: 0.65; }
+.project-card-top { display: flex; justify-content: space-between; align-items: center; }
+.project-card-title { margin: 4px 0 0; }
+.project-card-description { color: var(--muted); font-size: 14px; flex: 1; }
+.project-card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
+.project-card-dates { display: flex; align-items: center; gap: 4px; }
+.project-card-actions { display: flex; gap: 8px; margin-top: 8px; }
+.project-archive-btn { font-size: 13px; }
+
+.project-member-stack { display: flex; }
+.project-member-avatar {
+  width: 24px; height: 24px; border-radius: 50%; background: #eef3ee;
+  display: flex; align-items: center; justify-content: center;
+  margin-left: -8px; border: 2px solid #fff; overflow: hidden;
+}
+.project-member-avatar:first-child { margin-left: 0; }
+.project-member-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.project-member-extra { font-size: 10px; font-weight: 600; }
+
+.status-archived { background: #ececec; color: #6b6b6b; }
+
+.project-view-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.project-view-tab {
+  padding: 8px 16px; border-radius: 999px; border: 1px solid #e2e2e2;
+  background: #fff; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px;
+}
+.project-view-tab.is-active { background: #1f2b1f; color: #fff; border-color: #1f2b1f; }
 .absence-day-chip.is-project {
   background: #4a5a9c;
 }
