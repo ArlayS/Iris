@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import logo from "../assets/iris-logo.png";
+import logo from "../assets/logo.png";
 
 function highestRoleLabel({ isAdmin, isStaff, isResponsable, isAnimateur }) {
   if (isAdmin) return "Coordinateur";
