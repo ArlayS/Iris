@@ -38,7 +38,21 @@ function TaskCard({ task, currentHelperId, isResponsable, onSubmit, onValidate, 
 
   return (
     <div className="meeting-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
-      {/* ... en-tête inchangé (titre, assignee, due_date, description) ... */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <MemberAvatar member={task.assignee} size={22} />
+            <strong>{task.title}</strong>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--muted)", marginTop: 4 }}>
+            <Calendar size={14} /> <span>{task.due_date}</span>
+          </div>
+          {task.description && <p style={{ fontSize: 13, color: "var(--muted)", margin: "8px 0 0" }}>{task.description}</p>}
+        </div>
+        <span className={`status-badge ${task.status === "valide" ? "status-done" : "status-pending"}`}>
+          {TASK_STATUS_LABELS[task.status]}
+        </span>
+      </div>
 
       {task.status === "rendu" && (
         <div style={{ fontSize: 13, color: "var(--muted)", background: "#f7faf7", padding: 10, borderRadius: 8 }}>
@@ -92,6 +106,44 @@ function TaskCard({ task, currentHelperId, isResponsable, onSubmit, onValidate, 
   );
 }
 
+function ValidatedTaskRow({ task }) {
+  return (
+    <div className="meeting-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <MemberAvatar member={task.assignee} size={22} />
+            <strong>{task.title}</strong>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--muted)", marginTop: 4 }}>
+            <Calendar size={14} />
+            <span>Rendu par {task.assignee.display_name || task.assignee.username} · échéance {task.due_date}</span>
+          </div>
+        </div>
+        <span className="status-badge status-done">Validée</span>
+      </div>
+
+      {task.submission_note && (
+        <div
+          className="tiptap-readonly"
+          style={{ fontSize: 13, color: "var(--muted)", background: "#f7faf7", padding: 10, borderRadius: 8 }}
+          dangerouslySetInnerHTML={{ __html: task.submission_note }}
+        />
+      )}
+
+      {task.submission_file && (
+        <a
+          href={`/api/animateur/tasks/${task.id}/submission/download`}
+          onClick={(e) => e.stopPropagation()}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
+        >
+          <FileUp size={14} /> {task.submission_file.original_filename}
+        </a>
+      )}
+    </div>
+  );
+}
+
 export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -117,6 +169,9 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
   const [downloadingId, setDownloadingId] = useState(null);
 
   const isResponsable = isResponsableGlobal || project?.created_by?.id === helper?.id;
+
+  const activeTasks = tasks.filter((task) => task.status !== "valide");
+  const validatedTasks = tasks.filter((task) => task.status === "valide");
 
   const load = async () => {
     setLoading(true);
@@ -188,20 +243,20 @@ export default function ProjectDetailPage({ helper, isResponsableGlobal }) {
     }
   };
 
-const submitTask = async (taskId, note, file) => {
-  try {
-    const formData = new FormData();
-    formData.append("submission_content", note);
-    if (file) formData.append("file", file);
-    const response = await api.put(`/animateur/tasks/${taskId}/submit`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    setTasks((current) => current.map((task) => (task.id === taskId ? response.data : task)));
-    toast.success("Tâche rendue.");
-  } catch (error) {
-    toast.error(getErrorMessage(error));
-  }
-};
+  const submitTask = async (taskId, note, file) => {
+    try {
+      const formData = new FormData();
+      formData.append("submission_content", note);
+      if (file) formData.append("file", file);
+      const response = await api.put(`/animateur/tasks/${taskId}/submit`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setTasks((current) => current.map((task) => (task.id === taskId ? response.data : task)));
+      toast.success("Tâche rendue.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
 
   const validateTask = async (taskId) => {
     try {
@@ -389,11 +444,11 @@ const submitTask = async (taskId, note, file) => {
                 </button>
               </form>
             )}
-            {tasks.length === 0 ? (
-              <p className="resources-empty">Aucune tâche pour ce projet.</p>
+            {activeTasks.length === 0 ? (
+              <p className="resources-empty">Aucune tâche en cours pour ce projet.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {tasks.map((task) => (
+                {activeTasks.map((task) => (
                   <TaskCard
                     key={task.id}
                     task={task}
@@ -403,6 +458,21 @@ const submitTask = async (taskId, note, file) => {
                     onValidate={validateTask}
                     onDelete={deleteTask}
                   />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="section-heading">
+            <span>TÂCHES VALIDÉES</span>
+          </div>
+          <div style={{ padding: "0 20px 20px" }}>
+            {validatedTasks.length === 0 ? (
+              <p className="resources-empty">Aucune tâche validée pour l'instant.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {validatedTasks.map((task) => (
+                  <ValidatedTaskRow key={task.id} task={task} />
                 ))}
               </div>
             )}
