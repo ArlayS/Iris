@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Search, ShieldAlert, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,6 +12,9 @@ export default function CasierPage() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const triggerButtonRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   const resetCreateState = () => {
     setQuery("");
@@ -31,6 +34,33 @@ export default function CasierPage() {
     setCreateOpen(false);
     resetCreateState();
   };
+
+  useEffect(() => {
+    if (!createOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const timeout = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 20);
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeCreateModal();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+      window.clearTimeout(timeout);
+      triggerButtonRef.current?.focus();
+    };
+  }, [createOpen]);
 
   const searchMembers = async () => {
     const value = query.trim();
@@ -52,6 +82,11 @@ export default function CasierPage() {
     }
   };
 
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    searchMembers();
+  };
+
   const handleSelectMember = (member) => {
     setSelectedMember(member);
     setDiscordId(member.id);
@@ -70,10 +105,9 @@ export default function CasierPage() {
 
     setSubmitting(true);
     try {
-      const response = await api.post("/moderation/casiers", payload);
+      await api.post("/moderation/casiers", payload);
       toast.success("Casier créé.");
       closeCreateModal();
-      console.log("Casier créé :", response.data);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -91,6 +125,7 @@ export default function CasierPage() {
 
         <div className="dashboard-actions">
           <button
+            ref={triggerButtonRef}
             className="calm-primary-button"
             type="button"
             onClick={openCreateModal}
@@ -106,42 +141,59 @@ export default function CasierPage() {
         <div className="casier-empty-shell-icon">
           <ShieldAlert size={20} />
         </div>
+
         <div>
           <strong>Aucun casier affiché pour le moment</strong>
-          <p>Commence par créer un premier dossier membre depuis le bouton en haut à droite.</p>
+          <p>
+            Commence par créer un premier dossier membre depuis le bouton en haut à droite.
+          </p>
         </div>
       </div>
 
       {createOpen && (
-        <div className="casier-modal-backdrop" role="presentation" onClick={closeCreateModal}>
+        <div
+          className="casier-modal-backdrop"
+          role="presentation"
+          onClick={closeCreateModal}
+        >
           <div
-            className="casier-modal"
+            className="casier-modal-shell"
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-casier-title"
+            aria-describedby="create-casier-description"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="casier-modal-header">
               <div>
                 <p className="eyebrow">MODÉRATION</p>
                 <h2 id="create-casier-title">Créer un casier</h2>
+                <p id="create-casier-description" className="casier-modal-subtitle">
+                  Recherche un membre existant ou renseigne directement son ID Discord.
+                </p>
               </div>
 
-              <button type="button" className="icon-button" onClick={closeCreateModal} aria-label="Fermer">
+              <button
+                type="button"
+                className="casier-icon-button"
+                onClick={closeCreateModal}
+                aria-label="Fermer"
+              >
                 <X size={16} />
               </button>
             </div>
 
             <div className="casier-modal-body">
-              <div className="casier-modal-section">
+              <section className="casier-modal-section">
                 <label className="casier-label" htmlFor="casier-member-search">
                   Rechercher un membre
                 </label>
 
-                <div className="casier-search-row">
+                <form className="casier-search-row" onSubmit={handleSearchSubmit}>
                   <div className="casier-search-input">
                     <Search size={16} />
                     <input
+                      ref={searchInputRef}
                       id="casier-member-search"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
@@ -150,14 +202,13 @@ export default function CasierPage() {
                   </div>
 
                   <button
-                    type="button"
+                    type="submit"
                     className="calm-primary-button is-secondary"
-                    onClick={searchMembers}
                     disabled={searching || !query.trim()}
                   >
                     {searching ? "Recherche…" : "Rechercher"}
                   </button>
-                </div>
+                </form>
 
                 <div className="casier-search-results">
                   {results.length === 0 ? (
@@ -173,7 +224,7 @@ export default function CasierPage() {
                           className={`casier-search-result ${isActive ? "is-active" : ""}`}
                           onClick={() => handleSelectMember(member)}
                         >
-                          <div>
+                          <div className="casier-search-result-main">
                             <strong>{member.display_name || member.username}</strong>
                             <small>@{member.username}</small>
                           </div>
@@ -183,12 +234,13 @@ export default function CasierPage() {
                     })
                   )}
                 </div>
-              </div>
+              </section>
 
-              <div className="casier-modal-section">
+              <section className="casier-modal-section">
                 <label className="casier-label" htmlFor="casier-discord-id">
                   Ou entrer un ID Discord
                 </label>
+
                 <input
                   id="casier-discord-id"
                   className="casier-text-input"
@@ -197,22 +249,27 @@ export default function CasierPage() {
                   placeholder="Ex. 918121536911732747"
                   inputMode="numeric"
                 />
-              </div>
+              </section>
+            </div>
 
-              <div className="casier-modal-actions">
-                <button type="button" className="calm-primary-button is-secondary" onClick={closeCreateModal}>
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  className="calm-primary-button"
-                  onClick={createCasier}
-                  disabled={submitting}
-                >
-                  <Plus size={16} />
-                  {submitting ? "Création…" : "Créer le casier"}
-                </button>
-              </div>
+            <div className="casier-modal-footer">
+              <button
+                type="button"
+                className="calm-primary-button is-secondary"
+                onClick={closeCreateModal}
+              >
+                Annuler
+              </button>
+
+              <button
+                type="button"
+                className="calm-primary-button"
+                onClick={createCasier}
+                disabled={submitting}
+              >
+                <Plus size={16} />
+                {submitting ? "Création…" : "Créer le casier"}
+              </button>
             </div>
           </div>
         </div>
