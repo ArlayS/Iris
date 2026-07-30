@@ -136,7 +136,7 @@ function AuthenticatedApp({ helper, isAdmin, isStaff, isHelper, isResponsable, i
 <Route path="/responsable/auth-logs" element={<ResponsableAuthLogsPage />} />
             
 
-            <Route path="/casier" element={<ModerationCasierPage />} />
+            <Route path="/moderation/casiers" element={<ModerationCasierPage />} />
       <Route path="/animateur/projects" element={canSeeAnimateur ? <ProjectsListPage helper={helper} /> : <Navigate to="/" replace />} />
         <Route
           path="/animateur/projects/:projectId"
