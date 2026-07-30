@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, ShieldAlert, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
-
 import { api, getErrorMessage } from "../api/client";
 
 function MemberAvatar({ member, size = 34 }) {
@@ -30,9 +29,16 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const debounceRef = useRef(null);
-  const requestIdRef = useRef(0);
   const inputRef = useRef(null);
+  const debounceRef = useRef(null);
+  const aliveRef = useRef(true);
+
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -43,11 +49,8 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
     setLoading(false);
     setSubmitting(false);
 
-    const timer = setTimeout(() => {
-      inputRef.current?.focus();
-    }, 10);
-
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => inputRef.current?.focus(), 0);
+    return () => clearTimeout(t);
   }, [open]);
 
   useEffect(() => {
@@ -59,34 +62,30 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
       clearTimeout(debounceRef.current);
     }
 
-    if (selectedMember && needle === (selectedMember.display_name || selectedMember.username || "")) {
-      return;
-    }
-
-    if (needle.length < 2) {
-      setResults([]);
+    if (needle.length < 2 || selectedMember) {
       setLoading(false);
+      if (needle.length < 2) setResults([]);
       return;
     }
 
     debounceRef.current = setTimeout(async () => {
-      const requestId = ++requestIdRef.current;
-      setLoading(true);
-
       try {
+        setLoading(true);
+
         const response = await api.get("/moderation/casiers/search-members", {
           params: { q: needle },
         });
 
-        if (requestId !== requestIdRef.current) return;
-        setResults(Array.isArray(response.data) ? response.data : []);
+        if (!aliveRef.current) return;
+
+        const data = Array.isArray(response?.data) ? response.data : [];
+        setResults(data);
       } catch (error) {
-        if (requestId === requestIdRef.current) {
-          setResults([]);
-          toast.error(getErrorMessage(error));
-        }
+        if (!aliveRef.current) return;
+        setResults([]);
+        toast.error(getErrorMessage(error));
       } finally {
-        if (requestId === requestIdRef.current) {
+        if (aliveRef.current) {
           setLoading(false);
         }
       }
@@ -102,18 +101,20 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
     onClose?.();
   };
 
-  const handleChange = (value) => {
+  const handleInputChange = (event) => {
+    const value = event.target.value;
     setQuery(value);
 
     if (!selectedMember) return;
 
-    const selectedLabel = selectedMember.display_name || selectedMember.username || "";
+    const selectedLabel = selectedMember?.display_name || selectedMember?.username || "";
     if (value !== selectedLabel) {
       setSelectedMember(null);
     }
   };
 
   const handlePickMember = (member) => {
+    if (!member?.id) return;
     setSelectedMember(member);
     setQuery(member.display_name || member.username || "");
     setResults([]);
@@ -127,15 +128,15 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
       return;
     }
 
-    setSubmitting(true);
-
     try {
+      setSubmitting(true);
+
       const response = await api.post("/moderation/casiers", {
         discord_id: selectedMember.id,
       });
 
+      onCreated?.(response?.data);
       toast.success("Casier créé.");
-      onCreated?.(response.data);
       onClose?.();
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -147,7 +148,7 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
   if (!open) return null;
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={handleClose}>
+    <div className="modal-backdrop" onClick={handleClose}>
       <div
         className="modal-panel moderation-modal"
         role="dialog"
@@ -160,13 +161,7 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
             <p className="eyebrow">MODÉRATION</p>
             <h2 id="create-casier-title">Créer un casier</h2>
           </div>
-
-          <button
-            type="button"
-            className="icon-button"
-            onClick={handleClose}
-            aria-label="Fermer"
-          >
+          <button type="button" className="icon-button" onClick={handleClose} aria-label="Fermer">
             <X size={16} />
           </button>
         </div>
@@ -174,7 +169,6 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
         <form className="moderation-modal-body" onSubmit={handleSubmit}>
           <div className="moderation-field">
             <label htmlFor="discord-member-search">Membre Discord</label>
-
             <div className="moderation-input-wrap">
               <Search size={16} />
               <input
@@ -182,18 +176,14 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
                 id="discord-member-search"
                 type="text"
                 value={query}
-                onChange={(event) => handleChange(event.target.value)}
+                onChange={handleInputChange}
                 placeholder="Chercher un pseudo ou un nickname"
                 autoComplete="off"
               />
             </div>
-
-            <small className="moderation-help-text">
-              Tape au moins 2 caractères puis choisis un membre dans la liste.
-            </small>
           </div>
 
-          {selectedMember && (
+          {selectedMember ? (
             <div className="moderation-selected-member">
               <MemberAvatar member={selectedMember} size={40} />
               <div>
@@ -201,9 +191,9 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
                 <small>@{selectedMember.username}</small>
               </div>
             </div>
-          )}
+          ) : null}
 
-          {!selectedMember && query.trim().length >= 2 && (
+          {!selectedMember && query.trim().length >= 2 ? (
             <div className="moderation-search-results">
               {loading ? (
                 <p className="resources-empty">Recherche…</p>
@@ -226,12 +216,12 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
                 ))
               )}
             </div>
-          )}
+          ) : null}
 
           <div className="moderation-modal-actions">
             <button
-              className="calm-primary-button is-secondary"
               type="button"
+              className="calm-primary-button is-secondary"
               onClick={handleClose}
               disabled={submitting}
             >
@@ -239,8 +229,8 @@ export default function CreateCasierModal({ open, onClose, onCreated }) {
             </button>
 
             <button
-              className="calm-primary-button"
               type="submit"
+              className="calm-primary-button"
               disabled={!selectedMember?.id || submitting}
             >
               <ShieldAlert size={16} />
