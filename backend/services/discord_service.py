@@ -113,11 +113,11 @@ class DiscordService:
         channel = await self._get(f"/channels/{channel_id}")
         if channel.get("guild_id") != DISCORD_GUILD_ID:
             raise HTTPException(status_code=403, detail="Ce salon n’appartient pas au serveur Iris.")
-        if channel.get("parent_id") != DISCORD_TICKET_CATEGORY_ID:
-            raise HTTPException(
-                status_code=403,
-                detail="Ce salon n’appartient pas à la catégorie de tickets autorisée.",
-            )
+      #  if channel.get("parent_id") != DISCORD_TICKET_CATEGORY_ID:
+      #      raise HTTPException(
+        #        status_code=403,
+       #         detail="Ce salon n’appartient pas à la catégorie de tickets autorisée.",
+         #   )
         if channel.get("type") not in {0, 5, 15}:
             raise HTTPException(status_code=422, detail="L’identifiant doit désigner un salon textuel.")
         return channel
