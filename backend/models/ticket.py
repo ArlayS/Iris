@@ -3,7 +3,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
+class DiscordAttachment(BaseModel):
+    id: str
+    filename: str
+    url: str
+    content_type: str | None = None
+    
 class DiscordAuthor(BaseModel):
     id: str
     username: str
@@ -24,11 +29,7 @@ class TranscriptMessage(BaseModel):
     webhook_id: str | None = None
     
 
-class DiscordAttachment(BaseModel):
-    id: str
-    filename: str
-    url: str
-    content_type: str | None = None
+
 
 
 class DiscordMember(BaseModel):
