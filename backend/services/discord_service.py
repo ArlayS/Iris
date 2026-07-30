@@ -118,8 +118,8 @@ class DiscordService:
         #        status_code=403,
        #         detail="Ce salon n’appartient pas à la catégorie de tickets autorisée.",
          #   )
-        if channel.get("type") not in {0, 5, 15}:
-            raise HTTPException(status_code=422, detail="L’identifiant doit désigner un salon textuel.")
+      #  if channel.get("type") not in {0, 5, 15}:
+        #    raise HTTPException(status_code=422, detail="L’identifiant doit désigner un salon textuel.")
         return channel
 
     async def fetch_channel_history(self, channel_id: str) -> list[TranscriptMessage]:
