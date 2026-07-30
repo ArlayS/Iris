@@ -171,46 +171,51 @@ class DiscordService:
                 parts.append(str(footer).strip())
 
         return "\n".join(part for part in parts if part).strip()
+def _components_to_text(self, components: list[dict[str, Any]]) -> str:
+    parts: list[str] = []
 
-    def _components_to_text(self, components: list[dict[str, Any]]) -> str:
-        parts: list[str] = []
+    def walk(items: list[dict[str, Any]]) -> None:
+        for item in items:
+            item_type = item.get("type")
 
-        def walk(items: list[dict[str, Any]]) -> None:
-            for item in items:
-                label = (item.get("label") or "").strip()
-                placeholder = (item.get("placeholder") or "").strip()
-                custom_id = (item.get("custom_id") or "").strip()
-                value = (item.get("value") or "").strip()
+            text_content = (item.get("content") or "").strip()
+            if item_type == 10 and text_content:
+                parts.append(text_content)
 
-                if label:
-                    parts.append(label)
-                if placeholder:
-                    parts.append(placeholder)
-                if value:
-                    parts.append(value)
-                if custom_id and not label:
-                    parts.append(f"[component:{custom_id}]")
+            label = (item.get("label") or "").strip()
+            placeholder = (item.get("placeholder") or "").strip()
+            custom_id = (item.get("custom_id") or "").strip()
+            value = (item.get("value") or "").strip()
 
-                options = item.get("options", []) or []
-                for option in options:
-                    option_label = (option.get("label") or "").strip()
-                    option_value = (option.get("value") or "").strip()
-                    option_desc = (option.get("description") or "").strip()
+            if label:
+                parts.append(label)
+            if placeholder:
+                parts.append(placeholder)
+            if value:
+                parts.append(value)
+            if custom_id and not label and item_type not in {10, 14, 17}:
+                parts.append(f"[component:{custom_id}]")
 
-                    if option_label:
-                        parts.append(option_label)
-                    if option_desc:
-                        parts.append(option_desc)
-                    elif option_value and option_value != option_label:
-                        parts.append(option_value)
+            options = item.get("options", []) or []
+            for option in options:
+                option_label = (option.get("label") or "").strip()
+                option_value = (option.get("value") or "").strip()
+                option_desc = (option.get("description") or "").strip()
 
-                children = item.get("components", []) or []
-                if children:
-                    walk(children)
+                if option_label:
+                    parts.append(option_label)
+                if option_desc:
+                    parts.append(option_desc)
+                elif option_value and option_value != option_label:
+                    parts.append(option_value)
 
-        walk(components)
-        unique_parts = list(dict.fromkeys(part for part in parts if part))
-        return "\n".join(unique_parts).strip()
+            children = item.get("components", []) or []
+            if children:
+                walk(children)
+
+    walk(components)
+    unique_parts = list(dict.fromkeys(part for part in parts if part))
+    return "\n".join(unique_parts).strip()
 
     def _parse_transcript_message(self, raw_message: dict[str, Any]) -> TranscriptMessage:
         author = raw_message["author"]
