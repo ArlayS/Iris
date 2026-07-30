@@ -2,6 +2,7 @@ import asyncio
 import os
 import tempfile
 import re
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
@@ -23,6 +24,7 @@ from models.staff import (
     VolunteerRating,
 )
 from models.ticket import AuthenticatedHelper, HelperIdentity
+from services.audit_service import log_auth_event
 from services.auth_service import current_responsable, current_staff
 from services.discord_service import DiscordService
 from services.storage_service import extension_from_filename, get_object, put_object_from_file
@@ -67,6 +69,25 @@ def _helper_identity(helper: AuthenticatedHelper) -> dict:
     }
 
 
+def _safe_helper_id(helper_obj):
+    if isinstance(helper_obj, dict):
+        return helper_obj.get("id")
+    return getattr(helper_obj, "id", None)
+
+
+def _safe_helper_name(helper_obj):
+    if isinstance(helper_obj, dict):
+        return helper_obj.get("display_name") or helper_obj.get("username")
+    return getattr(helper_obj, "display_name", None) or getattr(helper_obj, "username", None)
+
+
+def normalize_text(value: str) -> str:
+    return "".join(
+        c for c in unicodedata.normalize("NFD", value)
+        if unicodedata.category(c) != "Mn"
+    ).lower()
+
+
 # ---------------------------------------------------------------------------
 # Absences
 # ---------------------------------------------------------------------------
@@ -79,6 +100,7 @@ async def list_absences(_: AuthenticatedHelper = Depends(current_staff)) -> list
 @router.post("/calendrier", response_model=AbsenceEntry, status_code=status.HTTP_201_CREATED)
 async def create_absence(
     payload: AbsenceCreate,
+    request: Request,
     helper: AuthenticatedHelper = Depends(current_staff),
 ) -> AbsenceEntry:
     if payload.end_date < payload.start_date:
@@ -92,17 +114,46 @@ async def create_absence(
         created_at=_now(),
     )
     await db.absences.insert_one(entry.model_dump())
+
+    await log_auth_event(
+        "staff.absence.created",
+        request,
+        helper=helper,
+        status_code=201,
+        details={
+            "absence_id": entry.id,
+            "start_date": entry.start_date,
+            "end_date": entry.end_date,
+            "has_reason": bool(entry.reason),
+        },
+    )
+
     return entry
 
 
 @router.delete("/calendrier/{absence_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_absence(
     absence_id: str,
-    _: AuthenticatedHelper = Depends(current_staff),
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_staff),
 ) -> None:
+    existing = await db.absences.find_one({"id": absence_id}, {"_id": 0})
     result = await db.absences.delete_one({"id": absence_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Absence introuvable.")
+
+    await log_auth_event(
+        "staff.absence.deleted",
+        request,
+        helper=helper,
+        status_code=204,
+        details={
+            "absence_id": absence_id,
+            "target_helper_id": existing.get("helper", {}).get("id") if existing else None,
+            "start_date": existing.get("start_date") if existing else None,
+            "end_date": existing.get("end_date") if existing else None,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -136,6 +187,7 @@ async def list_archived_periods(_: AuthenticatedHelper = Depends(current_staff))
 @router.post("/tasks/period", response_model=QuarterlyPeriod, status_code=status.HTTP_201_CREATED)
 async def create_period(
     payload: QuarterlyPeriodCreate,
+    request: Request,
     helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> QuarterlyPeriod:
     start = datetime.strptime(payload.start_date, "%Y-%m-%d")
@@ -149,26 +201,54 @@ async def create_period(
         created_at=_now(),
     )
     await db.quarterly_periods.insert_one(period.model_dump())
+
+    await log_auth_event(
+        "staff.period.created",
+        request,
+        helper=helper,
+        status_code=201,
+        details={
+            "period_id": period.id,
+            "start_date": period.start_date,
+            "end_date": period.end_date,
+        },
+    )
+
     return period
 
 
 @router.post("/tasks/period/{period_id}/archive", response_model=QuarterlyPeriod)
 async def archive_period(
     period_id: str,
-    _: AuthenticatedHelper = Depends(current_responsable),
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> QuarterlyPeriod:
     existing = await db.quarterly_periods.find_one({"id": period_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Période introuvable.")
     await db.quarterly_periods.update_one({"id": period_id}, {"$set": {"is_archived": True}})
     existing["is_archived"] = True
+
+    await log_auth_event(
+        "staff.period.archived",
+        request,
+        helper=helper,
+        status_code=200,
+        details={
+            "period_id": period_id,
+            "start_date": existing.get("start_date"),
+            "end_date": existing.get("end_date"),
+        },
+    )
+
     return existing
 
 
 @router.delete("/tasks/period/{period_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_period(
     period_id: str,
-    _: AuthenticatedHelper = Depends(current_responsable),
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> None:
     existing = await db.quarterly_periods.find_one({"id": period_id}, {"_id": 0})
     if not existing:
@@ -177,6 +257,18 @@ async def delete_period(
         raise HTTPException(status_code=403, detail="Seule une période archivée peut être supprimée.")
     await db.quarterly_tasks.delete_many({"period_id": period_id})
     await db.quarterly_periods.delete_one({"id": period_id})
+
+    await log_auth_event(
+        "staff.period.deleted",
+        request,
+        helper=helper,
+        status_code=204,
+        details={
+            "period_id": period_id,
+            "start_date": existing.get("start_date"),
+            "end_date": existing.get("end_date"),
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -191,18 +283,10 @@ async def list_tasks(
     return await db.quarterly_tasks.find({"period_id": period_id}, {"_id": 0}).sort("task_date", 1).to_list(500)
 
 
-import unicodedata
-
-def normalize_text(value: str) -> str:
-    return "".join(
-        c for c in unicodedata.normalize("NFD", value)
-        if unicodedata.category(c) != "Mn"
-    ).lower()
-
-
 @router.post("/tasks", response_model=QuarterlyTask, status_code=status.HTTP_201_CREATED)
 async def create_task(
     payload: QuarterlyTaskCreate,
+    request: Request,
     helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> QuarterlyTask:
     period = await db.quarterly_periods.find_one({"id": payload.period_id}, {"_id": 0})
@@ -243,21 +327,55 @@ async def create_task(
         updated_at=now,
     )
     await db.quarterly_tasks.insert_one(task.model_dump())
+
+    await log_auth_event(
+        "staff.task.created",
+        request,
+        helper=helper,
+        status_code=201,
+        details={
+            "task_id": task.id,
+            "period_id": task.period_id,
+            "name": task.name,
+            "category": task.category,
+            "task_date": task.task_date,
+            "end_date": task.end_date,
+        },
+    )
+
     return task
+
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
     task_id: str,
-    _: AuthenticatedHelper = Depends(current_responsable),
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> None:
+    existing = await db.quarterly_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
     result = await db.quarterly_tasks.delete_one({"id": task_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Tâche introuvable.")
+
+    await log_auth_event(
+        "staff.task.deleted",
+        request,
+        helper=helper,
+        status_code=204,
+        details={
+            "task_id": task_id,
+            "period_id": existing.get("period_id"),
+            "name": existing.get("name"),
+        },
+    )
 
 
 @router.post("/tasks/{task_id}/signup", response_model=QuarterlyTask)
 async def signup_task(
     task_id: str,
+    request: Request,
     helper: AuthenticatedHelper = Depends(current_staff),
 ) -> QuarterlyTask:
     existing = await db.quarterly_tasks.find_one({"id": task_id}, {"_id": 0})
@@ -266,11 +384,14 @@ async def signup_task(
 
     volunteers = existing.get("volunteers", [])
     updated_at = _now()
+    action = None
 
     if any(v["id"] == helper.id for v in volunteers):
         volunteers = [v for v in volunteers if v["id"] != helper.id]
+        action = "staff.task.signup.removed"
     else:
         volunteers.append(_helper_identity(helper))
+        action = "staff.task.signup.added"
 
     await db.quarterly_tasks.update_one(
         {"id": task_id},
@@ -278,6 +399,18 @@ async def signup_task(
     )
     existing["volunteers"] = volunteers
     existing["updated_at"] = updated_at
+
+    await log_auth_event(
+        action,
+        request,
+        helper=helper,
+        status_code=200,
+        details={
+            "task_id": task_id,
+            "period_id": existing.get("period_id"),
+        },
+    )
+
     return existing
 
 
@@ -285,7 +418,8 @@ async def signup_task(
 async def remove_volunteer(
     task_id: str,
     helper_id: str,
-    _: AuthenticatedHelper = Depends(current_responsable),
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> QuarterlyTask:
     existing = await db.quarterly_tasks.find_one({"id": task_id}, {"_id": 0})
     if not existing:
@@ -298,6 +432,19 @@ async def remove_volunteer(
     )
     existing["volunteers"] = volunteers
     existing["updated_at"] = updated_at
+
+    await log_auth_event(
+        "staff.task.volunteer.removed",
+        request,
+        helper=helper,
+        status_code=200,
+        details={
+            "task_id": task_id,
+            "period_id": existing.get("period_id"),
+            "helper_id": helper_id,
+        },
+    )
+
     return existing
 
 
@@ -306,6 +453,7 @@ async def rate_volunteer(
     task_id: str,
     helper_id: str,
     payload: VolunteerRating,
+    request: Request,
     _: AuthenticatedHelper = Depends(current_responsable),
 ) -> QuarterlyTask:
     existing = await db.quarterly_tasks.find_one({"id": task_id}, {"_id": 0})
@@ -328,6 +476,21 @@ async def rate_volunteer(
     )
     existing["volunteers"] = volunteers
     existing["updated_at"] = updated_at
+
+    await log_auth_event(
+        "staff.task.volunteer.rated",
+        request,
+        helper=_,
+        status_code=200,
+        details={
+            "task_id": task_id,
+            "period_id": existing.get("period_id"),
+            "helper_id": helper_id,
+            "rating": payload.rating,
+            "has_note": bool(payload.note.strip()),
+        },
+    )
+
     return existing
 
 
@@ -335,6 +498,7 @@ async def rate_volunteer(
 async def nominate_volunteer(
     task_id: str,
     helper_id: str,
+    request: Request,
     _: AuthenticatedHelper = Depends(current_responsable),
 ) -> QuarterlyTask:
     existing = await db.quarterly_tasks.find_one({"id": task_id}, {"_id": 0})
@@ -364,6 +528,20 @@ async def nominate_volunteer(
     )
     existing["volunteers"].append(volunteer)
     existing["updated_at"] = updated_at
+
+    await log_auth_event(
+        "staff.task.volunteer.nominated",
+        request,
+        helper=_,
+        status_code=200,
+        details={
+            "task_id": task_id,
+            "period_id": existing.get("period_id"),
+            "helper_id": helper_id,
+            "helper_username": member.username,
+        },
+    )
+
     return existing
 
 
@@ -390,6 +568,7 @@ async def get_meeting(
 @router.post("/meetings", response_model=MeetingSummary, status_code=status.HTTP_201_CREATED)
 async def create_meeting(
     payload: MeetingSummaryCreate,
+    request: Request,
     helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> MeetingSummary:
     now = _now()
@@ -406,6 +585,20 @@ async def create_meeting(
         is_locked=False,
     )
     await db.meeting_summaries.insert_one(meeting.model_dump())
+
+    await log_auth_event(
+        "staff.meeting.created",
+        request,
+        helper=helper,
+        status_code=201,
+        details={
+            "meeting_id": meeting.id,
+            "title": meeting.title,
+            "meeting_date": meeting.meeting_date,
+            "status": meeting.status,
+        },
+    )
+
     return meeting
 
 
@@ -413,7 +606,8 @@ async def create_meeting(
 async def update_meeting(
     meeting_id: str,
     payload: MeetingSummaryUpdate,
-    _: AuthenticatedHelper = Depends(current_staff),
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_staff),
 ) -> MeetingSummary:
     existing = await db.meeting_summaries.find_one({"id": meeting_id}, {"_id": 0})
     if not existing:
@@ -440,12 +634,29 @@ async def update_meeting(
         status=new_status,
         updated_at=updated_at,
     )
+
+    await log_auth_event(
+        "staff.meeting.updated",
+        request,
+        helper=helper,
+        status_code=200,
+        details={
+            "meeting_id": meeting_id,
+            "title": existing.get("title"),
+            "meeting_date": existing.get("meeting_date"),
+            "status": new_status,
+            "is_locked": existing.get("is_locked", False),
+        },
+    )
+
     return existing
+
 
 @router.delete("/meetings/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_meeting(
     meeting_id: str,
-    helper: AuthenticatedHelper = Depends(current_responsable),  # au lieu de current_staff
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> None:
     existing = await db.meeting_summaries.find_one({"id": meeting_id}, {"_id": 0})
     if not existing:
@@ -454,10 +665,24 @@ async def delete_meeting(
         raise HTTPException(status_code=403, detail="Ce résumé est verrouillé.")
     await db.meeting_summaries.delete_one({"id": meeting_id})
 
+    await log_auth_event(
+        "staff.meeting.deleted",
+        request,
+        helper=helper,
+        status_code=204,
+        details={
+            "meeting_id": meeting_id,
+            "title": existing.get("title"),
+            "meeting_date": existing.get("meeting_date"),
+        },
+    )
+
+
 @router.post("/meetings/{meeting_id}/lock", response_model=MeetingSummary)
 async def toggle_meeting_lock(
     meeting_id: str,
-    _: AuthenticatedHelper = Depends(current_responsable),
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> MeetingSummary:
     existing = await db.meeting_summaries.find_one({"id": meeting_id}, {"_id": 0})
     if not existing:
@@ -468,13 +693,27 @@ async def toggle_meeting_lock(
         {"$set": {"is_locked": new_lock_state}},
     )
     existing["is_locked"] = new_lock_state
+
+    await log_auth_event(
+        "staff.meeting.lock.toggled",
+        request,
+        helper=helper,
+        status_code=200,
+        details={
+            "meeting_id": meeting_id,
+            "title": existing.get("title"),
+            "is_locked": new_lock_state,
+        },
+    )
+
     return existing
 
 
 @router.post("/meetings/upload-image")
 async def upload_meeting_media(
     file: UploadFile = File(...),
-    _: AuthenticatedHelper = Depends(current_staff),
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_staff),
 ) -> dict:
     if not file.filename:
         raise HTTPException(status_code=422, detail="Choisissez un fichier à envoyer.")
@@ -499,6 +738,19 @@ async def upload_meeting_media(
         media_path = f"iris/meeting-images/{media_filename}"
         content_type = _media_content_type(extension)
         await asyncio.to_thread(put_object_from_file, media_path, temp_path, content_type)
+
+        await log_auth_event(
+            "staff.meeting.media.uploaded",
+            request,
+            helper=helper,
+            status_code=201,
+            details={
+                "filename": file.filename,
+                "media_id": media_id,
+                "extension": extension,
+                "size": total_size,
+            },
+        )
 
         return {"url": f"/api/staff/meetings/images/{media_filename}"}
     finally:
