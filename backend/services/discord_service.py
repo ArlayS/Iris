@@ -160,6 +160,7 @@ class DiscordService:
             for field in embed.get("fields", []):
                 name = (field.get("name") or "").strip()
                 value = (field.get("value") or "").strip()
+
                 if name:
                     parts.append(name)
                 if value:
@@ -171,6 +172,46 @@ class DiscordService:
 
         return "\n".join(part for part in parts if part).strip()
 
+    def _components_to_text(self, components: list[dict[str, Any]]) -> str:
+        parts: list[str] = []
+
+        def walk(items: list[dict[str, Any]]) -> None:
+            for item in items:
+                label = (item.get("label") or "").strip()
+                placeholder = (item.get("placeholder") or "").strip()
+                custom_id = (item.get("custom_id") or "").strip()
+                value = (item.get("value") or "").strip()
+
+                if label:
+                    parts.append(label)
+                if placeholder:
+                    parts.append(placeholder)
+                if value:
+                    parts.append(value)
+                if custom_id and not label:
+                    parts.append(f"[component:{custom_id}]")
+
+                options = item.get("options", []) or []
+                for option in options:
+                    option_label = (option.get("label") or "").strip()
+                    option_value = (option.get("value") or "").strip()
+                    option_desc = (option.get("description") or "").strip()
+
+                    if option_label:
+                        parts.append(option_label)
+                    if option_desc:
+                        parts.append(option_desc)
+                    elif option_value and option_value != option_label:
+                        parts.append(option_value)
+
+                children = item.get("components", []) or []
+                if children:
+                    walk(children)
+
+        walk(components)
+        unique_parts = list(dict.fromkeys(part for part in parts if part))
+        return "\n".join(unique_parts).strip()
+
     def _parse_transcript_message(self, raw_message: dict[str, Any]) -> TranscriptMessage:
         author = raw_message["author"]
         member = raw_message.get("member", {}) or {}
@@ -179,15 +220,18 @@ class DiscordService:
         embeds = raw_message.get("embeds", []) or []
         components = raw_message.get("components", []) or []
 
-        if not content and embeds:
-            content = self._embed_to_text(embeds)
+        embed_text = self._embed_to_text(embeds)
+        component_text = self._components_to_text(components)
 
-        if not content and components:
-            content = "[Message Discord avec composants]"
+        text_parts = [part for part in [content, embed_text, component_text] if part]
+        merged_content = "\n\n".join(dict.fromkeys(text_parts)).strip()
+
+        if not merged_content:
+            merged_content = "[Message Discord sans contenu textuel exploitable]"
 
         return TranscriptMessage(
             id=raw_message["id"],
-            content=content,
+            content=merged_content,
             timestamp=raw_message["timestamp"],
             author=DiscordAuthor(
                 id=author["id"],
