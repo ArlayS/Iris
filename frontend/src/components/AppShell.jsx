@@ -23,6 +23,7 @@ export default function AppShell({
   const [isHelperMenuOpen, setIsHelperMenuOpen] = useState(true);
   const [isStaffMenuOpen, setIsStaffMenuOpen] = useState(true);
   const [isAnimateurMenuOpen, setIsAnimateurMenuOpen] = useState(true);
+   const [isOpMenuOpen, setIsOpMenuOpen] = useState(true);
 
   const roleLabel = highestRoleLabel({ isAdmin, isStaff, isResponsable, isAnimateur, isHelper });
 
@@ -85,7 +86,26 @@ export default function AppShell({
     </div>
   </div>
 )}
-
+{(isResponsable) && (
+  <div className="menu-group" data-testid="staff-menu-group">
+    <button
+      className="helper-menu-trigger"
+      type="button"
+      onClick={() => setIsOpMenuOpen((current) => !current)}
+      aria-expanded={isOpMenuOpen}
+      data-testid="op-menu-toggle"
+    >
+      <Users size={18} />
+      <span>Opérateur</span>
+      <ChevronDown className={isOpMenuOpen ? "is-open" : ""} size={16} />
+    </button>
+    <div className={`helper-menu-links ${isOpMenuOpen ? "is-open" : ""}`} data-testid="op-menu-links">
+      <NavLink className="nav-link" to="/casier" data-testid="casier" title="Casier">
+        <FileStack size={18} /> <span>Logs</span>
+      </NavLink>
+    </div>
+  </div>
+)}
           {(isAnimateur || isResponsable) && (
             <div className="menu-group" data-testid="animateur-menu-group">
               <button
