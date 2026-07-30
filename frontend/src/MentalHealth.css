@@ -17,6 +17,195 @@
 .meeting-status-badge2{
   display: block;
 }
+.casier-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.42);
+  backdrop-filter: blur(6px);
+}
+
+.casier-modal-shell {
+  width: min(100%, 640px);
+  max-height: min(88vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: #fcfcfa;
+  box-shadow:
+    0 24px 80px rgba(15, 23, 42, 0.18),
+    0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.casier-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.casier-modal-header h2 {
+  margin: 4px 0 0;
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+.casier-modal-subtitle {
+  margin-top: 10px;
+  color: #6b7280;
+  max-width: 48ch;
+}
+
+.casier-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: #f4f4f1;
+  color: #374151;
+}
+
+.casier-icon-button:hover {
+  background: #ecece7;
+}
+
+.casier-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.casier-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.casier-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4b5563;
+}
+
+.casier-search-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.casier-search-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.casier-search-input input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.casier-text-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 14px;
+  background: #ffffff;
+  outline: 0;
+}
+
+.casier-search-input:focus-within,
+.casier-text-input:focus {
+  border-color: rgba(1, 105, 111, 0.35);
+  box-shadow: 0 0 0 4px rgba(1, 105, 111, 0.08);
+}
+
+.casier-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.casier-search-result {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: #ffffff;
+}
+
+.casier-search-result.is-active {
+  border-color: rgba(1, 105, 111, 0.28);
+  background: rgba(1, 105, 111, 0.06);
+}
+
+.casier-search-result small {
+  color: #6b7280;
+}
+
+.casier-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 24px 24px;
+  border-top: 1px solid rgba(17, 24, 39, 0.08);
+  background: #fcfcfa;
+}
+
+@media (max-width: 640px) {
+  .casier-modal-backdrop {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .casier-modal-shell {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .casier-search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .casier-modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .casier-modal-footer .calm-primary-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .project-card { display: flex; flex-direction: column; gap: 10px; }
 .project-card-archived { opacity: 0.65; }
 .project-card-top { display: flex; justify-content: space-between; align-items: center; }
