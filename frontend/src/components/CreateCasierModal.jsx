@@ -1,70 +1,134 @@
 import { useEffect, useRef, useState } from "react";
+import { Search, ShieldAlert, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
-import { Plus, Search, X } from "lucide-react";
+
 import { api, getErrorMessage } from "../api/client";
 
-export default function CreateCasierModal({ onClose, onCreated }) {
+function MemberAvatar({ member, size = 34 }) {
+  const label = member?.display_name || member?.username || "?";
+
+  return (
+    <span
+      className="moderation-avatar"
+      style={{ width: size, height: size }}
+      title={label}
+      aria-label={label}
+    >
+      {member?.avatar_url ? (
+        <img src={member.avatar_url} alt="" />
+      ) : (
+        <UserRound size={Math.round(size * 0.52)} />
+      )}
+    </span>
+  );
+}
+
+export default function CreateCasierModal({
+  open,
+  onClose,
+  onCreated,
+}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
-  const [searching, setSearching] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
-  const [discordId, setDiscordId] = useState("");
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const debounceRef = useRef(null);
+  const requestIdRef = useRef(0);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    inputRef.current?.focus();
+    if (!open) return;
 
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") onClose();
-    };
+    setQuery("");
+    setResults([]);
+    setSelectedMember(null);
+    setLoading(false);
+    setSubmitting(false);
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [onClose]);
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
 
-  const searchMembers = async () => {
-    const value = query.trim();
-    if (!value) {
+    return () => clearTimeout(timer);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const needle = query.trim();
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    if (needle.length < 2) {
       setResults([]);
+      setLoading(false);
       return;
     }
 
-    setSearching(true);
-    try {
-      const response = await api.get("/moderation/casiers/search-members", {
-        params: { q: value },
-      });
-      setResults(response.data);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setSearching(false);
-    }
+    debounceRef.current = setTimeout(async () => {
+      const requestId = ++requestIdRef.current;
+      setLoading(true);
+
+      try {
+        const response = await api.get("/moderation/casiers/search-members", {
+          params: { q: needle },
+        });
+
+        if (requestId !== requestIdRef.current) return;
+
+        setResults(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        if (requestId === requestIdRef.current) {
+          setResults([]);
+          toast.error(getErrorMessage(error));
+        }
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [query, open]);
+
+  const handleClose = () => {
+    if (submitting) return;
+    onClose?.();
   };
 
-  const createCasier = async () => {
-    const payload = {
-      member_id: selectedMember?.id || null,
-      discord_id: discordId.trim() || null,
-    };
+  const handlePickMember = (member) => {
+    setSelectedMember(member);
+    setQuery(member.display_name || member.username || "");
+    setResults([]);
+  };
 
-    if (!payload.member_id && !payload.discord_id) {
-      toast.error("Sélectionnez un membre ou entrez un ID Discord.");
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!selectedMember?.id) {
+      toast.error("Sélectionne un membre Discord.");
       return;
     }
 
     setSubmitting(true);
+
     try {
-      const response = await api.post("/moderation/casiers", payload);
-      onCreated?.(response.data);
+      const response = await api.post("/moderation/casiers", {
+        discord_id: selectedMember.id,
+      });
+
       toast.success("Casier créé.");
-      onClose();
+      onCreated?.(response.data);
+      onClose?.();
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -72,149 +136,113 @@ export default function CreateCasierModal({ onClose, onCreated }) {
     }
   };
 
+  if (!open) return null;
+
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(28, 38, 34, 0.35)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 50,
-      }}
-      onClick={onClose}
-    >
+    <div className="modal-backdrop" role="presentation" onClick={handleClose}>
       <div
-        className="dashboard-card"
-        style={{
-          width: "min(460px, 90vw)",
-          maxHeight: "72vh",
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-        }}
-        onClick={(event) => event.stopPropagation()}
+        className="modal-panel moderation-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-casier-title"
+        onClick={(event) => event.stopPropagation()}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="moderation-modal-header">
           <div>
-            <small className="eyebrow">MODÉRATION</small>
-            <strong id="create-casier-title" style={{ fontSize: 18, display: "block", marginTop: 4 }}>
-              Créer un casier
-            </strong>
-          </div>
-
-          <button type="button" className="icon-button" onClick={onClose} aria-label="Fermer">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <label htmlFor="casier-member-search" style={{ fontWeight: 600 }}>
-            Rechercher un membre
-          </label>
-
-          <div style={{ position: "relative" }}>
-            <Search
-              size={16}
-              style={{
-                position: "absolute",
-                left: 12,
-                top: 12,
-                color: "var(--muted)",
-              }}
-            />
-            <input
-              ref={inputRef}
-              id="casier-member-search"
-              className="meeting-inline-input"
-              style={{ paddingLeft: 36 }}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Pseudo, nom affiché ou ID"
-            />
+            <p className="eyebrow">MODÉRATION</p>
+            <h2 id="create-casier-title">Créer un casier</h2>
           </div>
 
           <button
             type="button"
-            className="calm-primary-button is-secondary"
-            onClick={searchMembers}
-            disabled={searching || !query.trim()}
+            className="icon-button"
+            onClick={handleClose}
+            aria-label="Fermer"
           >
-            {searching ? "Recherche…" : "Rechercher"}
+            <X size={16} />
           </button>
         </div>
 
-        <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
-          {results.length === 0 ? (
-            <p className="resources-empty">Aucun résultat pour le moment.</p>
-          ) : (
-            results.map((member) => {
-              const active = selectedMember?.id === member.id;
+        <form className="moderation-modal-body" onSubmit={handleSubmit}>
+          <div className="moderation-field">
+            <label htmlFor="discord-member-search">Membre Discord</label>
 
-              return (
-                <button
-                  key={member.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedMember(member);
-                    setDiscordId(member.id);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    padding: 10,
-                    borderRadius: 8,
-                    border: active ? "1px solid rgba(1, 105, 111, 0.24)" : "1px solid transparent",
-                    background: active ? "rgba(1, 105, 111, 0.08)" : "#f7faf7",
-                    textAlign: "left",
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <strong style={{ display: "block", fontSize: 13 }}>
-                      {member.display_name || member.username}
-                    </strong>
-                    <small style={{ color: "var(--muted)" }}>@{member.username}</small>
-                  </div>
-                  <small style={{ color: "var(--muted)" }}>{member.id}</small>
-                </button>
-              );
-            })
+            <div className="moderation-input-wrap">
+              <Search size={16} />
+              <input
+                ref={inputRef}
+                id="discord-member-search"
+                type="text"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setSelectedMember(null);
+                }}
+                placeholder="Chercher un pseudo ou un nickname"
+                autoComplete="off"
+              />
+            </div>
+
+            <small className="moderation-help-text">
+              Recherche directe parmi les membres du serveur Discord.
+            </small>
+          </div>
+
+          {selectedMember && (
+            <div className="moderation-selected-member">
+              <MemberAvatar member={selectedMember} size={40} />
+              <div>
+                <strong>{selectedMember.display_name || selectedMember.username}</strong>
+                <small>@{selectedMember.username}</small>
+              </div>
+            </div>
           )}
-        </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <label htmlFor="casier-discord-id" style={{ fontWeight: 600 }}>
-            Ou entrer un ID Discord
-          </label>
-          <input
-            id="casier-discord-id"
-            className="meeting-inline-input"
-            value={discordId}
-            onChange={(event) => setDiscordId(event.target.value)}
-            placeholder="Ex. 918121536911732747"
-            inputMode="numeric"
-          />
-        </div>
+          {!selectedMember && query.trim().length >= 2 && (
+            <div className="moderation-search-results">
+              {loading ? (
+                <p className="resources-empty">Recherche…</p>
+              ) : results.length === 0 ? (
+                <p className="resources-empty">Aucun membre trouvé.</p>
+              ) : (
+                results.map((member) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    className="moderation-search-result"
+                    onClick={() => handlePickMember(member)}
+                  >
+                    <MemberAvatar member={member} size={38} />
+                    <div className="moderation-search-result-copy">
+                      <strong>{member.display_name || member.username}</strong>
+                      <small>@{member.username}</small>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-          <button type="button" className="calm-primary-button is-secondary" onClick={onClose}>
-            Annuler
-          </button>
-          <button
-            type="button"
-            className="calm-primary-button"
-            onClick={createCasier}
-            disabled={submitting}
-          >
-            <Plus size={14} /> {submitting ? "Création…" : "Créer le casier"}
-          </button>
-        </div>
+          <div className="moderation-modal-actions">
+            <button
+              className="calm-primary-button is-secondary"
+              type="button"
+              onClick={handleClose}
+              disabled={submitting}
+            >
+              Annuler
+            </button>
+
+            <button
+              className="calm-primary-button"
+              type="submit"
+              disabled={!selectedMember || submitting}
+            >
+              <ShieldAlert size={16} />
+              {submitting ? "Création…" : "Créer le casier"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
