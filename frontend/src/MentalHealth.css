@@ -17,6 +17,8 @@
 .meeting-status-badge2{
   display: block;
 }
+
+
 .casier-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -25,21 +27,21 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(17, 24, 39, 0.42);
-  backdrop-filter: blur(6px);
+  background: rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(5px);
 }
 
-.casier-modal-shell {
-  width: min(100%, 640px);
-  max-height: min(88vh, 760px);
+.casier-modal-shell.is-compact {
+  width: min(100%, 560px);
+  max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 22px;
   border: 1px solid rgba(17, 24, 39, 0.08);
   background: #fcfcfa;
   box-shadow:
-    0 24px 80px rgba(15, 23, 42, 0.18),
+    0 20px 50px rgba(15, 23, 42, 0.14),
     0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
@@ -48,20 +50,22 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 24px 24px 18px;
+  padding: 20px 20px 14px;
   border-bottom: 1px solid rgba(17, 24, 39, 0.08);
 }
 
 .casier-modal-header h2 {
   margin: 4px 0 0;
-  font-size: 1.75rem;
+  font-size: 1.55rem;
   line-height: 1.1;
 }
 
 .casier-modal-subtitle {
-  margin-top: 10px;
+  margin-top: 8px;
   color: #6b7280;
-  max-width: 48ch;
+  font-size: 0.96rem;
+  line-height: 1.45;
+  max-width: 44ch;
 }
 
 .casier-icon-button {
@@ -69,23 +73,19 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 999px;
   border: 1px solid rgba(17, 24, 39, 0.08);
   background: #f4f4f1;
   color: #374151;
 }
 
-.casier-icon-button:hover {
-  background: #ecece7;
-}
-
-.casier-modal-body {
+.casier-modal-body.is-compact {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  padding: 24px;
+  gap: 18px;
+  padding: 18px 20px 20px;
   overflow-y: auto;
 }
 
@@ -96,16 +96,15 @@
 }
 
 .casier-label {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: #4b5563;
 }
 
-.casier-search-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: center;
+.casier-search-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .casier-search-input {
@@ -116,7 +115,7 @@
   padding: 0 14px;
   border: 1px solid rgba(17, 24, 39, 0.1);
   border-radius: 14px;
-  background: #ffffff;
+  background: #fff;
 }
 
 .casier-search-input input {
@@ -132,7 +131,7 @@
   padding: 0 14px;
   border: 1px solid rgba(17, 24, 39, 0.1);
   border-radius: 14px;
-  background: #ffffff;
+  background: #fff;
   outline: 0;
 }
 
@@ -146,7 +145,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 48px;
+  min-height: 24px;
 }
 
 .casier-search-result {
@@ -156,26 +155,35 @@
   justify-content: space-between;
   gap: 12px;
   text-align: left;
-  padding: 12px 14px;
+  padding: 11px 12px;
   border-radius: 14px;
   border: 1px solid rgba(17, 24, 39, 0.08);
-  background: #ffffff;
+  background: #fff;
 }
 
 .casier-search-result.is-active {
-  border-color: rgba(1, 105, 111, 0.28);
+  border-color: rgba(1, 105, 111, 0.24);
   background: rgba(1, 105, 111, 0.06);
 }
 
-.casier-search-result small {
+.casier-search-result-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.casier-search-result small,
+.casier-modal-subtitle,
+.resources-empty {
   color: #6b7280;
 }
 
-.casier-modal-footer {
+.casier-modal-footer.is-compact {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 18px 24px 24px;
+  gap: 10px;
+  padding: 14px 20px 20px;
   border-top: 1px solid rgba(17, 24, 39, 0.08);
   background: #fcfcfa;
 }
@@ -186,21 +194,17 @@
     align-items: flex-end;
   }
 
-  .casier-modal-shell {
+  .casier-modal-shell.is-compact {
     width: 100%;
     max-height: 92vh;
-    border-radius: 22px 22px 0 0;
+    border-radius: 20px 20px 0 0;
   }
 
-  .casier-search-row {
-    grid-template-columns: 1fr;
-  }
-
-  .casier-modal-footer {
+  .casier-modal-footer.is-compact {
     flex-direction: column-reverse;
   }
 
-  .casier-modal-footer .calm-primary-button {
+  .casier-modal-footer.is-compact .calm-primary-button {
     width: 100%;
     justify-content: center;
   }
