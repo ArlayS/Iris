@@ -100,8 +100,8 @@ export default function AppShell({
       <ChevronDown className={isOpMenuOpen ? "is-open" : ""} size={16} />
     </button>
     <div className={`helper-menu-links ${isOpMenuOpen ? "is-open" : ""}`} data-testid="op-menu-links">
-      <NavLink className="nav-link" to="/casier" data-testid="casier" title="Casier">
-        <FileStack size={18} /> <span>Logs</span>
+      <NavLink className="nav-link" to="/moderation/casiers" data-testid="casier" title="Casier">
+        <FileStack size={18} /> <span>Casiers</span>
       </NavLink>
     </div>
   </div>
