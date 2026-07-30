@@ -123,42 +123,69 @@ class DiscordService:
         return channel
 
     async def fetch_channel_history(self, channel_id: str) -> list[TranscriptMessage]:
-        await self.fetch_text_channel(channel_id)
-        messages: list[TranscriptMessage] = []
-        before: str | None = None
-        while True:
-            params: dict[str, str | int] = {"limit": 100}
-            if before:
-                params["before"] = before
-            page = await self._get(f"/channels/{channel_id}/messages", params)
-            if not page:
-                break
-            for raw_message in page:
-                author = raw_message["author"]
-                messages.append(
-                    TranscriptMessage(
-                        id=raw_message["id"],
-                        content=raw_message.get("content", ""),
-                        timestamp=raw_message["timestamp"],
-                        author=DiscordAuthor(
-                            id=author["id"],
-                            username=author["username"],
-                            display_name=raw_message.get("member", {}).get("nick")
-                            or author.get("global_name"),
-                            avatar_url=avatar_url(author),
-                        ),
-                        attachments=[
-                            DiscordAttachment(
-                                id=attachment["id"],
-                                filename=attachment["filename"],
-                                url=attachment["url"],
-                                content_type=attachment.get("content_type"),
-                            )
-                            for attachment in raw_message.get("attachments", [])
-                        ],
-                    )
+    await self.fetch_text_channel(channel_id)
+    messages: list[TranscriptMessage] = []
+    before: str | None = None
+
+    while True:
+        params: dict[str, str | int] = {"limit": 100}
+        if before:
+            params["before"] = before
+
+        page = await self._get(f"/channels/{channel_id}/messages", params)
+        if not page:
+            break
+
+        for raw_message in page:
+            author = raw_message["author"]
+            member = raw_message.get("member", {}) or {}
+
+            content = raw_message.get("content", "") or ""
+            embeds = raw_message.get("embeds", []) or []
+            components = raw_message.get("components", []) or []
+
+            if not content and embeds:
+                embed_text_parts = []
+                for embed in embeds:
+                    if embed.get("title"):
+                        embed_text_parts.append(embed["title"])
+                    if embed.get("description"):
+                        embed_text_parts.append(embed["description"])
+                    for field in embed.get("fields", []):
+                        if field.get("name"):
+                            embed_text_parts.append(field["name"])
+                        if field.get("value"):
+                            embed_text_parts.append(field["value"])
+                content = "\n".join(part.strip() for part in embed_text_parts if part and part.strip())
+
+            if not content and components:
+                content = "[Message Discord avec composants]"
+
+            messages.append(
+                TranscriptMessage(
+                    id=raw_message["id"],
+                    content=content,
+                    timestamp=raw_message["timestamp"],
+                    author=DiscordAuthor(
+                        id=author["id"],
+                        username=author["username"],
+                        display_name=member.get("nick") or author.get("global_name") or author["username"],
+                        avatar_url=avatar_url(author),
+                    ),
+                    attachments=[
+                        DiscordAttachment(
+                            id=attachment["id"],
+                            filename=attachment["filename"],
+                            url=attachment["url"],
+                            content_type=attachment.get("content_type"),
+                        )
+                        for attachment in raw_message.get("attachments", [])
+                    ],
                 )
-            if len(page) < 100:
-                break
-            before = page[-1]["id"]
-        return list(reversed(messages))
+            )
+
+        if len(page) < 100:
+            break
+        before = page[-1]["id"]
+
+    return list(reversed(messages))
