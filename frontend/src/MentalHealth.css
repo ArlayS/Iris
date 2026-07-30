@@ -18,7 +18,48 @@
   display: block;
 }
 
+.casier-dashboard-page .dashboard-actions {
+  display: flex;
+  gap: 10px;
+}
 
+.casier-row-heading {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.casier-row-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.casier-row-member strong {
+  display: block;
+}
+
+.casier-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.status-dot.alert {
+  background: rgba(161, 53, 68, 0.12);
+  color: #a13544;
+}
+
+.status-dot.danger {
+  background: rgba(125, 30, 94, 0.12);
+  color: #7d1e5e;
+}
 .casier-modal-backdrop {
   position: fixed;
   inset: 0;
