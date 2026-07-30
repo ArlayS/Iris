@@ -9,13 +9,7 @@ class DiscordAuthor(BaseModel):
     username: str
     display_name: str | None = None
     avatar_url: str | None = None
-
-
-class DiscordAttachment(BaseModel):
-    id: str
-    filename: str
-    url: str
-    content_type: str | None = None
+    is_bot: bool = False
 
 
 class TranscriptMessage(BaseModel):
@@ -23,7 +17,18 @@ class TranscriptMessage(BaseModel):
     content: str
     timestamp: str
     author: DiscordAuthor
-    attachments: list[DiscordAttachment] = Field(default_factory=list)
+    attachments: list[DiscordAttachment] = []
+    embeds: list[dict[str, Any]] = []
+    components: list[dict[str, Any]] = []
+    application_id: str | None = None
+    webhook_id: str | None = None
+    
+
+class DiscordAttachment(BaseModel):
+    id: str
+    filename: str
+    url: str
+    content_type: str | None = None
 
 
 class DiscordMember(BaseModel):
