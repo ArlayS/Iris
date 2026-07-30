@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from database import db
 from services.auth_service import current_staff
 
-router = APIRouter(prefix="/casier", tags=["moderation-casiers"])
+router = APIRouter(prefix="/moderation/casiers", tags=["moderation-casiers"])
 
 
 class MemberSearchResult(BaseModel):
