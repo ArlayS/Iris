@@ -700,11 +700,33 @@ export default function ModerationCasierPage() {
                 </div>
 
                 <div className="casier-detail-summary">
-                  <StatusBadge status={detail.status} />
-                  <span>
-                    {detail.sanctions_count} sanction{detail.sanctions_count === 1 ? "" : "s"}
-                  </span>
-                </div>
+  <StatusBadge status={detail.status} />
+  <span>
+    {detail.sanctions_count} sanction{detail.sanctions_count === 1 ? "" : "s"}
+  </span>
+  <div className="casier-detail-type-badges">
+    {detail.sanctions_summary?.avertissement > 0 && (
+      <span className="casier-type-badge is-avertissement">
+        {detail.sanctions_summary.avertissement} avert.
+      </span>
+    )}
+    {detail.sanctions_summary?.kick > 0 && (
+      <span className="casier-type-badge is-kick">
+        {detail.sanctions_summary.kick} kick
+      </span>
+    )}
+    {detail.sanctions_summary?.bannissement > 0 && (
+      <span className="casier-type-badge is-bannissement">
+        {detail.sanctions_summary.bannissement} ban
+      </span>
+    )}
+    {detail.sanctions_summary?.rappel_a_lordre > 0 && (
+      <span className="casier-type-badge is-rappel">
+        {detail.sanctions_summary.rappel_a_lordre} rappel
+      </span>
+    )}
+  </div>
+</div>
 
                 <div className="casier-detail-actions">
                   <button className="calm-primary-button is-fiche-s" type="button" onClick={() => setFicheSOpen(true)}>
