@@ -649,7 +649,6 @@ export default function ModerationCasierPage() {
     </span>
   )}
 </div>
-
 </div>
                   </button>
                 );
