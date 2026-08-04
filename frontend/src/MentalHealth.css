@@ -11,6 +11,289 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+
+/* Page modération casier */
+
+.casier-page {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Hero */
+
+.casier-hero h1 {
+  font-size: clamp(2.4rem, 3vw, 3.4rem);
+  letter-spacing: 0.02em;
+}
+
+.casier-content-shell {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Bloc “contenu à venir” */
+
+.casier-intro {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.casier-intro-mark {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(24, 28, 32, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.casier-intro strong {
+  font-weight: 600;
+}
+
+.casier-intro p {
+  margin-top: 4px;
+  color: var(--color-text-muted, #6b7280);
+}
+
+.casier-intro small {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #6b7280);
+}
+
+/* Toolbar */
+
+.casier-toolbar {
+  margin-top: 8px;
+}
+
+/* Avatar / cartes */
+
+.moderation-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(24, 28, 32, 0.06);
+}
+
+.moderation-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.casier-results-grid {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.casier-card {
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.casier-card-visual {
+  width: 140px;
+  height: 90px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.casier-card-visual .moderation-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+.casier-card-copy {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.casier-card-copy strong {
+  font-weight: 600;
+}
+
+.casier-card-copy span {
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #6b7280);
+}
+
+/* Sélection */
+
+.casier-selection-row {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.casier-selection-row small {
+  color: var(--color-text-muted, #6b7280);
+}
+
+/* Modal */
+
+.casier-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.12);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  z-index: 40;
+}
+
+.casier-modal {
+  width: min(720px, 100%);
+  border-radius: 24px;
+  background: #f7f6f2;
+  border: 1px solid rgba(24, 28, 32, 0.08);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.casier-modal-header {
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(24, 28, 32, 0.08);
+}
+
+.casier-modal-header .eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #6b7280);
+}
+
+.casier-modal-header h2 {
+  margin-top: 4px;
+  font-size: 1.4rem;
+}
+
+.casier-modal-body {
+  padding: 18px 22px 20px;
+}
+
+/* Champ de recherche */
+
+.casier-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid #1a73e8;
+  background: #fff;
+  min-height: 40px;
+}
+
+.casier-search-wrap input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 0.95rem;
+}
+
+.casier-modal-body small {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #6b7280);
+}
+
+/* Boutons */
+
+.calm-primary-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: #14532d;
+  color: #f9fafb;
+}
+
+.calm-primary-button.is-secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.calm-primary-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.casier-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+/* Spotlight (optionnel) */
+
+.casier-spotlight {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.casier-spotlight p {
+  margin-top: 4px;
+  color: var(--color-text-muted, #6b7280);
+}
+
+/* Responsive */
+
+@media (max-width: 640px) {
+  .casier-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .casier-modal {
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+  }
+
+  .casier-results-grid {
+    gap: 8px;
+  }
+
+  .casier-card-visual {
+    width: 120px;
+    height: 80px;
+  }
+}
 .meeting-editor-main .section-heading {
   margin-bottom: 20px;
 }
