@@ -680,7 +680,9 @@ export default function ModerationCasierPage() {
 
                 <div className="casier-detail-summary">
   <StatusBadge status={detail.status} />
-                  <StatusBadge status={detail.sanctions_count} sanction{detail.sanctions_count === 1 ? "" : "s"/>
+     <span className="casier-status-badge is-count">
+  {detail.sanctions_count} sanction{detail.sanctions_count === 1 ? "" : "s"}
+</span>
   <div className="casier-detail-type-badges">
     {detail.sanctions_summary?.avertissement > 0 && (
       <span className="casier-type-badge is-avertissement">
