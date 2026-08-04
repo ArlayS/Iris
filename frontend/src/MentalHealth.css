@@ -4196,6 +4196,10 @@ body {
   background: var(--sage-soft);
   color: var(--sage);
 }
+  .casier-status-badge.is-count {
+  background: var(--sage-soft);
+  color: var(--sage);
+}
 @media (max-width: 980px) {
   .dashboard-page .dashboard-grid {
     grid-template-columns: 1fr;
