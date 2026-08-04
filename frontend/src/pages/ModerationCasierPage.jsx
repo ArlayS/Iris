@@ -641,19 +641,37 @@ export default function ModerationCasierPage() {
                     <MemberAvatar member={casier.member} size={40} />
                     <div className="casier-list-copy">
                       <div className="casier-list-heading">
-                        <strong>{casier.member?.display_name || casier.member?.username}</strong>
-                        <StatusBadge status={casier.status} />
-                        {casier.has_active_fiche_s && (
-                          <span className="fiche-s-tag" title="Fiche S active">
-                            <Eye size={11} /> S
-                          </span>
-                        )}
-                      </div>
-                      <small>@{casier.member?.username}</small>
-                      <small className="casier-list-meta">
-                        {casier.sanctions_count} sanction{casier.sanctions_count === 1 ? "" : "s"}
-                      </small>
-                    </div>
+  <strong>{casier.member?.display_name || casier.member?.username}</strong>
+  <StatusBadge status={casier.status} />
+  {casier.has_active_fiche_s && (
+    <span className="fiche-s-tag" title="Fiche S active">
+      <Eye size={11} /> S
+    </span>
+  )}
+</div>
+
+<div className="casier-list-badges">
+  {casier.sanctions_summary?.avertissement > 0 && (
+    <span className="casier-type-badge is-avertissement">
+      {casier.sanctions_summary.avertissement} avert.
+    </span>
+  )}
+  {casier.sanctions_summary?.kick > 0 && (
+    <span className="casier-type-badge is-kick">
+      {casier.sanctions_summary.kick} kick
+    </span>
+  )}
+  {casier.sanctions_summary?.bannissement > 0 && (
+    <span className="casier-type-badge is-bannissement">
+      {casier.sanctions_summary.bannissement} ban
+    </span>
+  )}
+  {casier.sanctions_summary?.rappel_a_lordre > 0 && (
+    <span className="casier-type-badge is-rappel">
+      {casier.sanctions_summary.rappel_a_lordre} rappel
+    </span>
+  )}
+</div>
                   </button>
                 );
               })
