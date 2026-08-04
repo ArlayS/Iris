@@ -11,6 +11,198 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+
+/* ============================================================ */
+/* Fiches S — ajouts (utilise les tokens existants)              */
+/* ============================================================ */
+
+.casier-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.calm-primary-button.is-fiche-s {
+  background: #7d1e5e;
+  border-color: #7d1e5e;
+}
+
+.calm-primary-button.is-fiche-s:hover {
+  background: #5e1546;
+}
+
+/* Badge "S" dans la liste des casiers */
+
+.fiche-s-tag {
+  align-items: center;
+  background: rgba(125, 30, 94, 0.14);
+  border-radius: 999px;
+  color: #7d1e5e;
+  display: inline-flex;
+  font: 800 10px "IBM Plex Sans", sans-serif;
+  gap: 3px;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+}
+
+/* Section fiches S dans le détail */
+
+.fiche-s-section {
+  background: #fbf3f8;
+  border: 1px solid #ecd3e2;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+}
+
+.fiche-s-section-title {
+  align-items: center;
+  color: #7d1e5e;
+  display: inline-flex;
+  font: 700 12px "IBM Plex Sans", sans-serif;
+  gap: 6px;
+  letter-spacing: 0.06em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.fiche-s-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fiche-s-card {
+  background: #ffffff;
+  border: 1px solid #ecd3e2;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.fiche-s-card.is-closed {
+  opacity: 0.75;
+}
+
+.fiche-s-card-head {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.fiche-s-card-head strong {
+  color: var(--ink);
+  font: 600 14px "Manrope", sans-serif;
+}
+
+.fiche-s-status {
+  border-radius: 999px;
+  font: 700 10px "IBM Plex Sans", sans-serif;
+  letter-spacing: 0.04em;
+  padding: 2px 9px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fiche-s-status.is-active {
+  background: rgba(125, 30, 94, 0.14);
+  color: #7d1e5e;
+}
+
+.fiche-s-status.is-closed {
+  background: #edf1ed;
+  color: var(--muted);
+}
+
+.fiche-s-card p {
+  color: #46594c;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 6px 0 8px;
+  white-space: pre-wrap;
+}
+
+.fiche-s-card-foot {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.fiche-s-card-foot small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.fiche-s-close-button {
+  background: #fff;
+  border: 1px solid #ecd3e2;
+  border-radius: 999px;
+  color: #7d1e5e;
+  cursor: pointer;
+  font: 600 11px "IBM Plex Sans", sans-serif;
+  padding: 6px 12px;
+  transition: background-color 160ms ease;
+}
+
+.fiche-s-close-button:hover {
+  background: #fbf3f8;
+}
+
+.fiche-s-close-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Modal fiche S */
+
+.casier-fiche-s-modal .casier-modal-header {
+  border-bottom-color: #ecd3e2;
+}
+
+.fiche-s-eyebrow {
+  align-items: center;
+  color: #7d1e5e !important;
+  display: inline-flex;
+  gap: 5px;
+}
+
+.fiche-s-warning {
+  background: #fbf3f8;
+  border: 1px solid #ecd3e2;
+  border-radius: 12px;
+  color: #6b3a55;
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.fiche-s-warning strong {
+  color: #5e1546;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  .casier-detail-actions {
+    width: 100%;
+  }
+
+  .casier-detail-actions .calm-primary-button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .fiche-s-card-foot {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 /* ============================================================ */
 /* Ajouts pour la page ModÃ©ration â€“ Casier                       */
 /* Utilise les tokens existants : --ink, --muted, --sage,        */
