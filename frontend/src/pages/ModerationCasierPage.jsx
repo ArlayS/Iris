@@ -450,7 +450,7 @@ function AddFicheSModal({ open, casier, onClose, onAdded }) {
           </button>
         </div>
 
-        <form className="casier-modal-body" onSubmit={handleSubmit}>
+        <form className="casier-modal-body fiche-s-modal-body" onSubmit={handleSubmit}>
           <div className="casier-selection-row">
             <MemberAvatar member={casier.member} size={40} />
             <div>
@@ -464,10 +464,11 @@ function AddFicheSModal({ open, casier, onClose, onAdded }) {
             sanction. Réserve-la aux comportements préoccupants à documenter dans la durée.
           </p>
 
-          <div className="moderation-field">
+          <div className="fiche-s-field">
             <label htmlFor="fiche-s-title">Titre</label>
             <input
               id="fiche-s-title"
+              className="fiche-s-title-input"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Ex. Comportement suspect répété en vocal"
@@ -475,7 +476,7 @@ function AddFicheSModal({ open, casier, onClose, onAdded }) {
             />
           </div>
 
-          <div className="moderation-field">
+          <div className="fiche-s-field">
             <label>Observations</label>
             <TiptapSummaryEditor
               value={content}
