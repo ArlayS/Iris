@@ -601,8 +601,8 @@ export default function ModerationCasierPage() {
     <section className="page-content staff-page moderation-page casier-page" data-testid="moderation-casier-page">
       <header className="page-header casier-hero">
         <div>
-          <p className="eyebrow">ESPACE STAFF</p>
-          <h1>Modération – Casier</h1>
+          <p className="eyebrow">ESPACE OPERATEUR</p>
+          <h1>Casier</h1>
         </div>
 
         <div className="dashboard-actions">
@@ -650,28 +650,7 @@ export default function ModerationCasierPage() {
   )}
 </div>
 
-<div className="casier-list-badges">
-  {casier.sanctions_summary?.avertissement > 0 && (
-    <span className="casier-type-badge is-avertissement">
-      {casier.sanctions_summary.avertissement} warn
-    </span>
-  )}
-  {casier.sanctions_summary?.kick > 0 && (
-    <span className="casier-type-badge is-kick">
-      {casier.sanctions_summary.kick} kick
-    </span>
-  )}
-  {casier.sanctions_summary?.bannissement > 0 && (
-    <span className="casier-type-badge is-bannissement">
-      {casier.sanctions_summary.bannissement} ban
-    </span>
-  )}
-  {casier.sanctions_summary?.rappel_a_lordre > 0 && (
-    <span className="casier-type-badge is-rappel">
-      {casier.sanctions_summary.rappel_a_lordre} rappel
-    </span>
-  )}
-</div></div>
+</div>
                   </button>
                 );
               })
@@ -701,9 +680,7 @@ export default function ModerationCasierPage() {
 
                 <div className="casier-detail-summary">
   <StatusBadge status={detail.status} />
-  <span>
-    {detail.sanctions_count} sanction{detail.sanctions_count === 1 ? "" : "s"}
-  </span>
+                  <StatusBadge status={detail.sanctions_count} sanction{detail.sanctions_count === 1 ? "" : "s"/>
   <div className="casier-detail-type-badges">
     {detail.sanctions_summary?.avertissement > 0 && (
       <span className="casier-type-badge is-avertissement">
