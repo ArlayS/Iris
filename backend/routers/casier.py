@@ -1,5 +1,4 @@
 import os
-from datetime import datetime, timezone
 
 import httpx
 from bson import ObjectId
@@ -8,22 +7,22 @@ from pydantic import BaseModel, Field
 
 from database import db
 from services.auth_service import current_staff
+from services.casier_service import (
+    SANCTION_TYPES,
+    add_fiche_s,
+    add_sanction,
+    close_fiche_s,
+    compute_status,
+    get_or_create_casier,
+    has_active_fiche_s,
+    staff_to_author,
+)
 
 router = APIRouter(prefix="/moderation/casiers", tags=["moderation-casiers"])
 
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 DISCORD_GUILD_ID = os.getenv("DISCORD_GUILD_ID")
 DISCORD_API_BASE = "https://discord.com/api/v10"
-
-SANCTION_TYPES = {"avertissement", "bannissement", "kick", "rappel_a_lordre"}
-
-STATUS_SEVERITY = {
-    "vierge": 0,
-    "vigilance": 1,
-    "surveillance": 2,
-    "sanctionne": 3,
-    "bloque": 4,
-}
 
 
 class MemberSearchResult(BaseModel):
@@ -56,12 +55,19 @@ class SanctionAuthor(BaseModel):
     display_name: str | None = None
 
 
+class SanctionSource(BaseModel):
+    channel_id: str | None = None
+    message_id: str | None = None
+    message_url: str | None = None
+
+
 class Sanction(BaseModel):
     type: str
     reason: str
     created_at: str
     created_by: SanctionAuthor | None = None
     duration: str | None = None
+    source: SanctionSource | None = None
 
 
 class CreateSanctionPayload(BaseModel):
@@ -107,10 +113,6 @@ class CasierDetailResponse(BaseModel):
     fiches_s: list[FicheS]
 
 
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
 def object_id_or_400(value: str) -> ObjectId:
     try:
         return ObjectId(value)
@@ -134,52 +136,6 @@ def discord_avatar_url(user: dict) -> str | None:
     if not avatar or not user_id:
         return None
     return f"https://cdn.discordapp.com/avatars/{user_id}/{avatar}.png"
-
-
-def has_active_fiche_s(casier: dict) -> bool:
-    return any(fiche.get("active") for fiche in casier.get("fiches_s", []))
-
-
-def compute_status(casier: dict) -> str:
-    sanctions = casier.get("sanctions", [])
-
-    has_ban = any(s.get("type") == "bannissement" for s in sanctions)
-    has_kick = any(s.get("type") == "kick" for s in sanctions)
-    has_warning = any(s.get("type") == "avertissement" for s in sanctions)
-    has_reminder = any(s.get("type") == "rappel_a_lordre" for s in sanctions)
-
-    if has_ban:
-        base_status = "bloque"
-    elif has_kick:
-        base_status = "sanctionne"
-    elif has_warning:
-        base_status = "surveillance"
-    elif has_reminder:
-        base_status = "vigilance"
-    else:
-        base_status = "vierge"
-
-    if has_active_fiche_s(casier):
-        minimum_status = "surveillance"
-        if STATUS_SEVERITY[base_status] < STATUS_SEVERITY[minimum_status]:
-            return minimum_status
-
-    return base_status
-
-
-def latest_sanction(casier: dict) -> dict | None:
-    sanctions = casier.get("sanctions", [])
-    if not sanctions:
-        return None
-    return sorted(sanctions, key=lambda s: s.get("created_at", ""), reverse=True)[0]
-
-
-def staff_to_author(staff) -> dict:
-    return {
-        "id": getattr(staff, "id", None),
-        "username": getattr(staff, "username", None),
-        "display_name": getattr(staff, "display_name", None),
-    }
 
 
 async def search_guild_members(query: str, limit: int = 10) -> list[dict]:
@@ -230,15 +186,6 @@ async def fetch_guild_member(discord_id: str) -> dict | None:
     return response.json()
 
 
-def member_from_snapshot(snapshot: dict) -> CasierMember:
-    return CasierMember(
-        id=snapshot.get("id"),
-        username=snapshot.get("username"),
-        display_name=snapshot.get("display_name"),
-        avatar_url=snapshot.get("avatar_url"),
-    )
-
-
 def snapshot_from_guild_member(guild_member: dict) -> dict:
     user = guild_member.get("user", {})
     return {
@@ -249,6 +196,15 @@ def snapshot_from_guild_member(guild_member: dict) -> dict:
         or user.get("username"),
         "avatar_url": discord_avatar_url(user),
     }
+
+
+def member_from_snapshot(snapshot: dict) -> CasierMember:
+    return CasierMember(
+        id=snapshot.get("id"),
+        username=snapshot.get("username"),
+        display_name=snapshot.get("display_name"),
+        avatar_url=snapshot.get("avatar_url"),
+    )
 
 
 async def resolve_member(discord_id: str, snapshot: dict | None) -> CasierMember:
@@ -271,6 +227,7 @@ def build_sanctions(casier: dict) -> list[Sanction]:
             created_at=s.get("created_at", ""),
             created_by=SanctionAuthor(**s["created_by"]) if s.get("created_by") else None,
             duration=s.get("duration"),
+            source=SanctionSource(**s["source"]) if s.get("source") else None,
         )
         for s in casier.get("sanctions", [])
     ]
@@ -340,14 +297,17 @@ async def list_casiers(
             continue
 
         member = await resolve_member(discord_id, casier.get("discord_member_snapshot"))
-        latest = latest_sanction(casier)
+        sanctions = casier.get("sanctions", [])
+        latest = (
+            sorted(sanctions, key=lambda s: s.get("created_at", ""), reverse=True)[0] if sanctions else None
+        )
 
         results.append(
             CasierListItem(
                 id=str(casier["_id"]),
                 member=member,
                 status=compute_status(casier),
-                sanctions_count=len(casier.get("sanctions", [])),
+                sanctions_count=len(sanctions),
                 has_active_fiche_s=has_active_fiche_s(casier),
                 last_sanction_at=latest.get("created_at") if latest else None,
                 last_sanction_label=latest.get("reason") if latest else "Aucune sanction enregistrée.",
@@ -367,10 +327,7 @@ async def create_casier(
 
     guild_member = await fetch_guild_member(discord_id)
     if not guild_member:
-        raise HTTPException(
-            status_code=404,
-            detail="Membre introuvable sur le serveur Discord.",
-        )
+        raise HTTPException(status_code=404, detail="Membre introuvable sur le serveur Discord.")
 
     existing = await db.casiers.find_one({"discord_id": discord_id})
     if existing:
@@ -379,25 +336,13 @@ async def create_casier(
             detail="Un casier existe déjà pour ce membre.",
         )
 
-    now = now_iso()
     snapshot = snapshot_from_guild_member(guild_member)
-
-    document = {
-        "discord_id": discord_id,
-        "created_at": now,
-        "status": "vierge",
-        "discord_member_snapshot": snapshot,
-        "created_by": staff_to_author(staff),
-        "sanctions": [],
-        "fiches_s": [],
-    }
-
-    result = await db.casiers.insert_one(document)
+    casier = await get_or_create_casier(discord_id, snapshot, staff_to_author(staff))
 
     return CasierResponse(
-        id=str(result.inserted_id),
+        id=str(casier["_id"]),
         discord_id=discord_id,
-        created_at=now,
+        created_at=casier["created_at"],
     )
 
 
@@ -419,7 +364,7 @@ async def get_casier(
 
 
 @router.post("/{casier_id}/sanctions", response_model=CasierDetailResponse, status_code=status.HTTP_201_CREATED)
-async def add_sanction(
+async def add_sanction_endpoint(
     casier_id: str,
     payload: CreateSanctionPayload,
     staff=Depends(current_staff),
@@ -436,22 +381,20 @@ async def add_sanction(
     if not casier:
         raise HTTPException(status_code=404, detail="Casier introuvable.")
 
-    sanction = {
-        "type": payload.type,
-        "reason": payload.reason.strip(),
-        "created_at": now_iso(),
-        "created_by": staff_to_author(staff),
-        "duration": payload.duration,
-    }
+    updated = await add_sanction(
+        discord_id=casier["discord_id"],
+        sanction_type=payload.type,
+        reason=payload.reason,
+        snapshot=casier.get("discord_member_snapshot") or {},
+        created_by=staff_to_author(staff),
+        duration=payload.duration,
+    )
 
-    await db.casiers.update_one({"_id": object_id}, {"$push": {"sanctions": sanction}})
-
-    updated = await db.casiers.find_one({"_id": object_id})
     return await build_detail_response(updated)
 
 
 @router.post("/{casier_id}/fiches-s", response_model=CasierDetailResponse, status_code=status.HTTP_201_CREATED)
-async def add_fiche_s(
+async def add_fiche_s_endpoint(
     casier_id: str,
     payload: CreateFicheSPayload,
     staff=Depends(current_staff),
@@ -462,54 +405,27 @@ async def add_fiche_s(
     if not casier:
         raise HTTPException(status_code=404, detail="Casier introuvable.")
 
-    fiche = {
-        "id": str(ObjectId()),
-        "title": payload.title.strip(),
-        "content": payload.content,
-        "created_at": now_iso(),
-        "created_by": staff_to_author(staff),
-        "active": True,
-        "closed_at": None,
-        "closed_by": None,
-    }
+    updated = await add_fiche_s(
+        discord_id=casier["discord_id"],
+        title=payload.title,
+        content=payload.content,
+        snapshot=casier.get("discord_member_snapshot") or {},
+        created_by=staff_to_author(staff),
+    )
 
-    await db.casiers.update_one({"_id": object_id}, {"$push": {"fiches_s": fiche}})
-
-    updated = await db.casiers.find_one({"_id": object_id})
     return await build_detail_response(updated)
 
 
 @router.patch("/{casier_id}/fiches-s/{fiche_id}/close", response_model=CasierDetailResponse)
-async def close_fiche_s(
+async def close_fiche_s_endpoint(
     casier_id: str,
     fiche_id: str,
     staff=Depends(current_staff),
 ):
     object_id = object_id_or_400(casier_id)
-    casier = await db.casiers.find_one({"_id": object_id})
+    updated = await close_fiche_s(object_id, fiche_id, staff_to_author(staff))
 
-    if not casier:
-        raise HTTPException(status_code=404, detail="Casier introuvable.")
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Casier ou fiche S introuvable, ou déjà clôturée.")
 
-    fiches = casier.get("fiches_s", [])
-    target = next((f for f in fiches if f.get("id") == fiche_id), None)
-
-    if not target:
-        raise HTTPException(status_code=404, detail="Fiche S introuvable.")
-
-    if not target.get("active", True):
-        raise HTTPException(status_code=409, detail="Cette fiche S est déjà clôturée.")
-
-    await db.casiers.update_one(
-        {"_id": object_id, "fiches_s.id": fiche_id},
-        {
-            "$set": {
-                "fiches_s.$.active": False,
-                "fiches_s.$.closed_at": now_iso(),
-                "fiches_s.$.closed_by": staff_to_author(staff),
-            }
-        },
-    )
-
-    updated = await db.casiers.find_one({"_id": object_id})
     return await build_detail_response(updated)
