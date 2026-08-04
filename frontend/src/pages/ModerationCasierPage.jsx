@@ -653,7 +653,7 @@ export default function ModerationCasierPage() {
 <div className="casier-list-badges">
   {casier.sanctions_summary?.avertissement > 0 && (
     <span className="casier-type-badge is-avertissement">
-      {casier.sanctions_summary.avertissement} avert.
+      {casier.sanctions_summary.avertissement} warn
     </span>
   )}
   {casier.sanctions_summary?.kick > 0 && (
@@ -707,7 +707,7 @@ export default function ModerationCasierPage() {
   <div className="casier-detail-type-badges">
     {detail.sanctions_summary?.avertissement > 0 && (
       <span className="casier-type-badge is-avertissement">
-        {detail.sanctions_summary.avertissement} avert.
+        {detail.sanctions_summary.avertissement} warn.
       </span>
     )}
     {detail.sanctions_summary?.kick > 0 && (
