@@ -212,7 +212,13 @@ async def resolve_member(discord_id: str, snapshot: dict | None) -> CasierMember
     guild_member = await fetch_guild_member(discord_id)
 
     if guild_member:
-        return CasierMember(**snapshot_from_guild_member(guild_member))
+        fresh_snapshot = snapshot_from_guild_member(guild_member)
+        if fresh_snapshot != snapshot:
+            await db.casiers.update_one(
+                {"discord_id": discord_id},
+                {"$set": {"discord_member_snapshot": fresh_snapshot}},
+            )
+        return CasierMember(**fresh_snapshot)
 
     if snapshot:
         return member_from_snapshot(snapshot)
@@ -307,7 +313,11 @@ async def list_casiers(
         if not discord_id:
             continue
 
-        member = await resolve_member(discord_id, casier.get("discord_member_snapshot"))
+        snapshot = casier.get("discord_member_snapshot")
+        if snapshot:
+            member = member_from_snapshot(snapshot)
+        else:
+            member = CasierMember(id=discord_id, username=discord_id, display_name=discord_id, avatar_url=None)
         sanctions = casier.get("sanctions", [])
         latest = (
             sorted(sanctions, key=lambda s: s.get("created_at", ""), reverse=True)[0] if sanctions else None
