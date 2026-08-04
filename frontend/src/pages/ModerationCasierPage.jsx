@@ -1,254 +1,51 @@
-import { useEffect, useRef, useState } from "react";
-import { Search, ShieldAlert, UserRound, X } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { Plus } from "lucide-react";
 
-import { api, getErrorMessage } from "../api/client";
+import CreateCasierModal from "./CreateCasierModal"; // ou "../components/CreateCasierModal"
 
-function MemberAvatar({ member, size = 34 }) {
-  const label = member?.display_name || member?.username || "?";
-
-  return (
-    <span
-      className="moderation-avatar"
-      style={{ width: size, height: size }}
-      title={label}
-      aria-label={label}
-    >
-      {member?.avatar_url ? (
-        <img src={member.avatar_url} alt="" />
-      ) : (
-        <UserRound size={Math.round(size * 0.52)} />
-      )}
-    </span>
-  );
-}
-
-export default function CreateCasierModal({ open, onClose, onCreated }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const inputRef = useRef(null);
-  const debounceRef = useRef(null);
-  const requestIdRef = useRef(0);
-  const aliveRef = useRef(true);
-
-  useEffect(() => {
-    aliveRef.current = true;
-    return () => {
-      aliveRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-
-    setQuery("");
-    setResults([]);
-    setSelectedMember(null);
-    setLoading(false);
-    setSubmitting(false);
-
-    const timer = setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const needle = query.trim();
-
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-
-    if (needle.length < 2 || selectedMember) {
-      setLoading(false);
-      if (needle.length < 2) setResults([]);
-      return;
-    }
-
-    debounceRef.current = setTimeout(async () => {
-      const requestId = ++requestIdRef.current;
-      setLoading(true);
-
-      try {
-        const response = await api.get("/moderation/casiers/search-members", {
-          params: { q: needle },
-        });
-
-        if (!aliveRef.current || requestId !== requestIdRef.current) return;
-
-        setResults(Array.isArray(response?.data) ? response.data : []);
-      } catch (error) {
-        if (!aliveRef.current || requestId !== requestIdRef.current) return;
-        setResults([]);
-        toast.error(getErrorMessage(error));
-      } finally {
-        if (aliveRef.current && requestId === requestIdRef.current) {
-          setLoading(false);
-        }
-      }
-    }, 300);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [query, open, selectedMember]);
-
-  const handleClose = () => {
-    if (submitting) return;
-    onClose?.();
-  };
-
-  const handleInputChange = (event) => {
-    const value = event.target.value;
-    setQuery(value);
-
-    if (!selectedMember) return;
-
-    const selectedLabel = selectedMember.display_name || selectedMember.username || "";
-    if (value !== selectedLabel) {
-      setSelectedMember(null);
-    }
-  };
-
-  const handlePickMember = (member) => {
-    if (!member?.id) return;
-    setSelectedMember(member);
-    setQuery(member.display_name || member.username || "");
-    setResults([]);
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!selectedMember?.id) {
-      toast.error("Sélectionne un membre dans la liste.");
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      const response = await api.post("/moderation/casiers", {
-        discord_id: selectedMember.id,
-      });
-
-      toast.success("Casier créé.");
-      onCreated?.(response?.data);
-      onClose?.();
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (!open) return null;
+export default function ModerationCasierPage() {
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={handleClose}>
-      <div
-        className="modal-panel moderation-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-casier-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="moderation-modal-header">
-          <div>
-            <p className="eyebrow">MODÉRATION</p>
-            <h2 id="create-casier-title">Créer un casier</h2>
-          </div>
-
-          <button type="button" className="icon-button" onClick={handleClose} aria-label="Fermer">
-            <X size={16} />
-          </button>
+    <section className="page-content staff-page moderation-page" data-testid="moderation-casier-page">
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">ESPACE STAFF</p>
+          <h1>Modération – Casier</h1>
         </div>
 
-        <form className="moderation-modal-body" onSubmit={handleSubmit}>
-          <div className="moderation-field">
-            <label htmlFor="discord-member-search">Membre Discord</label>
-            <div className="moderation-input-wrap">
-              <Search size={16} />
-              <input
-                ref={inputRef}
-                id="discord-member-search"
-                type="text"
-                value={query}
-                onChange={handleInputChange}
-                placeholder="Chercher un pseudo ou un nickname"
-                autoComplete="off"
-              />
-            </div>
+        <div className="dashboard-actions">
+          <button
+            className="calm-primary-button"
+            type="button"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus size={17} />
+            Créer un casier
+          </button>
+        </div>
+      </header>
 
-            <small className="moderation-help-text">
-              Tape au moins 2 caractères puis choisis un membre dans la liste.
-            </small>
-          </div>
-
-          {selectedMember ? (
-            <div className="moderation-selected-member">
-              <MemberAvatar member={selectedMember} size={40} />
-              <div>
-                <strong>{selectedMember.display_name || selectedMember.username}</strong>
-                <small>@{selectedMember.username}</small>
-              </div>
-            </div>
-          ) : null}
-
-          {!selectedMember && query.trim().length >= 2 ? (
-            <div className="moderation-search-results">
-              {loading ? (
-                <p className="resources-empty">Recherche…</p>
-              ) : results.length === 0 ? (
-                <p className="resources-empty">Aucun membre trouvé.</p>
-              ) : (
-                results.map((member) => (
-                  <button
-                    key={member.id}
-                    type="button"
-                    className="moderation-search-result"
-                    onClick={() => handlePickMember(member)}
-                  >
-                    <MemberAvatar member={member} size={38} />
-                    <div className="moderation-search-result-copy">
-                      <strong>{member.display_name || member.username}</strong>
-                      <small>@{member.username}</small>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          ) : null}
-
-          <div className="moderation-modal-actions">
-            <button
-              type="button"
-              className="calm-primary-button is-secondary"
-              onClick={handleClose}
-              disabled={submitting}
-            >
-              Annuler
-            </button>
-
-            <button
-              type="submit"
-              className="calm-primary-button"
-              disabled={!selectedMember?.id || submitting}
-            >
-              <ShieldAlert size={16} />
-              {submitting ? "Création…" : "Créer le casier"}
-            </button>
-          </div>
-        </form>
+      <div className="moderation-placeholder-card">
+        <div className="moderation-placeholder-icon">
+          <Plus size={20} />
+        </div>
+        <div>
+          <strong>Contenu à venir</strong>
+          <p>
+            Liste des casiers, filtres, et détail à implémenter ici.
+          </p>
+        </div>
       </div>
-    </div>
+
+      <CreateCasierModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => {
+          // TODO: refresh la liste des casiers
+          setCreateOpen(false);
+        }}
+      />
+    </section>
   );
 }
