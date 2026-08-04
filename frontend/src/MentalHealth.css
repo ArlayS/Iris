@@ -12,18 +12,18 @@
   --line: #e2e8e2;
 }
 /* ============================================================ */
-/* Fiche S — intégration de l'éditeur Tiptap dans la modale      */
+/* Fiche S â€” intÃ©gration de l'Ã©diteur Tiptap dans la modale      */
 /* ============================================================ */
 
-/* La modale fiche S a besoin de plus de largeur pour l'éditeur */
+/* La modale fiche S a besoin de plus de largeur pour l'Ã©diteur */
 .casier-modal.casier-modal-wide {
   width: min(760px, 100%);
 }
 
-/* L'éditeur dans le moderation-field hérite du style .tiptap-editor
-   déjà défini globalement (border, radius, bn-container, ProseMirror).
+/* L'Ã©diteur dans le moderation-field hÃ©rite du style .tiptap-editor
+   dÃ©jÃ  dÃ©fini globalement (border, radius, bn-container, ProseMirror).
    On ajuste juste sa hauteur pour un contenu de fiche plus court
-   qu'un résumé de réunion complet. */
+   qu'un rÃ©sumÃ© de rÃ©union complet. */
 .casier-fiche-s-modal .tiptap-editor {
   min-height: 180px;
 }
@@ -63,7 +63,7 @@
   }
 }
 /* ============================================================ */
-/* Fiches S — ajouts (utilise les tokens existants)              */
+/* Fiches S â€” ajouts (utilise les tokens existants)              */
 /* ============================================================ */
 
 .casier-detail-actions {
@@ -95,7 +95,7 @@
   padding: 2px 7px;
 }
 
-/* Section fiches S dans le détail */
+/* Section fiches S dans le dÃ©tail */
 
 .fiche-s-section {
   background: #fbf3f8;
@@ -254,10 +254,10 @@
   }
 }
 /* ============================================================ */
-/* Ajouts pour la page ModÃ©ration â€“ Casier                       */
+/* Ajouts pour la page ModÃƒÂ©ration Ã¢â‚¬â€œ Casier                       */
 /* Utilise les tokens existants : --ink, --muted, --sage,        */
 /* --sage-soft, --clay, --clay-soft, --line, --surface, --canvas */
-/* Rien ci-dessous ne redÃ©finit les classes dÃ©jÃ  prÃ©sentes       */
+/* Rien ci-dessous ne redÃƒÂ©finit les classes dÃƒÂ©jÃƒ  prÃƒÂ©sentes       */
 /* (.casier-modal-shell.is-compact, .casier-search-input, etc.)  */
 /* ============================================================ */
 
@@ -269,7 +269,7 @@
   font: 600 clamp(32px, 4vw, 48px) "Manrope", sans-serif;
 }
 
-/* ---------- Layout liste / dÃ©tail ---------- */
+/* ---------- Layout liste / dÃƒÂ©tail ---------- */
 
 .casier-layout {
   display: grid;
@@ -387,7 +387,7 @@
   color: #a13544;
 }
 
-/* ---------- DÃ©tail du casier ---------- */
+/* ---------- DÃƒÂ©tail du casier ---------- */
 
 .casier-detail-header {
   align-items: center;
@@ -515,7 +515,7 @@
   white-space: pre-wrap;
 }
 
-/* ---------- SÃ©lecteur de type de sanction ---------- */
+/* ---------- SÃƒÂ©lecteur de type de sanction ---------- */
 
 .casier-type-grid {
   display: grid;
@@ -547,7 +547,7 @@
   color: var(--sage);
 }
 
-/* ---------- Ã‰tat vide ---------- */
+/* ---------- Ãƒâ€°tat vide ---------- */
 
 .casier-empty-state {
   align-items: center;
@@ -588,7 +588,7 @@
     grid-template-columns: 1fr;
   }
 }
-/* Page modération casier */
+/* Page modÃ©ration casier */
 
 .casier-page {
   max-width: 960px;
@@ -609,7 +609,7 @@
   gap: 24px;
 }
 
-/* Bloc “contenu à venir” */
+/* Bloc â€œcontenu Ã  venirâ€ */
 
 .casier-intro {
   display: flex;
@@ -715,7 +715,7 @@
   color: var(--color-text-muted, #6b7280);
 }
 
-/* Sélection */
+/* SÃ©lection */
 
 .casier-selection-row {
   margin-top: 16px;
@@ -3932,7 +3932,6 @@ body {
   .app-shell {
     display: block;
   }
-}
   .nano-sidebar {
     bottom: 0;
     flex-direction: row;
@@ -4019,6 +4018,7 @@ body {
   .follow-up-control {
     width: 100%;
   }
+}
 
   .dashboard-page .dashboard-grid {
   display: grid;
@@ -4071,7 +4071,7 @@ body {
 }
 /* ============================================================ */
 /* Correctif : champ Titre + espacement de la modale Fiche S    */
-/* À coller à la fin de MentalHealth-7.css                       */
+/* Ã€ coller Ã  la fin de MentalHealth-7.css                       */
 /* ============================================================ */
 
 .casier-fiche-s-modal .casier-modal-header {
@@ -4209,5 +4209,4 @@ body {
     border-right: none;
     border-bottom: 1px solid var(--line);
   }
-}
 }
