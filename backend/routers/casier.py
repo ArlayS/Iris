@@ -1,6 +1,5 @@
 import os
 from datetime import datetime, timezone
-from typing import Optional
 
 import httpx
 from bson import ObjectId
@@ -15,6 +14,8 @@ router = APIRouter(prefix="/moderation/casiers", tags=["moderation-casiers"])
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 DISCORD_GUILD_ID = os.getenv("DISCORD_GUILD_ID")
 DISCORD_API_BASE = "https://discord.com/api/v10"
+
+SANCTION_TYPES = {"avertissement", "bannissement", "kick", "rappel_a_lordre"}
 
 
 class MemberSearchResult(BaseModel):
@@ -41,29 +42,34 @@ class CasierMember(BaseModel):
     avatar_url: str | None = None
 
 
-class CasierListItem(BaseModel):
-    id: str
-    member: CasierMember
-    status: str
-    notes_count: int
-    sanctions_count: int
-    last_entry_at: str | None = None
-    last_entry_label: str | None = None
-    created_at: str
-
-
-class CasierEntryAuthor(BaseModel):
+class SanctionAuthor(BaseModel):
     id: str | None = None
     username: str | None = None
     display_name: str | None = None
 
 
-class CasierEntry(BaseModel):
+class Sanction(BaseModel):
     type: str
     reason: str
     created_at: str
-    created_by: CasierEntryAuthor | None = None
+    created_by: SanctionAuthor | None = None
     duration: str | None = None
+
+
+class CreateSanctionPayload(BaseModel):
+    type: str
+    reason: str = Field(..., min_length=1, max_length=1000)
+    duration: str | None = None
+
+
+class CasierListItem(BaseModel):
+    id: str
+    member: CasierMember
+    status: str
+    sanctions_count: int
+    last_sanction_at: str | None = None
+    last_sanction_label: str | None = None
+    created_at: str
 
 
 class CasierDetailResponse(BaseModel):
@@ -71,10 +77,8 @@ class CasierDetailResponse(BaseModel):
     member: CasierMember
     status: str
     created_at: str
-    notes_count: int
     sanctions_count: int
-    entries: list[CasierEntry]
-    notes: list[CasierEntry]
+    sanctions: list[Sanction]
 
 
 def now_iso() -> str:
@@ -95,40 +99,7 @@ def ensure_discord_config():
 
 def discord_headers() -> dict:
     ensure_discord_config()
-    return {
-        "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
-    }
-
-
-def compute_status(casier: dict) -> str:
-    if casier.get("status"):
-        return casier["status"]
-
-    entries = casier.get("entries", [])
-
-    has_ban = any(entry.get("type") == "ban" for entry in entries)
-    has_timeout = any(entry.get("type") == "timeout" for entry in entries)
-    has_warning = any(entry.get("type") == "warning" for entry in entries)
-
-    if has_ban:
-        return "bloque"
-    if has_timeout:
-        return "sanctionne"
-    if has_warning:
-        return "surveillance"
-    return "vierge"
-
-
-def latest_casier_event(casier: dict) -> dict | None:
-    entries = casier.get("entries", [])
-    notes = casier.get("notes", [])
-    combined = [*entries, *notes]
-
-    if not combined:
-        return None
-
-    combined.sort(key=lambda item: item.get("created_at", ""), reverse=True)
-    return combined[0]
+    return {"Authorization": f"Bot {DISCORD_BOT_TOKEN}"}
 
 
 def discord_avatar_url(user: dict) -> str | None:
@@ -139,12 +110,43 @@ def discord_avatar_url(user: dict) -> str | None:
     return f"https://cdn.discordapp.com/avatars/{user_id}/{avatar}.png"
 
 
+def compute_status(casier: dict) -> str:
+    sanctions = casier.get("sanctions", [])
+
+    has_ban = any(s.get("type") == "bannissement" for s in sanctions)
+    has_kick = any(s.get("type") == "kick" for s in sanctions)
+    has_warning = any(s.get("type") == "avertissement" for s in sanctions)
+    has_reminder = any(s.get("type") == "rappel_a_lordre" for s in sanctions)
+
+    if has_ban:
+        return "bloque"
+    if has_kick:
+        return "sanctionne"
+    if has_warning:
+        return "surveillance"
+    if has_reminder:
+        return "vigilance"
+    return "vierge"
+
+
+def latest_sanction(casier: dict) -> dict | None:
+    sanctions = casier.get("sanctions", [])
+    if not sanctions:
+        return None
+    return sorted(sanctions, key=lambda s: s.get("created_at", ""), reverse=True)[0]
+
+
+def staff_to_author(staff) -> dict:
+    return {
+        "id": getattr(staff, "id", None),
+        "username": getattr(staff, "username", None),
+        "display_name": getattr(staff, "display_name", None),
+    }
+
+
 async def search_guild_members(query: str, limit: int = 10) -> list[dict]:
     url = f"{DISCORD_API_BASE}/guilds/{DISCORD_GUILD_ID}/members/search"
-    params = {
-        "query": query,
-        "limit": max(1, min(limit, 25)),
-    }
+    params = {"query": query, "limit": max(1, min(limit, 25))}
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.get(url, headers=discord_headers(), params=params)
@@ -190,24 +192,37 @@ async def fetch_guild_member(discord_id: str) -> dict | None:
     return response.json()
 
 
-async def resolve_member_from_discord(discord_id: str) -> CasierMember:
+def member_from_snapshot(snapshot: dict) -> CasierMember:
+    return CasierMember(
+        id=snapshot.get("id"),
+        username=snapshot.get("username"),
+        display_name=snapshot.get("display_name"),
+        avatar_url=snapshot.get("avatar_url"),
+    )
+
+
+def snapshot_from_guild_member(guild_member: dict) -> dict:
+    user = guild_member.get("user", {})
+    return {
+        "id": user.get("id"),
+        "username": user.get("username") or user.get("id"),
+        "display_name": guild_member.get("nick")
+        or user.get("global_name")
+        or user.get("username"),
+        "avatar_url": discord_avatar_url(user),
+    }
+
+
+async def resolve_member(discord_id: str, snapshot: dict | None) -> CasierMember:
     guild_member = await fetch_guild_member(discord_id)
 
     if guild_member:
-        user = guild_member.get("user", {})
-        return CasierMember(
-            id=user.get("id"),
-            username=user.get("username") or user.get("id"),
-            display_name=guild_member.get("nick") or user.get("global_name") or user.get("username"),
-            avatar_url=discord_avatar_url(user),
-        )
+        return CasierMember(**snapshot_from_guild_member(guild_member))
 
-    return CasierMember(
-        id=discord_id,
-        username=discord_id,
-        display_name=discord_id,
-        avatar_url=None,
-    )
+    if snapshot:
+        return member_from_snapshot(snapshot)
+
+    return CasierMember(id=discord_id, username=discord_id, display_name=discord_id, avatar_url=None)
 
 
 @router.get("/search-members", response_model=list[MemberSearchResult])
@@ -235,18 +250,17 @@ async def list_casiers(
         if not discord_id:
             continue
 
-        member = await resolve_member_from_discord(discord_id)
-        latest = latest_casier_event(casier)
+        member = await resolve_member(discord_id, casier.get("discord_member_snapshot"))
+        latest = latest_sanction(casier)
 
         results.append(
             CasierListItem(
                 id=str(casier["_id"]),
                 member=member,
                 status=compute_status(casier),
-                notes_count=len(casier.get("notes", [])),
-                sanctions_count=len(casier.get("entries", [])),
-                last_entry_at=latest.get("created_at") if latest else casier.get("created_at"),
-                last_entry_label=latest.get("reason") if latest else "Dossier créé.",
+                sanctions_count=len(casier.get("sanctions", [])),
+                last_sanction_at=latest.get("created_at") if latest else None,
+                last_sanction_label=latest.get("reason") if latest else "Aucune sanction enregistrée.",
                 created_at=casier.get("created_at", ""),
             )
         )
@@ -276,26 +290,15 @@ async def create_casier(
         )
 
     now = now_iso()
+    snapshot = snapshot_from_guild_member(guild_member)
 
     document = {
         "discord_id": discord_id,
         "created_at": now,
         "status": "vierge",
-        "discord_member_snapshot": {
-            "id": guild_member.get("user", {}).get("id"),
-            "username": guild_member.get("user", {}).get("username"),
-            "display_name": guild_member.get("nick")
-            or guild_member.get("user", {}).get("global_name")
-            or guild_member.get("user", {}).get("username"),
-            "avatar_url": discord_avatar_url(guild_member.get("user", {})),
-        },
-        "created_by": {
-            "id": staff["id"],
-            "username": staff["username"],
-            "display_name": staff.get("display_name"),
-        },
-        "entries": [],
-        "notes": [],
+        "discord_member_snapshot": snapshot,
+        "created_by": staff_to_author(staff),
+        "sanctions": [],
     }
 
     result = await db.casiers.insert_one(document)
@@ -322,40 +325,84 @@ async def get_casier(
     if not discord_id:
         raise HTTPException(status_code=500, detail="Casier invalide : discord_id manquant.")
 
-    member = await resolve_member_from_discord(discord_id)
+    member = await resolve_member(discord_id, casier.get("discord_member_snapshot"))
 
-    entries = [
-        CasierEntry(
-            type=entry.get("type", "entry"),
-            reason=entry.get("reason", ""),
-            created_at=entry.get("created_at", ""),
-            created_by=CasierEntryAuthor(**entry["created_by"]) if entry.get("created_by") else None,
-            duration=entry.get("duration"),
+    sanctions = [
+        Sanction(
+            type=s.get("type", "sanction"),
+            reason=s.get("reason", ""),
+            created_at=s.get("created_at", ""),
+            created_by=SanctionAuthor(**s["created_by"]) if s.get("created_by") else None,
+            duration=s.get("duration"),
         )
-        for entry in casier.get("entries", [])
+        for s in casier.get("sanctions", [])
     ]
 
-    notes = [
-        CasierEntry(
-            type=note.get("type", "note"),
-            reason=note.get("reason", ""),
-            created_at=note.get("created_at", ""),
-            created_by=CasierEntryAuthor(**note["created_by"]) if note.get("created_by") else None,
-            duration=note.get("duration"),
-        )
-        for note in casier.get("notes", [])
-    ]
-
-    entries.sort(key=lambda item: item.created_at, reverse=True)
-    notes.sort(key=lambda item: item.created_at, reverse=True)
+    sanctions.sort(key=lambda item: item.created_at, reverse=True)
 
     return CasierDetailResponse(
         id=str(casier["_id"]),
         member=member,
         status=compute_status(casier),
         created_at=casier.get("created_at", ""),
-        notes_count=len(notes),
-        sanctions_count=len(entries),
-        entries=entries,
-        notes=notes,
+        sanctions_count=len(sanctions),
+        sanctions=sanctions,
+    )
+
+
+@router.post("/{casier_id}/sanctions", response_model=CasierDetailResponse, status_code=status.HTTP_201_CREATED)
+async def add_sanction(
+    casier_id: str,
+    payload: CreateSanctionPayload,
+    staff=Depends(current_staff),
+):
+    if payload.type not in SANCTION_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Type de sanction invalide. Valeurs autorisées : {sorted(SANCTION_TYPES)}",
+        )
+
+    object_id = object_id_or_400(casier_id)
+    casier = await db.casiers.find_one({"_id": object_id})
+
+    if not casier:
+        raise HTTPException(status_code=404, detail="Casier introuvable.")
+
+    sanction = {
+        "type": payload.type,
+        "reason": payload.reason.strip(),
+        "created_at": now_iso(),
+        "created_by": staff_to_author(staff),
+        "duration": payload.duration,
+    }
+
+    await db.casiers.update_one(
+        {"_id": object_id},
+        {"$push": {"sanctions": sanction}},
+    )
+
+    updated = await db.casiers.find_one({"_id": object_id})
+    discord_id = updated.get("discord_id")
+    member = await resolve_member(discord_id, updated.get("discord_member_snapshot"))
+
+    sanctions = [
+        Sanction(
+            type=s.get("type", "sanction"),
+            reason=s.get("reason", ""),
+            created_at=s.get("created_at", ""),
+            created_by=SanctionAuthor(**s["created_by"]) if s.get("created_by") else None,
+            duration=s.get("duration"),
+        )
+        for s in updated.get("sanctions", [])
+    ]
+
+    sanctions.sort(key=lambda item: item.created_at, reverse=True)
+
+    return CasierDetailResponse(
+        id=str(updated["_id"]),
+        member=member,
+        status=compute_status(updated),
+        created_at=updated.get("created_at", ""),
+        sanctions_count=len(sanctions),
+        sanctions=sanctions,
     )
