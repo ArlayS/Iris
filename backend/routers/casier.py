@@ -102,8 +102,7 @@ class CasierListItem(BaseModel):
     last_sanction_label: str | None = None
     created_at: str
     sanctions_summary: dict[str, int]  
-
-
+    
 class CasierDetailResponse(BaseModel):
     id: str
     member: CasierMember
@@ -112,6 +111,7 @@ class CasierDetailResponse(BaseModel):
     sanctions_count: int
     sanctions: list[Sanction]
     fiches_s: list[FicheS]
+    sanctions_summary: dict[str, int] 
 
 
 def object_id_or_400(value: str) -> ObjectId:
