@@ -14,6 +14,8 @@ import {
 import { toast } from "sonner";
 
 import { api, getErrorMessage } from "../api/client";
+import TiptapSummaryEditor from "../components/TiptapSummaryEditor";
+import SummaryReader from "../components/SummaryReader";
 
 const SANCTION_TYPES = [
   { value: "avertissement", label: "Avertissement", icon: TriangleAlert },
@@ -400,11 +402,13 @@ function AddFicheSModal({ open, casier, onClose, onAdded }) {
 
   if (!open || !casier) return null;
 
+  const isContentEmpty = !content || !content.replace(/<[^>]*>/g, "").trim();
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!title.trim() || !content.trim()) {
-      toast.error("Renseigne un titre et un contenu.");
+    if (!title.trim() || isContentEmpty) {
+      toast.error("Renseigne un titre et des observations.");
       return;
     }
 
@@ -412,7 +416,7 @@ function AddFicheSModal({ open, casier, onClose, onAdded }) {
     try {
       const response = await api.post(`/moderation/casiers/${casier.id}/fiches-s`, {
         title: title.trim(),
-        content: content.trim(),
+        content,
       });
 
       toast.success("Fiche S créée — membre placé en surveillance.");
@@ -428,7 +432,7 @@ function AddFicheSModal({ open, casier, onClose, onAdded }) {
   return (
     <div className="casier-modal-backdrop" role="presentation" onClick={() => (!submitting ? onClose?.() : null)}>
       <div
-        className="casier-modal casier-fiche-s-modal"
+        className="casier-modal casier-fiche-s-modal casier-modal-wide"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-fiche-s-title"
@@ -472,14 +476,11 @@ function AddFicheSModal({ open, casier, onClose, onAdded }) {
           </div>
 
           <div className="moderation-field">
-            <label htmlFor="fiche-s-content">Observations</label>
-            <textarea
-              id="fiche-s-content"
-              rows={6}
+            <label>Observations</label>
+            <TiptapSummaryEditor
               value={content}
-              onChange={(event) => setContent(event.target.value)}
-              placeholder="Décris les faits observés, le contexte, et pourquoi ce membre doit être suivi."
-              maxLength={2000}
+              onChange={setContent}
+              placeholder="Décris les faits observés, le contexte, et pourquoi ce membre doit être suivi. Tapez / pour les commandes."
             />
           </div>
 
@@ -713,7 +714,11 @@ export default function ModerationCasierPage() {
                             {fiche.active ? "Active" : "Clôturée"}
                           </span>
                         </div>
-                        <p>{fiche.content}</p>
+
+                        <div className="fiche-s-card-content tiptap-readonly">
+                          <SummaryReader content={fiche.content} />
+                        </div>
+
                         <div className="fiche-s-card-foot">
                           <small>
                             Rédigée par {fiche.created_by?.display_name || fiche.created_by?.username || "Staff"} ·{" "}
