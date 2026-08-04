@@ -260,6 +260,7 @@ async def build_detail_response(casier: dict) -> CasierDetailResponse:
 
     sanctions = build_sanctions(casier)
     fiches_s = build_fiches_s(casier)
+    summary = build_sanctions_summary(casier)
 
     return CasierDetailResponse(
         id=str(casier["_id"]),
@@ -269,6 +270,7 @@ async def build_detail_response(casier: dict) -> CasierDetailResponse:
         sanctions_count=len(sanctions),
         sanctions=sanctions,
         fiches_s=fiches_s,
+        sanctions_summary=summary,
     )
 
 def build_sanctions_summary(casier: dict) -> dict[str, int]:
@@ -279,6 +281,7 @@ def build_sanctions_summary(casier: dict) -> dict[str, int]:
         if t in summary:
             summary[t] += 1
     return summary
+    
 @router.get("/search-members", response_model=list[MemberSearchResult])
 async def search_members(
     q: str = Query(..., min_length=1),
@@ -309,7 +312,7 @@ async def list_casiers(
         latest = (
             sorted(sanctions, key=lambda s: s.get("created_at", ""), reverse=True)[0] if sanctions else None
         )
-
+summary = build_sanctions_summary(casier)
         results.append(
             CasierListItem(
                 id=str(casier["_id"]),
@@ -320,6 +323,7 @@ async def list_casiers(
                 last_sanction_at=latest.get("created_at") if latest else None,
                 last_sanction_label=latest.get("reason") if latest else "Aucune sanction enregistrée.",
                 created_at=casier.get("created_at", ""),
+                sanctions_summary=summary,
             )
         )
 
