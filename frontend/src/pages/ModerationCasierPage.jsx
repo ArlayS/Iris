@@ -791,7 +791,6 @@ export default function ModerationCasierPage() {
                           </div>
                           <p>{sanction.reason}</p>
                           <small>
-                            Par {sanction.created_by?.display_name || sanction.created_by?.username || "Staff"}
                             {sanction.duration ? ` · Durée ${sanction.duration}` : ""}
                           </small>
                         </div>
