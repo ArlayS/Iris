@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Ban,
   DoorOpen,
@@ -161,7 +162,7 @@ function CreateCasierModal({ open, onClose, onCreated }) {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="casier-modal-backdrop" role="presentation" onClick={() => (!submitting ? onClose?.() : null)}>
       <div
         className="casier-modal"
@@ -244,7 +245,8 @@ function CreateCasierModal({ open, onClose, onCreated }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -296,7 +298,7 @@ function AddSanctionModal({ open, casier, onClose, onAdded }) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="casier-modal-backdrop" role="presentation" onClick={() => (!submitting ? onClose?.() : null)}>
       <div
         className="casier-modal"
@@ -380,7 +382,8 @@ function AddSanctionModal({ open, casier, onClose, onAdded }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -429,7 +432,7 @@ function AddFicheSModal({ open, casier, onClose, onAdded }) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="casier-modal-backdrop" role="presentation" onClick={() => (!submitting ? onClose?.() : null)}>
       <div
         className="casier-modal casier-fiche-s-modal casier-modal-wide"
@@ -496,7 +499,8 @@ function AddFicheSModal({ open, casier, onClose, onAdded }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
