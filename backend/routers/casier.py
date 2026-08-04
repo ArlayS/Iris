@@ -83,7 +83,7 @@ class FicheS(BaseModel):
 
 class CreateFicheSPayload(BaseModel):
     title: str = Field(..., min_length=1, max_length=160)
-    content: str = Field(..., min_length=1, max_length=2000)
+    content: str = Field(..., min_length=1, max_length=8000)
 
 
 class CasierListItem(BaseModel):
@@ -465,7 +465,7 @@ async def add_fiche_s(
     fiche = {
         "id": str(ObjectId()),
         "title": payload.title.strip(),
-        "content": payload.content.strip(),
+        "content": payload.content,
         "created_at": now_iso(),
         "created_by": staff_to_author(staff),
         "active": True,
