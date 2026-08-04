@@ -270,7 +270,14 @@ async def build_detail_response(casier: dict) -> CasierDetailResponse:
         fiches_s=fiches_s,
     )
 
-
+def build_sanctions_summary(casier: dict) -> dict[str, int]:
+    sanctions = casier.get("sanctions", [])
+    summary = {"avertissement": 0, "kick": 0, "bannissement": 0, "rappel_a_lordre": 0}
+    for s in sanctions:
+        t = s.get("type")
+        if t in summary:
+            summary[t] += 1
+    return summary
 @router.get("/search-members", response_model=list[MemberSearchResult])
 async def search_members(
     q: str = Query(..., min_length=1),
