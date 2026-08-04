@@ -11,7 +11,57 @@
   --surface: #ffffff;
   --line: #e2e8e2;
 }
+/* ============================================================ */
+/* Fiche S — intégration de l'éditeur Tiptap dans la modale      */
+/* ============================================================ */
 
+/* La modale fiche S a besoin de plus de largeur pour l'éditeur */
+.casier-modal.casier-modal-wide {
+  width: min(760px, 100%);
+}
+
+/* L'éditeur dans le moderation-field hérite du style .tiptap-editor
+   déjà défini globalement (border, radius, bn-container, ProseMirror).
+   On ajuste juste sa hauteur pour un contenu de fiche plus court
+   qu'un résumé de réunion complet. */
+.casier-fiche-s-modal .tiptap-editor {
+  min-height: 180px;
+}
+
+.casier-fiche-s-modal .tiptap-editor .bn-container,
+.casier-fiche-s-modal .tiptap-editor-content .ProseMirror {
+  min-height: 140px;
+}
+
+/* Rendu lecture seule dans la carte fiche S */
+.fiche-s-card-content {
+  margin: 6px 0 8px;
+}
+
+.fiche-s-card-content .tiptap-readonly {
+  border: none;
+  padding: 0;
+}
+
+.fiche-s-card-content .ProseMirror {
+  color: #46594c;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.fiche-s-card-content p {
+  margin: 0 0 6px;
+}
+
+.fiche-s-card-content p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .casier-modal.casier-modal-wide {
+    width: 100%;
+  }
+}
 /* ============================================================ */
 /* Fiches S — ajouts (utilise les tokens existants)              */
 /* ============================================================ */
