@@ -101,6 +101,7 @@ class CasierListItem(BaseModel):
     last_sanction_at: str | None = None
     last_sanction_label: str | None = None
     created_at: str
+    sanctions_summary: dict[str, int]  
 
 
 class CasierDetailResponse(BaseModel):
