@@ -4168,27 +4168,30 @@ body {
 }
 
 .casier-type-badge {
-  display: inline-flex;
-  align-items: center;
   border-radius: 999px;
-  font: 600 10px "IBM Plex Sans", sans-serif;
+  display: inline-flex;
+  font: 700 10px "IBM Plex Sans", sans-serif;
   letter-spacing: 0.04em;
-  padding: 2px 8px;
+  padding: 3px 9px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .casier-type-badge.is-avertissement {
   background: #fdf3e0;
+  border: 1px solid rgba(196, 120, 56, 0.22);
   color: #b8860b;
 }
 
 .casier-type-badge.is-kick {
   background: var(--clay-soft);
+  border: 1px solid rgba(196, 120, 56, 0.22);
   color: #8a4a2f;
 }
 
 .casier-type-badge.is-bannissement {
   background: rgba(161, 53, 68, 0.12);
+  border: 1px solid rgba(196, 120, 56, 0.22);
   color: #a13544;
 }
 
