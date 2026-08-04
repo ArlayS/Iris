@@ -28,3 +28,4 @@ async def initialize_indexes() -> None:
     await db.auth_logs.create_index("helper_id")
     await db.auth_logs.create_index([("helper_id", 1), ("created_at", -1)])
     await db.auth_logs.create_index([("event_type", 1), ("created_at", -1)])
+    await db.casiers.createIndex({ "sanctions.source.message_id": 1 });
