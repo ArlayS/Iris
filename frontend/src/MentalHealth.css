@@ -3932,7 +3932,7 @@ body {
   .app-shell {
     display: block;
   }
-
+}
   .nano-sidebar {
     bottom: 0;
     flex-direction: row;
