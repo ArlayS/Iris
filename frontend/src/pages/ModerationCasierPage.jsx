@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Ban,
   DoorOpen,
+  Eye,
   MegaphoneOff,
-  Plus,
   Search,
   Shield,
   ShieldAlert,
@@ -31,10 +31,7 @@ const STATUS_LABELS = {
 };
 
 function sanctionMeta(type) {
-  return SANCTION_TYPES.find((item) => item.value === type) || {
-    label: type,
-    icon: Shield,
-  };
+  return SANCTION_TYPES.find((item) => item.value === type) || { label: type, icon: Shield };
 }
 
 function formatDate(iso) {
@@ -212,12 +209,7 @@ function CreateCasierModal({ open, onClose, onCreated }) {
                 <p className="resources-empty">Aucun membre trouvé.</p>
               ) : (
                 results.map((member) => (
-                  <button
-                    key={member.id}
-                    type="button"
-                    className="casier-result-row"
-                    onClick={() => handlePickMember(member)}
-                  >
+                  <button key={member.id} type="button" className="casier-result-row" onClick={() => handlePickMember(member)}>
                     <MemberAvatar member={member} size={38} />
                     <div className="casier-result-copy">
                       <strong>{member.display_name || member.username}</strong>
@@ -243,12 +235,7 @@ function CreateCasierModal({ open, onClose, onCreated }) {
             <button type="button" className="calm-primary-button is-secondary" onClick={() => onClose?.()} disabled={submitting}>
               Annuler
             </button>
-            <button
-              type="button"
-              className="calm-primary-button"
-              onClick={handleSubmit}
-              disabled={!selectedMember?.id || submitting}
-            >
+            <button type="button" className="calm-primary-button" onClick={handleSubmit} disabled={!selectedMember?.id || submitting}>
               <ShieldAlert size={16} />
               {submitting ? "Création…" : "Créer le casier"}
             </button>
@@ -396,6 +383,122 @@ function AddSanctionModal({ open, casier, onClose, onAdded }) {
 }
 
 /* ---------------------------------- */
+/* Modal: rédiger une fiche S         */
+/* ---------------------------------- */
+
+function AddFicheSModal({ open, casier, onClose, onAdded }) {
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setTitle("");
+    setContent("");
+    setSubmitting(false);
+  }, [open]);
+
+  if (!open || !casier) return null;
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!title.trim() || !content.trim()) {
+      toast.error("Renseigne un titre et un contenu.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await api.post(`/moderation/casiers/${casier.id}/fiches-s`, {
+        title: title.trim(),
+        content: content.trim(),
+      });
+
+      toast.success("Fiche S créée — membre placé en surveillance.");
+      onAdded?.(response?.data);
+      onClose?.();
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="casier-modal-backdrop" role="presentation" onClick={() => (!submitting ? onClose?.() : null)}>
+      <div
+        className="casier-modal casier-fiche-s-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-fiche-s-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="casier-modal-header">
+          <div>
+            <p className="eyebrow fiche-s-eyebrow">
+              <Eye size={13} /> FICHE S
+            </p>
+            <h2 id="add-fiche-s-title">Rédiger une fiche S</h2>
+          </div>
+          <button type="button" className="icon-button" onClick={() => onClose?.()} aria-label="Fermer" disabled={submitting}>
+            <X size={16} />
+          </button>
+        </div>
+
+        <form className="casier-modal-body" onSubmit={handleSubmit}>
+          <div className="casier-selection-row">
+            <MemberAvatar member={casier.member} size={40} />
+            <div>
+              <strong>{casier.member?.display_name || casier.member?.username}</strong>
+              <small>@{casier.member?.username}</small>
+            </div>
+          </div>
+
+          <p className="fiche-s-warning">
+            Créer une fiche S place immédiatement ce membre en <strong>surveillance</strong>, même sans
+            sanction. Réserve-la aux comportements préoccupants à documenter dans la durée.
+          </p>
+
+          <div className="moderation-field">
+            <label htmlFor="fiche-s-title">Titre</label>
+            <input
+              id="fiche-s-title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Ex. Comportement suspect répété en vocal"
+              maxLength={160}
+            />
+          </div>
+
+          <div className="moderation-field">
+            <label htmlFor="fiche-s-content">Observations</label>
+            <textarea
+              id="fiche-s-content"
+              rows={6}
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="Décris les faits observés, le contexte, et pourquoi ce membre doit être suivi."
+              maxLength={2000}
+            />
+          </div>
+
+          <div className="casier-actions">
+            <button type="button" className="calm-primary-button is-secondary" onClick={() => onClose?.()} disabled={submitting}>
+              Annuler
+            </button>
+            <button type="submit" className="calm-primary-button is-fiche-s" disabled={submitting}>
+              <Eye size={16} />
+              {submitting ? "Création…" : "Créer la fiche S"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------- */
 /* Page principale                    */
 /* ---------------------------------- */
 
@@ -408,6 +511,8 @@ export default function ModerationCasierPage() {
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [sanctionOpen, setSanctionOpen] = useState(false);
+  const [ficheSOpen, setFicheSOpen] = useState(false);
+  const [closingFicheId, setClosingFicheId] = useState(null);
 
   const fetchCasiers = async () => {
     setLoading(true);
@@ -466,13 +571,28 @@ export default function ModerationCasierPage() {
     fetchCasiers();
   };
 
-  const handleSanctionAdded = (updatedDetail) => {
+  const handleDetailUpdated = (updatedDetail) => {
     if (updatedDetail) {
       setDetail(updatedDetail);
     } else {
       fetchDetail(selectedCasierId);
     }
     fetchCasiers();
+  };
+
+  const handleCloseFicheS = async (ficheId) => {
+    if (!detail?.id) return;
+
+    setClosingFicheId(ficheId);
+    try {
+      const response = await api.patch(`/moderation/casiers/${detail.id}/fiches-s/${ficheId}/close`);
+      toast.success("Fiche S clôturée.");
+      handleDetailUpdated(response?.data);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setClosingFicheId(null);
+    }
   };
 
   return (
@@ -495,12 +615,7 @@ export default function ModerationCasierPage() {
         <aside className="casier-list-column">
           <div className="casier-search-wrap">
             <Search size={16} />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Filtrer par pseudo"
-              autoComplete="off"
-            />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Filtrer par pseudo" autoComplete="off" />
           </div>
 
           <div className="casier-list">
@@ -508,7 +623,7 @@ export default function ModerationCasierPage() {
               <p className="resources-empty">Chargement…</p>
             ) : filteredCasiers.length === 0 ? (
               <div className="casier-empty-state">
-                <Plus size={18} />
+                <ShieldCheck size={18} />
                 <p>Aucun casier pour l’instant.</p>
               </div>
             ) : (
@@ -526,6 +641,11 @@ export default function ModerationCasierPage() {
                       <div className="casier-list-heading">
                         <strong>{casier.member?.display_name || casier.member?.username}</strong>
                         <StatusBadge status={casier.status} />
+                        {casier.has_active_fiche_s && (
+                          <span className="fiche-s-tag" title="Fiche S active">
+                            <Eye size={11} /> S
+                          </span>
+                        )}
                       </div>
                       <small>@{casier.member?.username}</small>
                       <small className="casier-list-meta">
@@ -561,14 +681,65 @@ export default function ModerationCasierPage() {
 
                 <div className="casier-detail-summary">
                   <StatusBadge status={detail.status} />
-                  <span>{detail.sanctions_count} sanction{detail.sanctions_count === 1 ? "" : "s"}</span>
+                  <span>
+                    {detail.sanctions_count} sanction{detail.sanctions_count === 1 ? "" : "s"}
+                  </span>
                 </div>
 
-                <button className="calm-primary-button" type="button" onClick={() => setSanctionOpen(true)}>
-                  <ShieldAlert size={16} />
-                  Ajouter une sanction
-                </button>
+                <div className="casier-detail-actions">
+                  <button className="calm-primary-button is-fiche-s" type="button" onClick={() => setFicheSOpen(true)}>
+                    <Eye size={16} />
+                    Rédiger une fiche S
+                  </button>
+                  <button className="calm-primary-button" type="button" onClick={() => setSanctionOpen(true)}>
+                    <ShieldAlert size={16} />
+                    Ajouter une sanction
+                  </button>
+                </div>
               </div>
+
+              {detail.fiches_s.length > 0 && (
+                <div className="fiche-s-section">
+                  <p className="fiche-s-section-title">
+                    <Eye size={14} /> Fiches S
+                  </p>
+
+                  <div className="fiche-s-list">
+                    {detail.fiches_s.map((fiche) => (
+                      <article key={fiche.id} className={`fiche-s-card ${fiche.active ? "is-active" : "is-closed"}`}>
+                        <div className="fiche-s-card-head">
+                          <strong>{fiche.title}</strong>
+                          <span className={`fiche-s-status ${fiche.active ? "is-active" : "is-closed"}`}>
+                            {fiche.active ? "Active" : "Clôturée"}
+                          </span>
+                        </div>
+                        <p>{fiche.content}</p>
+                        <div className="fiche-s-card-foot">
+                          <small>
+                            Rédigée par {fiche.created_by?.display_name || fiche.created_by?.username || "Staff"} ·{" "}
+                            {formatDate(fiche.created_at)}
+                          </small>
+                          {fiche.active ? (
+                            <button
+                              type="button"
+                              className="fiche-s-close-button"
+                              onClick={() => handleCloseFicheS(fiche.id)}
+                              disabled={closingFicheId === fiche.id}
+                            >
+                              {closingFicheId === fiche.id ? "Clôture…" : "Clôturer"}
+                            </button>
+                          ) : (
+                            <small>
+                              Clôturée par {fiche.closed_by?.display_name || fiche.closed_by?.username || "Staff"} ·{" "}
+                              {formatDate(fiche.closed_at)}
+                            </small>
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="casier-sanctions">
                 {detail.sanctions.length === 0 ? (
@@ -608,12 +779,9 @@ export default function ModerationCasierPage() {
 
       <CreateCasierModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={handleCasierCreated} />
 
-      <AddSanctionModal
-        open={sanctionOpen}
-        casier={detail}
-        onClose={() => setSanctionOpen(false)}
-        onAdded={handleSanctionAdded}
-      />
+      <AddSanctionModal open={sanctionOpen} casier={detail} onClose={() => setSanctionOpen(false)} onAdded={handleDetailUpdated} />
+
+      <AddFicheSModal open={ficheSOpen} casier={detail} onClose={() => setFicheSOpen(false)} onAdded={handleDetailUpdated} />
     </section>
   );
 }
