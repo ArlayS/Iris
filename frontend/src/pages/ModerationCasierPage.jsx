@@ -685,7 +685,7 @@ export default function ModerationCasierPage() {
   <div className="casier-detail-type-badges">
     {detail.sanctions_summary?.avertissement > 0 && (
       <span className="casier-type-badge is-avertissement">
-        {detail.sanctions_summary.avertissement} warn.
+        {detail.sanctions_summary.avertissement} warn
       </span>
     )}
     {detail.sanctions_summary?.kick > 0 && (
