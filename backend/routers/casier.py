@@ -312,7 +312,7 @@ async def list_casiers(
         latest = (
             sorted(sanctions, key=lambda s: s.get("created_at", ""), reverse=True)[0] if sanctions else None
         )
-summary = build_sanctions_summary(casier)
+        summary = build_sanctions_summary(casier)
         results.append(
             CasierListItem(
                 id=str(casier["_id"]),
