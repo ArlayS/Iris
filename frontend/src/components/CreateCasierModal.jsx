@@ -23,20 +23,24 @@ function MemberAvatar({ member, size = 34 }) {
   );
 }
 
-export default function CreateCasierModal({
-  open,
-  onClose,
-  onCreated,
-}) {
+export default function CreateCasierModal({ open, onClose, onCreated }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const inputRef = useRef(null);
   const debounceRef = useRef(null);
   const requestIdRef = useRef(0);
-  const inputRef = useRef(null);
+  const aliveRef = useRef(true);
+
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -49,7 +53,7 @@ export default function CreateCasierModal({
 
     const timer = setTimeout(() => {
       inputRef.current?.focus();
-    }, 10);
+    }, 0);
 
     return () => clearTimeout(timer);
   }, [open]);
@@ -63,9 +67,9 @@ export default function CreateCasierModal({
       clearTimeout(debounceRef.current);
     }
 
-    if (needle.length < 2) {
-      setResults([]);
+    if (needle.length < 2 || selectedMember) {
       setLoading(false);
+      if (needle.length < 2) setResults([]);
       return;
     }
 
@@ -78,34 +82,44 @@ export default function CreateCasierModal({
           params: { q: needle },
         });
 
-        if (requestId !== requestIdRef.current) return;
+        if (!aliveRef.current || requestId !== requestIdRef.current) return;
 
-        setResults(Array.isArray(response.data) ? response.data : []);
+        setResults(Array.isArray(response?.data) ? response.data : []);
       } catch (error) {
-        if (requestId === requestIdRef.current) {
-          setResults([]);
-          toast.error(getErrorMessage(error));
-        }
+        if (!aliveRef.current || requestId !== requestIdRef.current) return;
+        setResults([]);
+        toast.error(getErrorMessage(error));
       } finally {
-        if (requestId === requestIdRef.current) {
+        if (aliveRef.current && requestId === requestIdRef.current) {
           setLoading(false);
         }
       }
     }, 300);
 
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, open]);
+  }, [query, open, selectedMember]);
 
   const handleClose = () => {
     if (submitting) return;
     onClose?.();
   };
 
+  const handleInputChange = (event) => {
+    const value = event.target.value;
+    setQuery(value);
+
+    if (!selectedMember) return;
+
+    const selectedLabel = selectedMember.display_name || selectedMember.username || "";
+    if (value !== selectedLabel) {
+      setSelectedMember(null);
+    }
+  };
+
   const handlePickMember = (member) => {
+    if (!member?.id) return;
     setSelectedMember(member);
     setQuery(member.display_name || member.username || "");
     setResults([]);
@@ -115,7 +129,7 @@ export default function CreateCasierModal({
     event.preventDefault();
 
     if (!selectedMember?.id) {
-      toast.error("Sélectionne un membre Discord.");
+      toast.error("Sélectionne un membre dans la liste.");
       return;
     }
 
@@ -127,7 +141,7 @@ export default function CreateCasierModal({
       });
 
       toast.success("Casier créé.");
-      onCreated?.(response.data);
+      onCreated?.(response?.data);
       onClose?.();
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -153,12 +167,7 @@ export default function CreateCasierModal({
             <h2 id="create-casier-title">Créer un casier</h2>
           </div>
 
-          <button
-            type="button"
-            className="icon-button"
-            onClick={handleClose}
-            aria-label="Fermer"
-          >
+          <button type="button" className="icon-button" onClick={handleClose} aria-label="Fermer">
             <X size={16} />
           </button>
         </div>
@@ -166,7 +175,6 @@ export default function CreateCasierModal({
         <form className="moderation-modal-body" onSubmit={handleSubmit}>
           <div className="moderation-field">
             <label htmlFor="discord-member-search">Membre Discord</label>
-
             <div className="moderation-input-wrap">
               <Search size={16} />
               <input
@@ -174,21 +182,18 @@ export default function CreateCasierModal({
                 id="discord-member-search"
                 type="text"
                 value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setSelectedMember(null);
-                }}
+                onChange={handleInputChange}
                 placeholder="Chercher un pseudo ou un nickname"
                 autoComplete="off"
               />
             </div>
 
             <small className="moderation-help-text">
-              Recherche directe parmi les membres du serveur Discord.
+              Tape au moins 2 caractères puis choisis un membre dans la liste.
             </small>
           </div>
 
-          {selectedMember && (
+          {selectedMember ? (
             <div className="moderation-selected-member">
               <MemberAvatar member={selectedMember} size={40} />
               <div>
@@ -196,9 +201,9 @@ export default function CreateCasierModal({
                 <small>@{selectedMember.username}</small>
               </div>
             </div>
-          )}
+          ) : null}
 
-          {!selectedMember && query.trim().length >= 2 && (
+          {!selectedMember && query.trim().length >= 2 ? (
             <div className="moderation-search-results">
               {loading ? (
                 <p className="resources-empty">Recherche…</p>
@@ -221,12 +226,12 @@ export default function CreateCasierModal({
                 ))
               )}
             </div>
-          )}
+          ) : null}
 
           <div className="moderation-modal-actions">
             <button
-              className="calm-primary-button is-secondary"
               type="button"
+              className="calm-primary-button is-secondary"
               onClick={handleClose}
               disabled={submitting}
             >
@@ -234,9 +239,9 @@ export default function CreateCasierModal({
             </button>
 
             <button
-              className="calm-primary-button"
               type="submit"
-              disabled={!selectedMember || submitting}
+              className="calm-primary-button"
+              disabled={!selectedMember?.id || submitting}
             >
               <ShieldAlert size={16} />
               {submitting ? "Création…" : "Créer le casier"}
