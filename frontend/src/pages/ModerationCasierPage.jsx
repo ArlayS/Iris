@@ -671,7 +671,7 @@ export default function ModerationCasierPage() {
       {casier.sanctions_summary.rappel_a_lordre} rappel
     </span>
   )}
-</div>
+</div></div>
                   </button>
                 );
               })
