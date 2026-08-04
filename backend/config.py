@@ -37,7 +37,45 @@ def missing_discord_bot_settings() -> list[str]:
     }
     return [name for name, value in required.items() if not value]
 
+import os
 
+VALID_SANCTION_TYPES = {"avertissement", "bannissement", "kick", "rappel_a_lordre"}
+
+
+def parse_moderation_channels(raw: str) -> dict[int, str]:
+    """
+    Parse DISCORD_MODERATION_CHANNELS au format:
+       "avertissement:111111111111111111,kick:222222222222222222,
+        bannissement:333333333333333333,rappel_a_lordre:444444444444444444"
+       -> {111111111111111111: "avertissement", 222222222222222222: "kick", ...}
+    """
+    mapping: dict[int, str] = {}
+
+    for pair in raw.split(","):
+        pair = pair.strip()
+        if not pair or ":" not in pair:
+            continue
+
+        sanction_type, channel_id = pair.split(":", 1)
+        sanction_type = sanction_type.strip()
+        channel_id = channel_id.strip()
+
+        if sanction_type not in VALID_SANCTION_TYPES:
+            continue
+        if not channel_id.isdigit():
+            continue
+
+        mapping[int(channel_id)] = sanction_type
+
+    return mapping
+
+
+# Exemple .env :
+# DISCORD_MODERATION_CHANNELS=avertissement:ID_SALON_AVERT,
+#   kick:ID_SALON_KICK,bannissement:ID_SALON_BAN,rappel_a_lordre:ID_SALON_RAPPEL
+DISCORD_MODERATION_CHANNEL_TYPES = parse_moderation_channels(
+    os.getenv("DISCORD_MODERATION_CHANNELS", "")
+)
 def missing_oauth_settings() -> list[str]:
     required = {
         "DISCORD_CLIENT_ID": DISCORD_CLIENT_ID,
