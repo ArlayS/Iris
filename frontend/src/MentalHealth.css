@@ -4069,7 +4069,91 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+/* ============================================================ */
+/* Correctif : champ Titre + espacement de la modale Fiche S    */
+/* À coller à la fin de MentalHealth-7.css                       */
+/* ============================================================ */
 
+.casier-fiche-s-modal .casier-modal-header {
+  padding: 22px 26px 18px;
+}
+
+.casier-fiche-s-modal .fiche-s-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px 26px 26px;
+}
+
+.casier-fiche-s-modal .fiche-s-warning {
+  margin: 0;
+  padding: 14px 16px;
+}
+
+.casier-fiche-s-modal .fiche-s-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.casier-fiche-s-modal .fiche-s-field label {
+  display: block;
+  color: var(--ink);
+  font: 700 12px "IBM Plex Sans", sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.casier-fiche-s-modal .fiche-s-title-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 17px "Manrope", sans-serif;
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.casier-fiche-s-modal .fiche-s-title-input::placeholder {
+  color: #9aa39c;
+  font-weight: 500;
+}
+
+.casier-fiche-s-modal .fiche-s-title-input:focus {
+  border-color: #7d1e5e;
+  box-shadow: 0 0 0 3px rgba(125, 30, 94, 0.12);
+}
+
+.casier-fiche-s-modal .fiche-s-field .tiptap-editor {
+  min-height: 200px;
+}
+
+.casier-fiche-s-modal .fiche-s-field .tiptap-editor .bn-container,
+.casier-fiche-s-modal .fiche-s-field .tiptap-editor-content .ProseMirror {
+  min-height: 160px;
+}
+
+.casier-fiche-s-modal .casier-actions {
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
+@media (max-width: 640px) {
+  .casier-fiche-s-modal .fiche-s-modal-body {
+    padding: 18px 18px 20px;
+    gap: 18px;
+  }
+
+  .casier-fiche-s-modal .fiche-s-title-input {
+    font-size: 16px;
+  }
+}
 .dashboard-page .system-pane b,
 .dashboard-page .system-pane strong {
   font-size: 15px;
