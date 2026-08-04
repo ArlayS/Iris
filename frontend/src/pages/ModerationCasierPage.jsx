@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 
-import CreateCasierModal from "./CreateCasierModal"; // ou "../components/CreateCasierModal"
+import CreateCasierModal from "./components/CreateCasierModal"; // ou "../components/CreateCasierModal"
 
 export default function ModerationCasierPage() {
   const [createOpen, setCreateOpen] = useState(false);
