@@ -106,7 +106,7 @@ MIN_ALNUM_CHARS = 3            # en dessous, le message n'est pas analysé
 QUEUE_MAXSIZE = 500
 WORKER_COUNT = 2
 DEGRADED_RATIO = 0.8           # à 80 % du budget : plus de contexte
-MAX_OUTPUT_TOKENS = 1000       # marge large : le verdict normal fait ~80 tokens, la "raison" peut déborder
+MAX_OUTPUT_TOKENS = 3000       # marge large : le verdict normal fait ~80 tokens, la "raison" peut déborder
 
 DELETE_MIN_CONFIDENCE = 0.8    # suppression auto : gravité >= 2 et confiance >= 0.8
 TIMEOUT_MIN_CONFIDENCE = 0.9   # timeout auto : gravité 3 et confiance >= 0.9
