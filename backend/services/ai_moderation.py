@@ -562,11 +562,11 @@ async def send_alert(
 
     if verdict is not None:
         sev = SEVERITY_EMOJI.get(verdict.gravite, "⚪")
-        header = f"# 🛡️ Automodération IA\n### {sev} Signalement : `{verdict.categorie or 'autre'}`"
+        header = f"# 🛡️ SecuModIA \n### {sev} Alerte : `{verdict.categorie or 'autre'}`"
         stats = f"**Gravité :** {verdict.gravite}/3  |  **Confiance :** {verdict.confiance:.0%}"
         reason_text = verdict.raison
     else:
-        header = "# 🛡️ Automodération IA\n### ⚠️ Message non analysable"
+        header = "# 🛡️ SecuModIA \n### ⚠️ Message non analysable"
         stats = "**Gravité :** non évaluée"
         reason_text = "Analyse impossible, à vérifier manuellement."
 
@@ -574,7 +574,7 @@ async def send_alert(
         f"**Auteur :** {author.mention} (`{author.id}`)\n"
         f"**Salon :** {message.channel.mention}\n"
         f"{stats}\n"
-        f"-# {title}"
+        
     )
 
     container = ui.Container(
