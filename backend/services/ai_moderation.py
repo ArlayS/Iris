@@ -15,6 +15,12 @@ Fonctionnement :
 Le champ « Action » de l'alerte affiche la sanction suggérée par l'échelle de sanctions.
 Les alertes utilisent Components V2 (discord.py >= 2.6 : ui.LayoutView / ui.Container).
 
+Prompt caching : le prompt système (consignes + règlement + échelle de sanctions) est identique à
+chaque appel, il est donc marqué `cache_control`. Les lectures du cache sont facturées environ 10 %
+du prix normal d'entrée, l'écriture 1,25x (TTL 5 min) ou 2x (TTL 1 h). Le contenu variable (contexte
++ message analysé) vient APRÈS le prompt système et n'est jamais mis en cache. Si le règlement ou
+l'échelle change, le cache est réécrit une fois, automatiquement.
+
 Compatibilité Haiku 5.5 (voir le guide de migration d'Anthropic) :
 - pas de temperature / top_p / top_k (erreur sinon) ;
 - pas de prefill de message assistant : la requête se termine par un tour "user" ;
@@ -27,10 +33,14 @@ Variables d'environnement (à mettre dans le .env du VPS) :
   AI_MODERATION_ALERT_CHANNEL_ID     salon staff où poster les signalements
   AI_MODERATION_IGNORED_CHANNEL_IDS  salons ignorés, séparés par des virgules
   AI_MODERATION_TRUSTED_ROLE_IDS     rôles ignorés (staff), séparés par des virgules
-  AI_MODERATION_DAILY_TOKEN_LIMIT    défaut : 2000000
+  AI_MODERATION_DAILY_TOKEN_LIMIT    défaut : 2000000 (tokens "équivalents" : le cache est pondéré)
   AI_MODERATION_MODEL                défaut : claude-haiku-5-5
   AI_MODERATION_MAX_OUTPUT_TOKENS    défaut : 3000 (plafond de la réponse du modèle)
   AI_MODERATION_DISABLE_THINKING     true / false (défaut : false) : envoie thinking={"type":"disabled"}.
+  AI_MODERATION_PROMPT_CACHE         true (défaut) / false : active le prompt caching.
+  AI_MODERATION_CACHE_TTL            5m (défaut) ou 1h. Utilise 1h si le serveur est peu actif
+                                     (moins d'un message analysé toutes les 5 min) : l'écriture coûte
+                                     2x au lieu de 1,25x, mais le cache survit plus longtemps.
   AI_MODERATION_RULES_FILE           fichier texte du règlement
                                      (défaut : reglement_ia.txt, à côté de ce fichier)
   AI_MODERATION_SANCTIONS_FILE       fichier texte de l'échelle de sanctions
@@ -53,6 +63,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 import os
 import re
 from collections import defaultdict, deque
@@ -107,6 +118,13 @@ DAILY_TOKEN_LIMIT = _env_int("AI_MODERATION_DAILY_TOKEN_LIMIT", 2_000_000)
 SKIP_ADMINS = _env_bool("AI_MODERATION_SKIP_ADMINS", True)
 ALERT_ALL = _env_bool("AI_MODERATION_ALERT_ALL", False)
 DISABLE_THINKING = _env_bool("AI_MODERATION_DISABLE_THINKING", False)
+
+PROMPT_CACHE = _env_bool("AI_MODERATION_PROMPT_CACHE", True)
+CACHE_TTL = os.getenv("AI_MODERATION_CACHE_TTL", "5m").strip().lower()
+if CACHE_TTL not in {"5m", "1h"}:
+    CACHE_TTL = "5m"
+CACHE_WRITE_MULTIPLIER = 2.0 if CACHE_TTL == "1h" else 1.25  # coût d'écriture vs entrée normale
+CACHE_READ_MULTIPLIER = 0.1                                   # coût de lecture vs entrée normale
 
 CONTEXT_MESSAGES = 10          # nombre de messages précédents envoyés au modèle
 CONTEXT_MAX_AGE_SECONDS = 900  # on ignore les messages de contexte plus vieux que 15 min
@@ -220,12 +238,16 @@ class TextFileStore:
 _rules = TextFileStore(RULES_FILE, "règlement")
 _sanctions = TextFileStore(SANCTIONS_FILE, "échelle de sanctions")
 
-PROMPT_WARN_CHARS = 6000  # règlement + sanctions : au-delà, chaque appel coûte sensiblement plus cher
+PROMPT_WARN_CHARS = 30000  # règlement + sanctions : au-delà, le prompt devient très coûteux
 _warned_prompt_size = False
 
 
 def build_system_prompt() -> str | None:
-    """Prompt système à jour (règlement + échelle de sanctions), ou None si pas de règlement valide."""
+    """Prompt système à jour (règlement + échelle de sanctions), ou None si pas de règlement valide.
+
+    Le texte est strictement identique d'un appel à l'autre tant que les fichiers ne changent pas,
+    condition nécessaire pour que le prompt caching fonctionne (correspondance de préfixe exacte).
+    """
     global _warned_prompt_size
 
     rules = _rules.get()
@@ -243,7 +265,7 @@ def build_system_prompt() -> str | None:
 
     if len(rules) + len(sanctions or "") > PROMPT_WARN_CHARS and not _warned_prompt_size:
         _warned_prompt_size = True
-        logger.warning("Règlement + sanctions longs (%d caractères) : chaque analyse consommera plus de tokens.",
+        logger.warning("Règlement + sanctions très longs (%d caractères) : chaque analyse consommera beaucoup de tokens.",
                        len(rules) + len(sanctions or ""))
 
     return _PROMPT_TEMPLATE.replace("[[REGLEMENT]]", rules).replace("[[SANCTIONS]]", sanctions_block)
@@ -279,8 +301,9 @@ class Job:
 
 
 class DailyTokenBudget:
-    """Compte les tokens consommés par jour (jour UTC, approximation d'une fenêtre de 24 h).
+    """Compte les tokens "équivalents" consommés par jour (jour UTC, approximation d'une fenêtre de 24 h).
 
+    Le cache est pondéré (lecture x0,1 ; écriture x1,25 ou x2) pour que le budget reflète le coût réel.
     Le compteur est écrit dans un petit fichier JSON pour survivre aux redémarrages du bot.
     """
 
@@ -336,6 +359,9 @@ _queue: asyncio.Queue[Job] | None = None
 _workers: list[asyncio.Task] = []
 _budget = DailyTokenBudget(USAGE_FILE, DAILY_TOKEN_LIMIT)
 _warned: set[str] = set()
+
+# Statistiques de cache depuis le démarrage (tokens)
+_cache_stats = {"calls": 0, "read": 0, "write": 0, "uncached": 0}
 
 # Historique récent par salon : (timestamp, auteur, texte)
 _history: dict[int, deque[tuple[float, str, str]]] = defaultdict(lambda: deque(maxlen=30))
@@ -394,6 +420,26 @@ def build_user_content(job: Job, context: list[str]) -> str:
         f"Texte : {job.text}\n"
         f"</message_a_analyser>"
     )
+
+
+def build_system_param(system_prompt: str):
+    """Paramètre `system` de l'API : avec cache_control si le prompt caching est activé."""
+    if not PROMPT_CACHE:
+        return system_prompt
+    cache_control: dict = {"type": "ephemeral"}
+    if CACHE_TTL == "1h":
+        cache_control["ttl"] = "1h"
+    return [{"type": "text", "text": system_prompt, "cache_control": cache_control}]
+
+
+def account_usage(usage) -> tuple[int, int, int, int, int]:
+    """Retourne (entrée non cachée, lecture cache, écriture cache, sortie, tokens équivalents pour le budget)."""
+    uncached = int(getattr(usage, "input_tokens", 0) or 0)
+    read = int(getattr(usage, "cache_read_input_tokens", 0) or 0)
+    write = int(getattr(usage, "cache_creation_input_tokens", 0) or 0)
+    output = int(getattr(usage, "output_tokens", 0) or 0)
+    equivalent = math.ceil(uncached + output + read * CACHE_READ_MULTIPLIER + write * CACHE_WRITE_MULTIPLIER)
+    return uncached, read, write, output, equivalent
 
 
 _JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
@@ -590,10 +636,10 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
     if MODE != "act":
         await send_alert(
             job,
-            title="Mode test",
+            title=" ",
             color=color,
             verdict=verdict,
-            action_line=f"{suggestion}\n(Mode test : aucune action effectuée par le bot.)",
+            action_line=f"{suggestion}\n",
         )
         return
 
@@ -660,7 +706,7 @@ async def _process(job: Job) -> None:
     request: dict = {
         "model": MODEL,
         "max_tokens": MAX_OUTPUT_TOKENS,
-        "system": system_prompt,
+        "system": build_system_param(system_prompt),
         "messages": [{"role": "user", "content": user_content}],
     }
     if DISABLE_THINKING:
@@ -673,7 +719,24 @@ async def _process(job: Job) -> None:
         logger.warning("Appel Anthropic échoué (message %s) : %s", job.message.id, exc)
         return
 
-    _budget.add(response.usage.input_tokens + response.usage.output_tokens)
+    uncached, cache_read, cache_write, output, equivalent = account_usage(response.usage)
+    _budget.add(equivalent)
+
+    _cache_stats["calls"] += 1
+    _cache_stats["read"] += cache_read
+    _cache_stats["write"] += cache_write
+    _cache_stats["uncached"] += uncached
+    logger.info(
+        "Tokens message %s : cache lu=%d, cache écrit=%d, entrée non cachée=%d, sortie=%d "
+        "(équivalent budget=%d ; budget du jour=%.1f %%).",
+        job.message.id, cache_read, cache_write, uncached, output, equivalent, _budget.ratio * 100,
+    )
+    if PROMPT_CACHE and cache_read == 0 and cache_write == 0 and f"{key}-nocache" not in _warned:
+        _warned.add(f"{key}-nocache")
+        logger.warning(
+            "Prompt caching actif mais aucun token mis en cache : le prompt système est probablement "
+            "sous le minimum cacheable du modèle, ou le modèle ne le supporte pas."
+        )
 
     if response.stop_reason == "refusal":
         # Le classifieur de sécurité du modèle a refusé : le contenu est probablement
@@ -689,10 +752,9 @@ async def _process(job: Job) -> None:
         return
 
     logger.debug(
-        "Message %s : blocs=%s, tokens sortie=%s, stop=%s",
+        "Message %s : blocs=%s, stop=%s",
         job.message.id,
         [getattr(block, "type", "?") for block in response.content],
-        response.usage.output_tokens,
         response.stop_reason,
     )
 
@@ -703,7 +765,7 @@ async def _process(job: Job) -> None:
             "Réponse illisible du modèle (message %s, stop_reason=%s, blocs=%s, tokens sortie=%s) : %r",
             job.message.id, response.stop_reason,
             [getattr(block, "type", "?") for block in response.content],
-            response.usage.output_tokens, text[:600],
+            output, text[:600],
         )
         # Pas de faux négatif silencieux : le staff est prévenu qu'un message n'a pas pu être analysé.
         await send_alert(
@@ -742,6 +804,16 @@ async def _worker(name: str) -> None:
 # --------------------------------------------------------------------------- #
 # Points d'entrée (à appeler depuis moderation_bot.py)
 # --------------------------------------------------------------------------- #
+
+
+def cache_report() -> str:
+    """Résumé des statistiques de cache depuis le démarrage (utile pour un log ou une commande staff)."""
+    total_prompt = _cache_stats["read"] + _cache_stats["write"] + _cache_stats["uncached"]
+    hit = (_cache_stats["read"] / total_prompt * 100) if total_prompt else 0.0
+    return (
+        f"{_cache_stats['calls']} appels, cache lu={_cache_stats['read']}, écrit={_cache_stats['write']}, "
+        f"non cachés={_cache_stats['uncached']} ({hit:.0f} % de l'entrée servie depuis le cache)"
+    )
 
 
 def start(discord_client: discord.Client) -> None:
@@ -792,17 +864,18 @@ def start(discord_client: discord.Client) -> None:
 
     logger.info(
         "Automodération IA démarrée : modèle=%s, mode=%s, max_tokens=%s, thinking_désactivé=%s, "
-        "budget=%s tokens/jour (utilisé : %s), serveur=%s, salon_alertes=%s, salons_ignorés=%s, "
-        "rôles_de_confiance=%s, ignorer_admins=%s, sanctions=%s.",
+        "prompt_cache=%s (TTL %s), budget=%s tokens/jour (utilisé : %s), serveur=%s, salon_alertes=%s, "
+        "salons_ignorés=%s, rôles_de_confiance=%s, ignorer_admins=%s, sanctions=%s.",
         MODEL, "act" if MODE == "act" else "log", MAX_OUTPUT_TOKENS, DISABLE_THINKING,
-        DAILY_TOKEN_LIMIT, _budget.used, GUILD_ID or "tous", ALERT_CHANNEL_ID or "AUCUN",
-        sorted(IGNORED_CHANNEL_IDS), sorted(TRUSTED_ROLE_IDS), SKIP_ADMINS,
+        "oui" if PROMPT_CACHE else "non", CACHE_TTL, DAILY_TOKEN_LIMIT, _budget.used, GUILD_ID or "tous",
+        ALERT_CHANNEL_ID or "AUCUN", sorted(IGNORED_CHANNEL_IDS), sorted(TRUSTED_ROLE_IDS), SKIP_ADMINS,
         "oui" if _sanctions.get() else "non",
     )
 
 
 async def stop() -> None:
     """À appeler à l'arrêt du bot."""
+    logger.info("Bilan du cache à l'arrêt : %s", cache_report())
     for task in _workers:
         task.cancel()
     await asyncio.gather(*_workers, return_exceptions=True)
