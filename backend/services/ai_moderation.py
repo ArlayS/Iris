@@ -48,9 +48,14 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import anthropic
 import discord
-from anthropic import AsyncAnthropic
+
+try:
+    import anthropic
+    from anthropic import AsyncAnthropic
+except ImportError:  # paquet absent de l'environnement : l'API doit quand même démarrer
+    anthropic = None
+    AsyncAnthropic = None
 
 logger = logging.getLogger("ai_moderation")
 
@@ -550,6 +555,12 @@ def start(discord_client: discord.Client) -> None:
         return
     if not ENABLED:
         logger.info("Automodération IA désactivée (AI_MODERATION_ENABLED=false).")
+        return
+    if anthropic is None:
+        logger.error(
+            "Le paquet Python 'anthropic' n'est pas installé (ajoute-le à requirements.txt "
+            "puis reconstruis l'image) : automodération IA non démarrée."
+        )
         return
     if not ANTHROPIC_API_KEY:
         logger.warning("ANTHROPIC_API_KEY manquante : automodération IA non démarrée.")
