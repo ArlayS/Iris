@@ -11,28 +11,34 @@ Fonctionnement :
    - "log" : le bot ne fait que signaler dans le salon staff (mode test) ;
    - "act" : le bot supprime / met en timeout selon la gravité, et signale.
 
+Les alertes utilisent Components V2 (discord.py >= 2.6 : ui.LayoutView / ui.Container).
+
 Compatibilité Haiku 5.5 (voir le guide de migration d'Anthropic) :
 - pas de temperature / top_p / top_k (erreur sinon) ;
 - pas de prefill de message assistant : la requête se termine par un tour "user" ;
 - stop_reason == "refusal" possible : traité comme "à vérifier par un humain".
 
 Variables d'environnement (à mettre dans le .env du VPS) :
-  ANTHROPIC_API_KEY                clé API (jamais dans le code ni dans Git)
-  AI_MODERATION_ENABLED            true / false (défaut : false)
-  AI_MODERATION_MODE               log (défaut) ou act
-  AI_MODERATION_ALERT_CHANNEL_ID   salon staff où poster les signalements
-  AI_MODERATION_IGNORED_CHANNEL_IDS salons ignorés, séparés par des virgules
-  AI_MODERATION_TRUSTED_ROLE_IDS   rôles ignorés (staff), séparés par des virgules
-  AI_MODERATION_DAILY_TOKEN_LIMIT  défaut : 2000000
-  AI_MODERATION_MODEL              défaut : claude-haiku-5-5
-  AI_MODERATION_RULES_FILE         fichier texte du règlement
-                                   (défaut : reglement_ia.txt, à côté de ce fichier)
-  AI_MODERATION_GUILD_ID           serveur analysé (défaut : DISCORD_GUILD_ID de config.py ;
-                                   les messages des autres serveurs sont ignorés)
-  AI_MODERATION_SKIP_ADMINS        true (défaut) / false : ignorer les administrateurs.
-                                   Mets false pour tester avec ton propre compte admin.
-  AI_MODERATION_ALERT_ALL          true / false (défaut : false) : en mode "log", poste
-                                   aussi un récap des messages jugés OK (debug de test).
+  ANTHROPIC_API_KEY                  clé API (jamais dans le code ni dans Git)
+  AI_MODERATION_ENABLED              true / false (défaut : false)
+  AI_MODERATION_MODE                 log (défaut) ou act
+  AI_MODERATION_ALERT_CHANNEL_ID     salon staff où poster les signalements
+  AI_MODERATION_IGNORED_CHANNEL_IDS  salons ignorés, séparés par des virgules
+  AI_MODERATION_TRUSTED_ROLE_IDS     rôles ignorés (staff), séparés par des virgules
+  AI_MODERATION_DAILY_TOKEN_LIMIT    défaut : 2000000
+  AI_MODERATION_MODEL                défaut : claude-haiku-5-5
+  AI_MODERATION_MAX_OUTPUT_TOKENS    défaut : 3000 (plafond de la réponse du modèle)
+  AI_MODERATION_DISABLE_THINKING     true / false (défaut : false) : envoie thinking={"type":"disabled"}.
+                                     À essayer si la réponse du modèle est vide (stop_reason=max_tokens).
+                                     Retire-le si l'API renvoie une erreur 400 sur ce paramètre.
+  AI_MODERATION_RULES_FILE           fichier texte du règlement
+                                     (défaut : reglement_ia.txt, à côté de ce fichier)
+  AI_MODERATION_GUILD_ID             serveur analysé (défaut : DISCORD_GUILD_ID de config.py ;
+                                     les messages des autres serveurs sont ignorés)
+  AI_MODERATION_SKIP_ADMINS          true (défaut) / false : ignorer les administrateurs.
+                                     Mets false pour tester avec ton propre compte admin.
+  AI_MODERATION_ALERT_ALL            true / false (défaut : false) : en mode "log", poste
+                                     aussi un récap des messages jugés OK (debug de test).
 
 Le règlement est lu dans un fichier texte : modifie-le quand tu veux, le bot le relit
 automatiquement au message suivant, sans redémarrage. Si le fichier est absent ou vide au
@@ -53,6 +59,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import discord
+from discord import ui
 
 try:
     import anthropic
@@ -97,6 +104,7 @@ TRUSTED_ROLE_IDS = _env_int_set("AI_MODERATION_TRUSTED_ROLE_IDS")
 DAILY_TOKEN_LIMIT = _env_int("AI_MODERATION_DAILY_TOKEN_LIMIT", 2_000_000)
 SKIP_ADMINS = _env_bool("AI_MODERATION_SKIP_ADMINS", True)
 ALERT_ALL = _env_bool("AI_MODERATION_ALERT_ALL", False)
+DISABLE_THINKING = _env_bool("AI_MODERATION_DISABLE_THINKING", False)
 
 CONTEXT_MESSAGES = 10          # nombre de messages précédents envoyés au modèle
 CONTEXT_MAX_AGE_SECONDS = 900  # on ignore les messages de contexte plus vieux que 15 min
@@ -106,7 +114,7 @@ MIN_ALNUM_CHARS = 3            # en dessous, le message n'est pas analysé
 QUEUE_MAXSIZE = 500
 WORKER_COUNT = 2
 DEGRADED_RATIO = 0.8           # à 80 % du budget : plus de contexte
-MAX_OUTPUT_TOKENS = 3000       # marge large : le verdict normal fait ~80 tokens, la "raison" peut déborder
+MAX_OUTPUT_TOKENS = _env_int("AI_MODERATION_MAX_OUTPUT_TOKENS", 3000)  # plafond, pas une consommation
 
 DELETE_MIN_CONFIDENCE = 0.8    # suppression auto : gravité >= 2 et confiance >= 0.8
 TIMEOUT_MIN_CONFIDENCE = 0.9   # timeout auto : gravité 3 et confiance >= 0.9
@@ -415,8 +423,10 @@ ACTION_LABELS = {
 }
 
 # --------------------------------------------------------------------------- #
-# Alertes et actions Discord
+# Alertes (Components V2) et actions Discord
 # --------------------------------------------------------------------------- #
+
+SEVERITY_EMOJI = {0: "⚪", 1: "🟡", 2: "🟠", 3: "🔴"}
 
 
 async def _get_alert_channel() -> discord.abc.Messageable | None:
@@ -436,6 +446,11 @@ async def _get_alert_channel() -> discord.abc.Messageable | None:
         return None
 
 
+def _codeblock(text: str, limit: int) -> str:
+    text = (text or "—").replace("```", "` ` `").strip()[:limit] or "—"
+    return f"```{text}```"
+
+
 async def send_alert(
     job: Job,
     *,
@@ -449,25 +464,57 @@ async def send_alert(
         return
 
     message = job.message
-    embed = discord.Embed(title=title, color=color, timestamp=discord.utils.utcnow())
-    embed.add_field(name="Auteur", value=f"{message.author.mention} (`{message.author.id}`)", inline=True)
-    embed.add_field(name="Salon", value=message.channel.mention, inline=True)
-    if verdict is not None:
-        embed.add_field(name="Catégorie", value=verdict.categorie or "—", inline=True)
-        embed.add_field(name="Gravité / confiance", value=f"{verdict.gravite}/3 — {verdict.confiance:.0%}", inline=True)
-        embed.add_field(name="Raison", value=verdict.raison or "—", inline=False)
-    embed.add_field(name="Action", value=action_line, inline=False)
+    author = message.author
+    ts = int(message.created_at.timestamp())
 
-    excerpt = message.clean_content.replace("```", "` ` `")[:600] or "—"
-    embed.add_field(name="Message", value=f"```{excerpt}```", inline=False)
-    embed.add_field(name="Lien", value=message.jump_url, inline=False)
+    if verdict is not None:
+        sev = SEVERITY_EMOJI.get(verdict.gravite, "⚪")
+        header = f"# 🛡️ Automodération IA\n### {sev} Signalement : `{verdict.categorie or 'autre'}`"
+        stats = f"**Gravité :** {verdict.gravite}/3  |  **Confiance :** {verdict.confiance:.0%}"
+        reason_text = verdict.raison
+    else:
+        header = "# 🛡️ Automodération IA\n### ⚠️ Message non analysable"
+        stats = "**Gravité :** non évaluée"
+        reason_text = "Analyse impossible, à vérifier manuellement."
+
+    identity = (
+        f"**Auteur :** {author.mention} (`{author.id}`)\n"
+        f"**Salon :** {message.channel.mention}\n"
+        f"{stats}\n"
+        f"-# {title}"
+    )
+
+    container = ui.Container(
+        ui.Section(
+            ui.TextDisplay(header),
+            ui.TextDisplay(identity),
+            accessory=ui.Thumbnail(media=author.display_avatar.url),
+        ),
+        ui.Separator(visible=True, spacing=discord.SeparatorSpacing.small),
+        ui.TextDisplay(f"**Message :**\n{_codeblock(message.clean_content, 600)}"),
+        ui.TextDisplay(f"**Raison :**\n{_codeblock(reason_text, 300)}"),
+        ui.TextDisplay(f"**Action :**\n{_codeblock(action_line, 300)}"),
+        ui.Separator(visible=True, spacing=discord.SeparatorSpacing.small),
+        ui.ActionRow(
+            ui.Button(
+                style=discord.ButtonStyle.link,
+                label="Voir le message",
+                url=message.jump_url,
+            ),
+        ),
+        ui.TextDisplay(f"-# Message du <t:{ts}:f> • <t:{ts}:R>"),
+        accent_colour=color,
+    )
+
+    view = ui.LayoutView(timeout=None)
+    view.add_item(container)
 
     try:
-        await channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
         logger.info("Alerte postée dans le salon %s (message %s).", ALERT_CHANNEL_ID, message.id)
     except (discord.Forbidden, discord.HTTPException):
         logger.exception(
-            "Échec de l'envoi de l'alerte d'automodération (permissions View/Send/Embed du salon %s ?).",
+            "Échec de l'envoi de l'alerte d'automodération (permissions View/Send du salon %s ?).",
             ALERT_CHANNEL_ID,
         )
 
@@ -481,8 +528,8 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
         if ALERT_ALL and MODE != "act":
             await send_alert(
                 job,
-                title="Automodération IA (test) : message jugé OK",
-                color=discord.Color.light_grey(),
+                title="Mode test : message jugé OK",
+                color=discord.Color.green(),
                 verdict=verdict,
                 action_line="Aucun signalement : le modèle n'a détecté aucune violation.",
             )
@@ -495,7 +542,7 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
     if MODE != "act":
         await send_alert(
             job,
-            title="Automodération IA (mode test)",
+            title="Mode test",
             color=color,
             verdict=verdict,
             action_line=f"Aucune action effectuée. Action prévue en mode actif : {ACTION_LABELS[planned]}.",
@@ -525,7 +572,7 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
 
     await send_alert(
         job,
-        title="Automodération IA",
+        title="Mode actif",
         color=color,
         verdict=verdict,
         action_line=", ".join(done) if done else "signalement seul (à traiter par le staff)",
@@ -561,14 +608,18 @@ async def _process(job: Job) -> None:
     context = [] if degraded else job.context
     user_content = build_user_content(job, context)
 
+    request: dict = {
+        "model": MODEL,
+        "max_tokens": MAX_OUTPUT_TOKENS,
+        "system": system_prompt,
+        "messages": [{"role": "user", "content": user_content}],
+    }
+    if DISABLE_THINKING:
+        request["thinking"] = {"type": "disabled"}
+
     try:
         # Haiku 5.5 : ni temperature/top_p/top_k, ni prefill assistant (erreurs 400).
-        response = await _client.messages.create(
-            model=MODEL,
-            max_tokens=MAX_OUTPUT_TOKENS,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_content}],
-        )
+        response = await _client.messages.create(**request)
     except anthropic.APIError as exc:
         logger.warning("Appel Anthropic échoué (message %s) : %s", job.message.id, exc)
         return
@@ -581,19 +632,37 @@ async def _process(job: Job) -> None:
         logger.info("Message %s : refus du modèle (stop_reason=refusal) -> alerte manuelle.", job.message.id)
         await send_alert(
             job,
-            title="Automodération IA : message non analysable",
+            title="Refus du modèle",
             color=discord.Color.dark_red(),
             verdict=None,
             action_line="Le modèle a refusé d'analyser ce message. À vérifier manuellement.",
         )
         return
 
+    logger.debug(
+        "Message %s : blocs=%s, tokens sortie=%s, stop=%s",
+        job.message.id,
+        [getattr(block, "type", "?") for block in response.content],
+        response.usage.output_tokens,
+        response.stop_reason,
+    )
+
     text = "".join(block.text for block in response.content if getattr(block, "type", None) == "text")
     verdict = parse_verdict(text)
     if verdict is None:
         logger.warning(
-            "Réponse illisible du modèle (message %s, stop_reason=%s) : %r",
-            job.message.id, response.stop_reason, text[:600],
+            "Réponse illisible du modèle (message %s, stop_reason=%s, blocs=%s, tokens sortie=%s) : %r",
+            job.message.id, response.stop_reason,
+            [getattr(block, "type", "?") for block in response.content],
+            response.usage.output_tokens, text[:600],
+        )
+        # Pas de faux négatif silencieux : le staff est prévenu qu'un message n'a pas pu être analysé.
+        await send_alert(
+            job,
+            title="Analyse échouée",
+            color=discord.Color.dark_grey(),
+            verdict=None,
+            action_line=f"Réponse du modèle illisible (stop_reason={response.stop_reason}). À vérifier manuellement.",
         )
         return
 
@@ -654,6 +723,12 @@ def start(discord_client: discord.Client) -> None:
             "AI_MODERATION_ALERT_CHANNEL_ID non défini : l'IA analysera les messages "
             "mais AUCUNE alerte ne sera postée."
         )
+    if not hasattr(ui, "LayoutView"):
+        logger.error(
+            "discord.py %s ne supporte pas Components V2 (LayoutView) : passe à discord.py>=2.6, "
+            "sinon les alertes échoueront.",
+            getattr(discord, "__version__", "?"),
+        )
 
     _discord = discord_client
     _client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY, max_retries=3, timeout=30.0)
@@ -662,11 +737,12 @@ def start(discord_client: discord.Client) -> None:
         _workers.append(asyncio.create_task(_worker(f"ia-{index}")))
 
     logger.info(
-        "Automodération IA démarrée : modèle=%s, mode=%s, budget=%s tokens/jour (utilisé : %s), "
-        "serveur=%s, salon_alertes=%s, salons_ignorés=%s, rôles_de_confiance=%s, ignorer_admins=%s.",
-        MODEL, "act" if MODE == "act" else "log", DAILY_TOKEN_LIMIT, _budget.used,
-        GUILD_ID or "tous", ALERT_CHANNEL_ID or "AUCUN", sorted(IGNORED_CHANNEL_IDS),
-        sorted(TRUSTED_ROLE_IDS), SKIP_ADMINS,
+        "Automodération IA démarrée : modèle=%s, mode=%s, max_tokens=%s, thinking_désactivé=%s, "
+        "budget=%s tokens/jour (utilisé : %s), serveur=%s, salon_alertes=%s, salons_ignorés=%s, "
+        "rôles_de_confiance=%s, ignorer_admins=%s.",
+        MODEL, "act" if MODE == "act" else "log", MAX_OUTPUT_TOKENS, DISABLE_THINKING,
+        DAILY_TOKEN_LIMIT, _budget.used, GUILD_ID or "tous", ALERT_CHANNEL_ID or "AUCUN",
+        sorted(IGNORED_CHANNEL_IDS), sorted(TRUSTED_ROLE_IDS), SKIP_ADMINS,
     )
 
 
