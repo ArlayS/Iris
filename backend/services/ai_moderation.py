@@ -119,6 +119,9 @@ SKIP_ADMINS = _env_bool("AI_MODERATION_SKIP_ADMINS", True)
 ALERT_ALL = _env_bool("AI_MODERATION_ALERT_ALL", False)
 DISABLE_THINKING = _env_bool("AI_MODERATION_DISABLE_THINKING", False)
 
+PING_ROLE_ID = _env_int("AI_MODERATION_PING_ROLE_ID", 0)          # 0 = pas de ping
+PING_MIN_GRAVITY = _env_int("AI_MODERATION_PING_MIN_GRAVITY", 1)  # gravité minimale pour pinger (1 à 3)
+
 PROMPT_CACHE = _env_bool("AI_MODERATION_PROMPT_CACHE", True)
 CACHE_TTL = os.getenv("AI_MODERATION_CACHE_TTL", "5m").strip().lower()
 if CACHE_TTL not in {"5m", "1h"}:
@@ -551,6 +554,7 @@ async def send_alert(
     color: discord.Color,
     verdict: Verdict | None,
     action_line: str,
+    ping: bool = True,
 ) -> None:
     channel = await _get_alert_channel()
     if channel is None:
@@ -600,10 +604,19 @@ async def send_alert(
     )
 
     view = ui.LayoutView(timeout=None)
+    mentions = discord.AllowedMentions.none()
+    if ping and PING_ROLE_ID:
+        view.add_item(ui.TextDisplay(f"<@&{PING_ROLE_ID}>"))
+        mentions = discord.AllowedMentions(
+            roles=[discord.Object(id=PING_ROLE_ID)],
+            users=False,
+            everyone=False,
+            replied_user=False,
+        )
     view.add_item(container)
 
     try:
-        await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
+        await channel.send(view=view, allowed_mentions=mentions)
         logger.info("Alerte postée dans le salon %s (message %s).", ALERT_CHANNEL_ID, message.id)
     except (discord.Forbidden, discord.HTTPException):
         logger.exception(
@@ -625,6 +638,7 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
                 color=discord.Color.green(),
                 verdict=verdict,
                 action_line="Aucune sanction : le modèle n'a détecté aucune violation.",
+                ping=verdict.gravite >= PING_MIN_GRAVITY,
             )
         return
 
@@ -640,6 +654,7 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
             color=color,
             verdict=verdict,
             action_line=f"{suggestion}\n",
+            ping=verdict.gravite >= PING_MIN_GRAVITY,
         )
         return
 
@@ -671,6 +686,7 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
         color=color,
         verdict=verdict,
         action_line=f"{suggestion}\nExécuté par le bot : {executed}.",
+        ping=verdict.gravite >= PING_MIN_GRAVITY,
     )
 
 
