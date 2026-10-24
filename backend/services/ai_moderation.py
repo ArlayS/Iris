@@ -81,15 +81,15 @@ def _env_int_set(name: str) -> set[int]:
 
 def _env_int(name: str, default: int) -> int:
     try:
-        return int(os.getenv(name, "") or default)
+        return int(os.getenv(name, "").strip() or default)
     except ValueError:
         return default
 
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 ENABLED = _env_bool("AI_MODERATION_ENABLED", False)
 MODE = os.getenv("AI_MODERATION_MODE", "log").strip().lower()  # "log" ou "act"
-MODEL = os.getenv("AI_MODERATION_MODEL", "claude-haiku-5-5")
+MODEL = os.getenv("AI_MODERATION_MODEL", "claude-haiku-5-5").strip()
 ALERT_CHANNEL_ID = _env_int("AI_MODERATION_ALERT_CHANNEL_ID", 0)
 GUILD_ID = _env_int("AI_MODERATION_GUILD_ID", 0) or _env_int("DISCORD_GUILD_ID", 0)  # 0 = tous
 IGNORED_CHANNEL_IDS = _env_int_set("AI_MODERATION_IGNORED_CHANNEL_IDS")
@@ -106,7 +106,7 @@ MIN_ALNUM_CHARS = 3            # en dessous, le message n'est pas analysé
 QUEUE_MAXSIZE = 500
 WORKER_COUNT = 2
 DEGRADED_RATIO = 0.8           # à 80 % du budget : plus de contexte
-MAX_OUTPUT_TOKENS = 300        # large : le verdict JSON fait ~60 tokens
+MAX_OUTPUT_TOKENS = 1000       # marge large : le verdict normal fait ~80 tokens, la "raison" peut déborder
 
 DELETE_MIN_CONFIDENCE = 0.8    # suppression auto : gravité >= 2 et confiance >= 0.8
 TIMEOUT_MIN_CONFIDENCE = 0.9   # timeout auto : gravité 3 et confiance >= 0.9
@@ -146,9 +146,10 @@ GRAVITÉ : 0 = rien ; 1 = mineur / à surveiller ; 2 = violation claire ; \
 3 = grave (menaces, harcèlement caractérisé, contenu haineux, données personnelles d'autrui, \
 arnaque ou phishing).
 
-Réponds UNIQUEMENT avec un objet JSON, sans texte avant ni après, sans bloc de code :
+Réponds UNIQUEMENT avec un objet JSON, sans texte avant ni après, sans bloc de code. \
+Mets "raison" EN DERNIER et limite-la à 15 mots maximum :
 {"violation": true ou false, "categorie": "...", "gravite": 0 à 3, "confiance": 0.0 à 1.0, \
-"raison": "une phrase courte"}
+"raison": "15 mots maximum"}
 Catégories possibles : insulte, harcelement, haine, menace, sexuel, spam, donnees_personnelles, arnaque, \
 contournement, autre, aucune."""
 
@@ -353,23 +354,49 @@ def build_user_content(job: Job, context: list[str]) -> str:
 
 
 _JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
+_F_VIOLATION = re.compile(r'"violation"\s*:\s*(true|false)', re.IGNORECASE)
+_F_CATEGORIE = re.compile(r'"categorie"\s*:\s*"([^"]*)"')
+_F_GRAVITE = re.compile(r'"gravite"\s*:\s*(\d)')
+_F_CONFIANCE = re.compile(r'"confiance"\s*:\s*([0-9]*\.?[0-9]+)')
+_F_RAISON = re.compile(r'"raison"\s*:\s*"((?:[^"\\]|\\.)*)')
+
+
+def _salvage_verdict(text: str) -> Verdict | None:
+    """Récupère un verdict depuis un JSON tronqué (stop_reason=max_tokens)."""
+    v = _F_VIOLATION.search(text)
+    g = _F_GRAVITE.search(text)
+    c = _F_CONFIANCE.search(text)
+    if not (v and g and c):
+        return None
+    cat = _F_CATEGORIE.search(text)
+    raison = _F_RAISON.search(text)
+    try:
+        return Verdict(
+            violation=v.group(1).lower() == "true",
+            categorie=(cat.group(1) if cat else "autre")[:40],
+            gravite=max(0, min(3, int(g.group(1)))),
+            confiance=max(0.0, min(1.0, float(c.group(1)))),
+            raison=((raison.group(1) if raison else "") + "…")[:200],
+        )
+    except ValueError:
+        return None
 
 
 def parse_verdict(text: str) -> Verdict | None:
     match = _JSON_RE.search(text)
-    if not match:
-        return None
-    try:
-        data = json.loads(match.group(0))
-        return Verdict(
-            violation=bool(data.get("violation", False)),
-            categorie=str(data.get("categorie", "autre"))[:40],
-            gravite=max(0, min(3, int(data.get("gravite", 0)))),
-            confiance=max(0.0, min(1.0, float(data.get("confiance", 0.0)))),
-            raison=str(data.get("raison", ""))[:200],
-        )
-    except (ValueError, TypeError, AttributeError):
-        return None
+    if match:
+        try:
+            data = json.loads(match.group(0))
+            return Verdict(
+                violation=bool(data.get("violation", False)),
+                categorie=str(data.get("categorie", "autre"))[:40],
+                gravite=max(0, min(3, int(data.get("gravite", 0)))),
+                confiance=max(0.0, min(1.0, float(data.get("confiance", 0.0)))),
+                raison=str(data.get("raison", ""))[:200],
+            )
+        except (ValueError, TypeError, AttributeError):
+            pass
+    return _salvage_verdict(text)
 
 
 def decide_action(verdict: Verdict) -> str:
@@ -426,7 +453,7 @@ async def send_alert(
     embed.add_field(name="Auteur", value=f"{message.author.mention} (`{message.author.id}`)", inline=True)
     embed.add_field(name="Salon", value=message.channel.mention, inline=True)
     if verdict is not None:
-        embed.add_field(name="Catégorie", value=verdict.categorie, inline=True)
+        embed.add_field(name="Catégorie", value=verdict.categorie or "—", inline=True)
         embed.add_field(name="Gravité / confiance", value=f"{verdict.gravite}/3 — {verdict.confiance:.0%}", inline=True)
         embed.add_field(name="Raison", value=verdict.raison or "—", inline=False)
     embed.add_field(name="Action", value=action_line, inline=False)
@@ -566,9 +593,12 @@ async def _process(job: Job) -> None:
     if verdict is None:
         logger.warning(
             "Réponse illisible du modèle (message %s, stop_reason=%s) : %r",
-            job.message.id, response.stop_reason, text[:300],
+            job.message.id, response.stop_reason, text[:600],
         )
         return
+
+    if response.stop_reason == "max_tokens":
+        logger.warning("Message %s : réponse tronquée (max_tokens), verdict récupéré partiellement.", job.message.id)
 
     logger.info(
         "Verdict message %s : violation=%s catégorie=%s gravité=%s confiance=%.2f raison=%r (stop=%s)",
