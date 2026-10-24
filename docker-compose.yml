@@ -24,6 +24,7 @@ services:
     volumes:
       - resources-data:/app/storage
       - ./activity-video:/data/activity:ro
+      - ./ai_config:/app/ai_config
     env_file:
       - .env
     depends_on:
