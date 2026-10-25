@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { api, getErrorMessage } from "../api/client";
-import "@/HelperProfile.css";
+import "@/Profile.css";
 
 export default function HelperProfilePage({ helper }) {
   const [triggers, setTriggers] = useState("");
