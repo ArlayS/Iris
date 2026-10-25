@@ -545,3 +545,118 @@ body.resources-library-no-nav .app-shell > .app-main {
     transition: none;
   }
 }
+.rl-page .rl-upload {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 2fr);
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 22px 24px;
+  border: 1px dashed #bfd0c4;
+  border-radius: 20px;
+  background: #f4f8f3;
+}
+
+.rl-page .rl-upload-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.rl-page .rl-upload-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: #e1ece4;
+  color: var(--sage, #4a675c);
+}
+
+.rl-page .rl-upload-copy h2 {
+  margin: 0;
+  font: 600 18px "Manrope", sans-serif;
+}
+
+.rl-page .rl-upload-copy p {
+  margin: 6px 0 0;
+  color: var(--muted, #64706a);
+  font-size: 12px;
+}
+
+.rl-page .rl-upload-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rl-page .rl-upload-text {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+
+.rl-page .rl-upload-fields input:not([type="file"]),
+.rl-page .rl-upload-fields textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #dce5de;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink, #1c2622);
+  font: 14px "IBM Plex Sans", sans-serif;
+}
+
+.rl-page .rl-upload-fields textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.rl-page .rl-upload-file {
+  margin: 0;
+  color: var(--sage, #4a675c);
+  font-size: 12px;
+}
+
+.rl-page .rl-upload-progress {
+  position: relative;
+  height: 24px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e1ece4;
+}
+
+.rl-page .rl-upload-progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--sage, #4a675c);
+  transition: width 120ms linear;
+}
+
+.rl-page .rl-upload-progress b {
+  position: relative;
+  display: block;
+  padding-left: 12px;
+  color: #fff;
+  font-size: 11px;
+  line-height: 24px;
+  mix-blend-mode: difference;
+}
+
+.rl-page .rl-upload .rl-primary-button {
+  align-self: flex-start;
+}
+
+.rl-page .rl-primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 800px) {
+  .rl-page .rl-upload,
+  .rl-page .rl-upload-text {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
