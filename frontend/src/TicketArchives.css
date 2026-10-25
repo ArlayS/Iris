@@ -1,0 +1,431 @@
+/* Sans sidebar, uniquement sur /archives. */
+
+body.ticket-archives-no-nav .app-shell {
+  display: block !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  padding-left: 0 !important;
+}
+
+body.ticket-archives-no-nav .app-shell > .sidebar {
+  display: none !important;
+}
+
+body.ticket-archives-no-nav .app-shell > .app-main {
+  grid-column: 1 / -1 !important;
+  margin-left: 0 !important;
+  margin-inline-start: 0 !important;
+  padding-left: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+}
+
+/* Page et titre */
+
+.tar-page {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: clamp(24px, 4vw, 64px);
+  background: var(--canvas, #f9f9f7);
+  color: var(--ink, #1c2622);
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+.tar-page *,
+.tar-page *::before,
+.tar-page *::after {
+  box-sizing: border-box;
+}
+
+.tar-page a {
+  text-decoration: none;
+}
+
+.tar-page button,
+.tar-page input {
+  font-family: inherit;
+}
+
+.tar-page a:focus-visible,
+.tar-page button:focus-visible {
+  outline: 3px solid var(--sage, #4a675c);
+  outline-offset: 3px;
+}
+
+.tar-page .tar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 34px;
+}
+
+.tar-page .tar-header > div {
+  min-width: 0;
+}
+
+.tar-page .tar-eyebrow {
+  margin: 0 0 12px;
+  color: var(--muted, #64706a);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tar-page .tar-header h1 {
+  margin: 0;
+  font: 600 clamp(32px, 4vw, 56px) / 1.15 "Manrope", sans-serif;
+  letter-spacing: -0.035em;
+}
+
+.tar-page .tar-intro {
+  max-width: 70ch;
+  margin: 14px 0 0;
+  color: var(--muted, #64706a);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.tar-page .tar-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 11px 20px;
+  border: 1px solid var(--line, #e2e8e2);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--sage, #4a675c);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tar-page .tar-home:hover {
+  background: var(--sage-soft, #e8efea);
+}
+
+/* Carte principale */
+
+.tar-page .tar-panel {
+  overflow: hidden;
+  border: 1px solid var(--line, #e2e8e2);
+  border-radius: 20px;
+  background: #fff;
+}
+
+.tar-page .tar-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 26px;
+  border-bottom: 1px solid #e5dccf;
+  background: #f5f0e7;
+}
+
+.tar-page .tar-panel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #e9dfcf;
+  color: #8a704c;
+}
+
+.tar-page .tar-panel-header > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.tar-page .tar-panel-header h2 {
+  margin: 0;
+  font: 600 20px "Manrope", sans-serif;
+}
+
+.tar-page .tar-panel-header p {
+  margin: 7px 0 0;
+  color: #8a7c66;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tar-page .tar-count {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border: 1px solid #e0d5c3;
+  border-radius: 999px;
+  background: #fffaf2;
+  color: #8a704c;
+  font-size: 12px;
+}
+
+/* Recherche */
+
+.tar-page .tar-toolbar {
+  padding: 22px 26px;
+  border-bottom: 1px solid var(--line, #e2e8e2);
+}
+
+.tar-page .tar-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 15px;
+  border: 1px solid #dce5de;
+  border-radius: 12px;
+  background: #fcfdfb;
+  color: var(--sage, #4a675c);
+}
+
+.tar-page .tar-search:focus-within {
+  border-color: #88a492;
+  box-shadow: 0 0 0 3px rgba(74, 103, 92, 0.08);
+}
+
+.tar-page .tar-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink, #1c2622);
+  font-size: 14px;
+}
+
+.tar-page .tar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.tar-page .tar-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #f5f6f2;
+  color: var(--muted, #64706a);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tar-page .tar-filters button.is-selected {
+  border-color: #cfddd3;
+  background: var(--sage-soft, #e8efea);
+  color: var(--sage, #4a675c);
+}
+
+.tar-page .tar-filters .tar-reset {
+  background: transparent;
+}
+
+/* Dossiers */
+
+.tar-page .tar-ticket {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 26px;
+  color: var(--ink, #1c2622);
+  transition: background-color 160ms ease;
+}
+
+.tar-page .tar-ticket + .tar-ticket {
+  border-top: 1px solid var(--line, #e2e8e2);
+}
+
+.tar-page .tar-ticket:hover {
+  background: #f8faf6;
+}
+
+.tar-page .tar-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--sage-soft, #e8efea);
+  color: var(--sage, #4a675c);
+}
+
+.tar-page .tar-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tar-page .tar-ticket-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tar-page .tar-ticket-copy strong {
+  font: 600 15px "Manrope", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.tar-page .tar-ticket-copy > small {
+  overflow: hidden;
+  color: var(--muted, #64706a);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tar-page .tar-ticket-helper {
+  color: #869187;
+  font-size: 11px;
+}
+
+.tar-page .tar-ticket-date {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 145px;
+}
+
+.tar-page .tar-ticket-date small {
+  color: #8a968d;
+  font-size: 10px;
+}
+
+.tar-page .tar-ticket-date > span {
+  color: var(--muted, #64706a);
+  font-size: 12px;
+}
+
+.tar-page .tar-status {
+  flex-shrink: 0;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: #f0eee8;
+  color: #8a7c66;
+  font-size: 11px;
+}
+
+.tar-page .tar-ticket-arrow {
+  flex-shrink: 0;
+  margin-left: 8px;
+  color: var(--sage, #4a675c);
+}
+
+.tar-page .tar-panel-footer {
+  padding: 16px 26px;
+  border-top: 1px solid var(--line, #e2e8e2);
+  background: #fafbf8;
+  color: var(--muted, #64706a);
+  font-size: 11px;
+}
+
+/* État vide */
+
+.tar-page .tar-empty {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 14px;
+  padding: 50px 24px;
+  color: #a08b6b;
+  text-align: center;
+}
+
+.tar-page .tar-empty h3 {
+  margin: 0;
+  color: var(--ink, #1c2622);
+  font: 600 18px "Manrope", sans-serif;
+}
+
+.tar-page .tar-empty p {
+  margin: 0;
+  color: var(--muted, #64706a);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.tar-page .tar-empty-button {
+  margin-top: 4px;
+  padding: 10px 16px;
+  border: 1px solid var(--line, #e2e8e2);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--sage, #4a675c);
+  font: 600 12px "IBM Plex Sans", sans-serif;
+  cursor: pointer;
+}
+
+@media (max-width: 800px) {
+  .tar-page .tar-ticket-date {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .tar-page {
+    padding: 24px 16px;
+  }
+
+  .tar-page .tar-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tar-page .tar-panel-header {
+    flex-wrap: wrap;
+    padding: 20px;
+  }
+
+  .tar-page .tar-panel-header > div {
+    flex-basis: calc(100% - 65px);
+  }
+
+  .tar-page .tar-count {
+    margin-left: 61px;
+  }
+
+  .tar-page .tar-toolbar,
+  .tar-page .tar-panel-footer {
+    padding: 18px 20px;
+  }
+
+  .tar-page .tar-ticket {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px;
+  }
+
+  .tar-page .tar-ticket-copy {
+    flex-basis: calc(100% - 65px);
+  }
+
+  .tar-page .tar-status {
+    margin-left: 58px;
+  }
+
+  .tar-page .tar-ticket-arrow {
+    margin-left: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tar-page .tar-ticket {
+    transition: none;
+  }
+}
