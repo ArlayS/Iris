@@ -7,7 +7,7 @@ from uuid import uuid4
 from pydantic import BaseModel, StrictBool
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import Response
-
+from services.file_response_service import stream_local_file
 from config import DISCORD_STAFF_ROLE_ID
 from database import db
 from models.staff import (
@@ -566,61 +566,29 @@ async def get_meeting_media(
     request: Request,
     _: AuthenticatedHelper = Depends(current_staff),
 ):
-    extension = filename.rsplit(".", 1)[-1].lower()
-    content_type = _media_content_type(extension)
-    try:
-        content, _unused = await asyncio.to_thread(get_object, f"iris/meeting-images/{filename}")
-    except FileNotFoundError as error:
-        raise HTTPException(status_code=404, detail="Fichier introuvable.") from error
-
-    file_size = len(content)
-    range_header = request.headers.get("range")
-    base_headers = {"Accept-Ranges": "bytes", "Content-Length": str(file_size)}
-
-    if not range_header:
-        return Response(content=content, media_type=content_type, headers=base_headers)
-
-    match = re.fullmatch(r"\s*bytes\s*=\s*(\d*)\s*-\s*(\d*)\s*", range_header)
-    if not match:
-        # Header Range mal formé : on renvoie le fichier complet plutôt que de planter.
-        return Response(content=content, media_type=content_type, headers=base_headers)
-
-    start_str, end_str = match.groups()
-
-    if not start_str and not end_str:
-        return Response(content=content, media_type=content_type, headers=base_headers)
-
-    if start_str:
-        start = int(start_str)
-        end = int(end_str) if end_str else file_size - 1
-    else:
-        # Suffix range : bytes=-N => les N derniers octets
-        suffix_length = int(end_str)
-        if suffix_length <= 0:
-            raise HTTPException(
-                status_code=416,
-                detail="Plage demandée invalide.",
-                headers={"Content-Range": f"bytes */{file_size}"},
-            )
-        start = max(file_size - suffix_length, 0)
-        end = file_size - 1
-
-    if start >= file_size or end < start:
+    # Les noms générés à l'upload sont des UUID suivis de l'extension.
+    if not re.fullmatch(
+        r"[0-9a-fA-F-]{36}\.[a-zA-Z0-9]+",
+        filename,
+    ):
         raise HTTPException(
-            status_code=416,
-            detail="Plage demandée invalide.",
-            headers={"Content-Range": f"bytes */{file_size}"},
+            status_code=404,
+            detail="Fichier introuvable.",
         )
 
-    end = min(end, file_size - 1)
-    chunk = content[start:end + 1]
-    headers = {
-        "Content-Range": f"bytes {start}-{end}/{file_size}",
-        "Accept-Ranges": "bytes",
-        "Content-Length": str(len(chunk)),
-    }
-    return Response(content=chunk, status_code=206, media_type=content_type, headers=headers)
+    extension = filename.rsplit(".", 1)[-1].lower()
 
+    if extension not in MEETING_MEDIA_TYPES:
+        raise HTTPException(
+            status_code=404,
+            detail="Fichier introuvable.",
+        )
+
+    return stream_local_file(
+        request=request,
+        storage_path=f"iris/meeting-images/{filename}",
+        content_type=_media_content_type(extension),
+    )
 class QuarterlyCompletionUpdate(BaseModel):
     completed: StrictBool
 
