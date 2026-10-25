@@ -5,8 +5,6 @@ import json
 import secrets
 import time
 from urllib.parse import urlencode
-from uuid import uuid4
-from datetime import datetime, timezone
 
 import httpx
 from fastapi import HTTPException, Request, status
@@ -28,10 +26,11 @@ from config import (
     missing_oauth_settings,
 )
 
-from database import db
 from models.ticket import AuthenticatedHelper
 from services.audit_service import log_auth_event
 from services.discord_service import DiscordService
+from services.rate_limit import invalid_log_throttle
+from services.request_utils import client_ip
 
 DISCORD_AUTHORIZE_URL = "https://discord.com/oauth2/authorize"
 DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
@@ -258,13 +257,15 @@ async def has_any_access(helper_id: str) -> bool:
 async def current_helper(request: Request) -> AuthenticatedHelper:
     helper = parse_session(request.cookies.get(SESSION_COOKIE))
     if not helper or helper.mode != "discord":
-        await log_auth_event(
-            "auth.session.invalid",
-            request,
-            helper=None,
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            details={"reason": "missing_or_invalid_session"},
-        )
+        # Au plus 1 ligne de log par IP et par intervalle (évite le flood de auth_logs)
+        if invalid_log_throttle.should_log(f"invalid-session:{client_ip(request) or 'unknown'}"):
+            await log_auth_event(
+                "auth.session.invalid",
+                request,
+                helper=None,
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                details={"reason": "missing_or_invalid_session"},
+            )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Connexion requise.")
 
     if not await has_any_access(helper.id):
@@ -309,35 +310,6 @@ async def current_responsable(request: Request) -> AuthenticatedHelper:
     if not await is_responsable_helper(helper.id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rôle Responsable requis.")
     return helper
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-async def log_auth_event(
-    event_type: str,
-    request,
-    helper=None,
-    status_code: int | None = None,
-    details: dict | None = None,
-) -> None:
-    forwarded_for = request.headers.get("x-forwarded-for")
-    ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else None)
-
-    await db.auth_logs.insert_one({
-        "id": str(uuid4()),
-        "created_at": _now(),
-        "event_type": event_type,
-        "helper_id": getattr(helper, "id", None),
-        "username": getattr(helper, "username", None),
-        "ip": ip,
-        "user_agent": request.headers.get("user-agent"),
-        "path": request.url.path,
-        "method": request.method,
-        "status_code": status_code,
-        "details": details or {},
-    })
 
 
 def create_state() -> str:

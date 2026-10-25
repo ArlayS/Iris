@@ -8,9 +8,22 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 
+def _int_env(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _parse_origins(raw: str) -> list[str]:
+    origins = [o.strip().rstrip("/") for o in raw.split(",") if o.strip() and o.strip() != "*"]
+    return origins or ["https://iris.loasis.app"]
+
+
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
-CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*").split(",")
+# "*" est ignoré : incompatible avec allow_credentials=True. Défaut = le front de prod.
+CORS_ORIGINS = _parse_origins(os.environ.get("CORS_ORIGINS", ""))
 DISCORD_GUILD_ID = os.environ.get("DISCORD_GUILD_ID")
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
 DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID")
@@ -28,6 +41,16 @@ DISCORD_ANIMATEUR_ROLE_ID = os.getenv("DISCORD_ANIMATEUR_ROLE_ID", "")
 DISCORD_OPERATEUR_ROLE_ID = os.getenv("DISCORD_OPERATEUR_ROLE_ID", "")
 DISCORD_OPERATEUR_ROLE2_ID = os.getenv("DISCORD_OPERATEUR_ROLE2_ID", "")
 
+# --- Sécurité / logs d'auth ---
+TRUSTED_PROXIES = os.environ.get(
+    "TRUSTED_PROXIES",
+    "127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,::1/128,fc00::/7",
+)
+AUTH_LOG_TTL_DAYS = _int_env("AUTH_LOG_TTL_DAYS", 180)
+AUTH_SESSION_RATE_LIMIT = _int_env("AUTH_SESSION_RATE_LIMIT", 120)
+AUTH_SESSION_RATE_WINDOW = _int_env("AUTH_SESSION_RATE_WINDOW", 60)
+AUTH_INVALID_LOG_INTERVAL = _int_env("AUTH_INVALID_LOG_INTERVAL", 300)
+
 
 def missing_discord_bot_settings() -> list[str]:
     required = {
@@ -39,7 +62,6 @@ def missing_discord_bot_settings() -> list[str]:
     }
     return [name for name, value in required.items() if not value]
 
-import os
 
 VALID_SANCTION_TYPES = {"avertissement", "bannissement", "kick", "rappel_a_lordre"}
 
@@ -78,6 +100,8 @@ def parse_moderation_channels(raw: str) -> dict[int, str]:
 DISCORD_MODERATION_CHANNEL_TYPES = parse_moderation_channels(
     os.getenv("DISCORD_MODERATION_CHANNELS", "")
 )
+
+
 def missing_oauth_settings() -> list[str]:
     required = {
         "DISCORD_CLIENT_ID": DISCORD_CLIENT_ID,

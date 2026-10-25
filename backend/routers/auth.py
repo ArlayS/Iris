@@ -1,7 +1,7 @@
 import os
 from urllib.parse import quote
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
 from models.ticket import AuthSession
@@ -16,6 +16,8 @@ from services.auth_service import (
     get_helper_role_flags,
     parse_session,
 )
+from services.rate_limit import invalid_log_throttle, session_rate_limit
+from services.request_utils import client_ip
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://iris.loasis.app")
 COOKIE_DOMAIN = os.environ.get("COOKIE_DOMAIN", ".loasis.app")
@@ -100,7 +102,11 @@ async def discord_callback(code: str, state: str, request: Request) -> RedirectR
     return response
 
 
-@router.get("/session", response_model=AuthSession)
+@router.get(
+    "/session",
+    response_model=AuthSession,
+    dependencies=[Depends(session_rate_limit)],
+)
 async def session(request: Request, response: Response) -> AuthSession:
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
     response.headers["Pragma"] = "no-cache"
@@ -120,13 +126,15 @@ async def session(request: Request, response: Response) -> AuthSession:
     )
 
     if raw_session and not helper:
-        await log_auth_event(
-            "auth.session.invalid",
-            request,
-            helper=None,
-            status_code=200,
-            details={"reason": "invalid_or_expired_cookie"},
-        )
+        # Au plus 1 ligne de log par IP et par intervalle (cookies invalides = bruit potentiellement illimité)
+        if invalid_log_throttle.should_log(f"session-invalid:{client_ip(request) or 'unknown'}"):
+            await log_auth_event(
+                "auth.session.invalid",
+                request,
+                helper=None,
+                status_code=200,
+                details={"reason": "invalid_or_expired_cookie"},
+            )
         response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
         response.delete_cookie(SESSION_COOKIE)
         return empty
