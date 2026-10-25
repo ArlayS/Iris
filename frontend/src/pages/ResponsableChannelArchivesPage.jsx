@@ -2,7 +2,7 @@ import { Archive, ArrowRight, ImageDown, LoaderCircle, MessagesSquare, PlusCircl
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-
+import "@/ResponsableChannelArchives.css";
 import { api, getErrorMessage } from "../api/client";
 
 
@@ -81,7 +81,13 @@ export default function ResponsableChannelArchivesPage() {
   useEffect(() => {
     archivesRef.current = archives;
   }, [archives]);
+useEffect(() => {
+  document.body.classList.add("responsable-page-no-nav");
 
+  return () => {
+    document.body.classList.remove("responsable-page-no-nav");
+  };
+}, []);
   // Polling léger : tant qu'un salon est en cours d'import, on réinterroge la liste pour
   // que les compteurs et la barre de progression avancent tout seuls, sans action de l'utilisateur.
   useEffect(() => {
