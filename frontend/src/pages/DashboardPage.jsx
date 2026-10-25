@@ -1,64 +1,443 @@
-import { ArrowRight, BookHeart, HeartHandshake, Plus, Radio, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowRight,
+  HeartHandshake,
+  Plus,
+  Search,
+  Users,
+  X,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
+import "@/TicketList.css";
 
-export default function DashboardPage({ stats, tickets }) {
-  const latest = tickets[0];
+function displayName(member) {
   return (
-    <section className="page-content dashboard-page" data-testid="dashboard-page">
-      <header className="page-header">
+    member?.display_name ||
+    member?.global_name ||
+    member?.username ||
+    "Membre"
+  );
+}
+
+function normalize(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function timestamp(value) {
+  const result = Date.parse(value || "");
+  return Number.isNaN(result) ? 0 : result;
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+
+  if (!value || Number.isNaN(date.getTime())) {
+    return "Non renseignée";
+  }
+
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function MemberAvatar({ member }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [member?.avatar_url]);
+
+  return (
+    <span className="tl-avatar">
+      {member?.avatar_url && !failed ? (
+        <img
+          src={member.avatar_url}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <Users size={20} aria-hidden="true" />
+      )}
+    </span>
+  );
+}
+
+const STATUS_FILTERS = [
+  { value: "all", label: "Tous les statuts" },
+  {
+    value: "en attente de réponse",
+    label: "En attente de réponse",
+  },
+  { value: "en cours", label: "En cours" },
+  { value: "à conclure", label: "À conclure" },
+];
+
+function statusClass(status) {
+  if (status === "en cours") return "is-progress";
+  if (status === "à conclure") return "is-closing";
+  return "is-waiting";
+}
+
+export default function DashboardPage({
+  tickets = [],
+  helper,
+  loading = false,
+  error = "",
+  onRetry,
+}) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
+
+  useEffect(() => {
+    document.body.classList.add("ticket-list-no-nav");
+
+    return () => {
+      document.body.classList.remove("ticket-list-no-nav");
+    };
+  }, []);
+
+  const activeTickets = useMemo(
+    () =>
+      tickets
+        .filter((ticket) => ticket.status === "active")
+        .sort(
+          (a, b) =>
+            timestamp(b.updated_at) - timestamp(a.updated_at)
+        ),
+    [tickets]
+  );
+
+  const visibleTickets = useMemo(() => {
+    const term = normalize(search.trim());
+
+    return activeTickets.filter((ticket) => {
+      const followUpStatus =
+        ticket.follow_up_status || "en attente de réponse";
+
+      if (
+        statusFilter !== "all" &&
+        followUpStatus !== statusFilter
+      ) {
+        return false;
+      }
+
+      if (
+        assignmentFilter === "unassigned" &&
+        ticket.assigned_helper?.id
+      ) {
+        return false;
+      }
+
+      if (
+        assignmentFilter === "mine" &&
+        (!helper?.id ||
+          String(ticket.assigned_helper?.id) !== String(helper.id))
+      ) {
+        return false;
+      }
+
+      if (!term) return true;
+
+      const text = normalize(
+        [
+          ticket.title,
+          ticket.channel_name,
+          ticket.id,
+          ticket.member?.id,
+          displayName(ticket.member),
+          ticket.assigned_helper
+            ? displayName(ticket.assigned_helper)
+            : "",
+        ].join(" ")
+      );
+
+      return text.includes(term);
+    });
+  }, [
+    activeTickets,
+    search,
+    statusFilter,
+    assignmentFilter,
+    helper?.id,
+  ]);
+
+  const hasFilters =
+    Boolean(search.trim()) ||
+    statusFilter !== "all" ||
+    assignmentFilter !== "all";
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setAssignmentFilter("all");
+  };
+
+  return (
+    <section
+      className="tl-page"
+      data-testid="dashboard-page"
+    >
+      <header className="tl-header">
         <div>
-          <p className="eyebrow">ESPACE HELPERS</p>
-          <h1>Un suivi attentif, à votre rythme.</h1>
+          <p className="tl-eyebrow">ESPACE HELPER</p>
+          <h1>Suivis ouverts</h1>
+
+          <p className="tl-intro">
+            Retrouvez les accompagnements en cours et accédez
+            aux dossiers pour poursuivre les échanges.
+          </p>
         </div>
-        <div className="dashboard-actions">
-          <Link className="calm-primary-button" to="/new" data-testid="import-discord-channel-button"><Plus size={17} /> Importer un salon Discord</Link>
+
+        <div className="tl-header-actions">
+          <Link to="/" className="tl-home">
+            Accueil
+            <ArrowRight size={18} aria-hidden="true" />
+          </Link>
+
+          <Link
+            to="/new"
+            className="tl-primary-button"
+            data-testid="import-discord-channel-button"
+          >
+            <Plus size={17} aria-hidden="true" />
+            Nouveau suivi
+          </Link>
         </div>
       </header>
 
-      <div className="metrics-grid" data-testid="ticket-statistics">
-        <div className="metric-block"><HeartHandshake size={18} /><span>Suivis ouverts</span><strong data-testid="active-ticket-count">{stats.active_count}</strong></div>
-        <div className="metric-block"><BookHeart size={18} /><span>Échanges consignés</span><strong data-testid="message-count">{stats.total_messages}</strong></div>
-        <div className="metric-block"><ShieldCheck size={18} /><span>Suivis stabilisés</span><strong data-testid="archived-ticket-count">{stats.archived_count}</strong></div>
-      </div>
+      <section className="tl-panel" aria-labelledby="tl-list-title">
+        <header className="tl-panel-header">
+          <span className="tl-panel-icon">
+            <HeartHandshake size={23} aria-hidden="true" />
+          </span>
 
-      <section className="care-hero" data-testid="command-hero">
-        <div><p className="eyebrow">À ACCUEILLIR</p><h2>{latest ? latest.title : "Un espace prêt à écouter."}</h2><p>{latest ? `Dossier ${latest.id} · ${latest.member.display_name || latest.member.username}. Ouvrez le dossier lorsque vous êtes disponible.` : "Créez un suivi test ou utilisez le formulaire pour démarrer."}</p></div>
-        {latest ? <Link to={`/tickets/${latest.id}`} className="care-open" data-testid="open-priority-ticket"><span>Ouvrir le suivi</span><ArrowRight size={20} /></Link> : <Radio size={32} />}
-      </section>
+          <div>
+            <h2 id="tl-list-title">Les accompagnements</h2>
+            <p>
+              Une vue partagée pour retrouver le bon dossier.
+            </p>
+          </div>
 
-      <div className="dashboard-grid">
-        <section className="activity-pane" data-testid="ticket-activity-panel">
-          <div className="section-heading"><span>SUIVIS EN COURS</span><span className="live-dot">CONFIDENTIEL</span></div>
-          {tickets.length === 0 ? (
-            <div className="dashboard-empty" data-testid="dashboard-empty-state">
-              <Radio size={28} />
-              <p>Votre file est vide.</p>
-              <Link to="/new" data-testid="dashboard-empty-new-ticket-link">Synchroniser un premier ticket <ArrowRight size={14} /></Link>
-            </div>
-          ) : (
-            <div className="ticket-table">
-              {tickets.map((ticket) => (
-                <Link to={`/tickets/${ticket.id}`} className="ticket-table-row" key={ticket.id} data-testid={`ticket-row-${ticket.id}`}>
-                  <span className="ticket-table-person">
-                    {ticket.member.avatar_url && <img src={ticket.member.avatar_url} alt="" />}
-                    <strong>{ticket.member.display_name || ticket.member.username}</strong>
-                  </span>
-                  <span>{ticket.follow_up_status}</span>
-                  <span>{ticket.message_count} échanges</span>
-                  <span className={`status-dot ${ticket.status}`}>{ticket.status === "active" ? "ACTIF" : "ARCHIVÉ"}</span>
-                </Link>
-              ))}
-            </div>
+          {!loading && !error && (
+            <span className="tl-count" role="status">
+              {visibleTickets.length} suivi
+              {visibleTickets.length > 1 ? "s" : ""}
+            </span>
           )}
-        </section>
-        <aside className="system-pane" data-testid="system-status-panel">
-          <p className="eyebrow">REPÈRES</p>
-        <div><span><HeartHandshake size={15} /> Écoute active</span><b>PRÊT</b></div>
-          <div><span><BookHeart size={15} /> Notes privées</span><b>{tickets.length}</b></div>
-          <div><span>Dernier suivi</span><strong>{latest ? latest.member.display_name || latest.member.username : "—"}</strong></div>
-        </aside>
-      </div>
+        </header>
+
+        <div className="tl-toolbar">
+          <div className="tl-search-row">
+            <label className="tl-search">
+              <Search size={18} aria-hidden="true" />
+
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Rechercher un membre, un salon ou un interlocuteur…"
+                aria-label="Rechercher un suivi"
+              />
+            </label>
+
+            <select
+              className="tl-status-select"
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value)
+              }
+              aria-label="Filtrer par statut de suivi"
+            >
+              {STATUS_FILTERS.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="tl-filters" aria-label="Filtrer les attributions">
+            <button
+              type="button"
+              className={
+                assignmentFilter === "all" ? "is-selected" : ""
+              }
+              aria-pressed={assignmentFilter === "all"}
+              onClick={() => setAssignmentFilter("all")}
+            >
+              Tous les suivis
+            </button>
+
+            {helper?.id && (
+              <button
+                type="button"
+                className={
+                  assignmentFilter === "mine" ? "is-selected" : ""
+                }
+                aria-pressed={assignmentFilter === "mine"}
+                onClick={() => setAssignmentFilter("mine")}
+              >
+                Mes suivis
+              </button>
+            )}
+
+            <button
+              type="button"
+              className={
+                assignmentFilter === "unassigned"
+                  ? "is-selected"
+                  : ""
+              }
+              aria-pressed={assignmentFilter === "unassigned"}
+              onClick={() => setAssignmentFilter("unassigned")}
+            >
+              Sans interlocuteur
+            </button>
+
+            {hasFilters && (
+              <button
+                type="button"
+                className="tl-reset"
+                onClick={clearFilters}
+              >
+                <X size={14} aria-hidden="true" />
+                Effacer les filtres
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="tl-empty" role="status">
+            <p>Chargement des suivis…</p>
+          </div>
+        ) : error ? (
+          <div className="tl-empty tl-error" role="alert">
+            <h3>Les suivis n’ont pas pu être chargés.</h3>
+            <p>{error}</p>
+
+            {onRetry && (
+              <button
+                type="button"
+                className="tl-empty-button"
+                onClick={onRetry}
+              >
+                Réessayer
+              </button>
+            )}
+          </div>
+        ) : visibleTickets.length === 0 ? (
+          <div
+            className="tl-empty"
+            data-testid="dashboard-empty-state"
+          >
+            <HeartHandshake size={32} aria-hidden="true" />
+
+            <h3>
+              {hasFilters
+                ? "Aucun suivi ne correspond à cette sélection."
+                : "Aucun suivi ouvert pour le moment."}
+            </h3>
+
+            <p>
+              {hasFilters
+                ? "Essayez une autre recherche ou retirez les filtres."
+                : "Importez un salon Discord pour démarrer un accompagnement."}
+            </p>
+
+            {hasFilters ? (
+              <button
+                type="button"
+                className="tl-empty-button"
+                onClick={clearFilters}
+              >
+                Afficher tous les suivis
+              </button>
+            ) : (
+              <Link to="/new" className="tl-empty-button">
+                <Plus size={16} aria-hidden="true" />
+                Nouveau suivi
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="tl-list">
+            {visibleTickets.map((ticket) => {
+              const followUpStatus =
+                ticket.follow_up_status || "en attente de réponse";
+
+              return (
+                <Link
+                  key={ticket.id}
+                  to={`/tickets/${ticket.id}`}
+                  className="tl-ticket"
+                  data-testid={`ticket-row-${ticket.id}`}
+                >
+                  <MemberAvatar member={ticket.member} />
+
+                  <span className="tl-ticket-copy">
+                    <strong>{displayName(ticket.member)}</strong>
+
+                    <small>
+                      {ticket.title || ticket.channel_name}
+                    </small>
+
+                    <span
+                      className={`tl-interlocutor ${
+                        !ticket.assigned_helper ? "is-unassigned" : ""
+                      }`}
+                    >
+                      {ticket.assigned_helper
+                        ? `Interlocuteur : ${displayName(
+                            ticket.assigned_helper
+                          )}`
+                        : "Aucun interlocuteur attribué"}
+                    </span>
+                  </span>
+
+                  <span className="tl-ticket-date">
+                    <small>Dernière modification</small>
+                    <span>{formatDate(ticket.updated_at)}</span>
+                  </span>
+
+                  <span
+                    className={`tl-status ${statusClass(
+                      followUpStatus
+                    )}`}
+                  >
+                    {followUpStatus}
+                  </span>
+
+                  <ArrowRight
+                    className="tl-ticket-arrow"
+                    size={19}
+                    aria-hidden="true"
+                  />
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        <footer className="tl-panel-footer">
+          <span>
+            Recherche et filtres sur les tickets déjà chargés.
+          </span>
+
+          <Link to="/archives">
+            Consulter les archives
+            <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </footer>
+      </section>
     </section>
   );
 }
