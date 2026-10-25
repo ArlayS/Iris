@@ -1483,3 +1483,381 @@ body.dashboard-no-nav .app-shell > .app-main {
     grid-template-columns: 1fr;
   }
 }
+/* Animateur compact : projets à gauche, calendrier à droite. */
+
+.nd-page .nd-anim-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.nd-page .nd-anim-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e2dbe9;
+  border-radius: 18px;
+  background: var(--surface, #fff);
+}
+
+.nd-page .nd-anim-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 88px;
+  padding: 20px;
+  border-bottom: 1px solid #e8e1ed;
+  background: #f4f0f8;
+}
+
+.nd-page .nd-anim-heading-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #e9e0f0;
+  color: #76568a;
+}
+
+.nd-page .nd-anim-panel-heading h3 {
+  margin: 0;
+  color: var(--ink, #1c2622);
+  font: 600 16px "Manrope", sans-serif;
+}
+
+.nd-page .nd-anim-panel-heading p {
+  margin: 5px 0 0;
+  color: var(--muted, #64706a);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.nd-page .nd-anim-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Projets dépliables */
+
+.nd-page .nd-anim-project + .nd-anim-project {
+  border-top: 1px solid var(--line, #e2e8e2);
+}
+
+.nd-page .nd-anim-project-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.nd-page .nd-anim-project-summary::-webkit-details-marker {
+  display: none;
+}
+
+.nd-page .nd-anim-project-summary::marker {
+  content: "";
+}
+
+.nd-page .nd-anim-project-summary:hover {
+  background: #faf8fc;
+}
+
+.nd-page .nd-anim-project-summary:focus-visible {
+  outline: 3px solid #9773ad;
+  outline-offset: -3px;
+}
+
+.nd-page .nd-anim-project-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f1ecf6;
+  color: #76568a;
+}
+
+.nd-page .nd-anim-project-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.nd-page .nd-anim-project-copy strong {
+  overflow: hidden;
+  color: var(--ink, #1c2622);
+  font: 600 14px "Manrope", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nd-page .nd-anim-project-copy small {
+  color: var(--muted, #64706a);
+  font-size: 12px;
+}
+
+.nd-page .nd-anim-task-count {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f1ecf6;
+  color: #76568a;
+  font-size: 11px;
+}
+
+.nd-page .nd-anim-chevron {
+  flex-shrink: 0;
+  color: #8a7897;
+  transition: transform 160ms ease;
+}
+
+.nd-page .nd-anim-project[open] .nd-anim-chevron {
+  transform: rotate(180deg);
+}
+
+.nd-page .nd-anim-project[open] .nd-anim-project-summary {
+  background: #faf8fc;
+}
+
+.nd-page .nd-anim-project-body {
+  border-top: 1px solid #eee8f3;
+}
+
+.nd-page .nd-anim-task-list {
+  padding: 0 20px;
+}
+
+.nd-page .nd-anim-task-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 0;
+  color: var(--ink, #1c2622);
+}
+
+.nd-page .nd-anim-task-row + .nd-anim-task-row {
+  border-top: 1px solid #eee8f3;
+}
+
+.nd-page .nd-anim-task-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #bba6ca;
+}
+
+.nd-page .nd-anim-task-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nd-page .nd-anim-task-row small {
+  flex-shrink: 0;
+  color: var(--muted, #64706a);
+  font-size: 11px;
+}
+
+.nd-page .nd-anim-task-row > svg {
+  flex-shrink: 0;
+  color: #8a7897;
+}
+
+.nd-page .nd-anim-project-footer,
+.nd-page .nd-anim-calendar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid #e8e1ed;
+  background: #faf8fc;
+  color: #76568a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.nd-page .nd-anim-project-footer:hover,
+.nd-page .nd-anim-calendar-footer:hover {
+  background: #f1ecf6;
+}
+
+/* Colonne calendrier */
+
+.nd-page .nd-anim-calendar {
+  border-color: var(--line, #e2e8e2);
+}
+
+.nd-page .nd-anim-calendar .nd-anim-panel-heading {
+  border-bottom-color: var(--line, #e2e8e2);
+  background: #f1f5f1;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-heading-icon {
+  background: var(--sage-soft, #e8efea);
+  color: var(--sage, #4a675c);
+}
+
+.nd-page .nd-anim-upcoming-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  color: var(--ink, #1c2622);
+}
+
+.nd-page .nd-anim-upcoming-row + .nd-anim-upcoming-row {
+  border-top: 1px solid var(--line, #e2e8e2);
+}
+
+.nd-page .nd-anim-upcoming-row:hover {
+  background: #f7faf7;
+}
+
+.nd-page .nd-anim-date {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 58px;
+  min-height: 62px;
+  border: 1px solid #dce6dd;
+  border-radius: 13px;
+  background: #f0f5f0;
+  color: var(--sage, #4a675c);
+}
+
+.nd-page .nd-anim-date strong {
+  font: 600 25px "Manrope", sans-serif;
+  line-height: 1.15;
+}
+
+.nd-page .nd-anim-date small {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.nd-page .nd-anim-upcoming-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nd-page .nd-anim-upcoming-copy strong {
+  overflow: hidden;
+  font: 600 14px "Manrope", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nd-page .nd-anim-upcoming-copy small {
+  color: var(--muted, #64706a);
+  font-size: 12px;
+}
+
+.nd-page .nd-anim-upcoming-row > svg {
+  flex-shrink: 0;
+  color: var(--sage, #4a675c);
+}
+
+.nd-page .nd-anim-calendar-footer {
+  border-top-color: var(--line, #e2e8e2);
+  background: #f7faf7;
+  color: var(--sage, #4a675c);
+}
+
+.nd-page .nd-anim-calendar-footer:hover {
+  background: var(--sage-soft, #e8efea);
+}
+
+.nd-page .nd-anim-message {
+  margin: 0;
+  padding: 22px 20px;
+  color: var(--muted, #64706a);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.nd-page .nd-anim-message p {
+  margin: 0 0 10px;
+}
+
+.nd-page .nd-anim-message button {
+  padding: 7px 12px;
+  border: 1px solid var(--line, #e2e8e2);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--sage, #4a675c);
+  font: 600 12px "IBM Plex Sans", sans-serif;
+  cursor: pointer;
+}
+
+@media (max-width: 1000px) {
+  .nd-page .nd-anim-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .nd-page .nd-anim-project-summary {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .nd-page .nd-anim-project-copy {
+    flex-basis: calc(100% - 75px);
+  }
+
+  .nd-page .nd-anim-task-count {
+    margin-left: 48px;
+  }
+
+  .nd-page .nd-anim-chevron {
+    margin-left: auto;
+  }
+
+  .nd-page .nd-anim-task-row {
+    flex-wrap: wrap;
+  }
+
+  .nd-page .nd-anim-task-title {
+    flex-basis: calc(100% - 25px);
+  }
+
+  .nd-page .nd-anim-task-row small {
+    margin-left: 17px;
+  }
+
+  .nd-page .nd-anim-task-row > svg {
+    margin-left: auto;
+  }
+
+  .nd-page .nd-anim-upcoming-row {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nd-page .nd-anim-chevron {
+    transition: none;
+  }
+}
