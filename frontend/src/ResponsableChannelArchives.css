@@ -1,167 +1,19 @@
-@import "./ResponsableBase.css";
+@import "./NewDashboard.css";
 
 .rca-page {
-  width: 100%;
-  min-height: 100vh;
-  padding: clamp(24px, 4vw, 60px);
-  background:
-    radial-gradient(circle at 90% 0%, rgba(154, 119, 60, 0.07), transparent 30%),
-    var(--canvas, #f8f8f4);
-  color: var(--ink, #1c2622);
-  font-family: "IBM Plex Sans", sans-serif;
-}
-
-.rca-page *,
-.rca-page *::before,
-.rca-page *::after {
-  box-sizing: border-box;
-}
-
-.rca-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
-}
-
-.rca-eyebrow {
-  margin: 0 0 10px;
-  color: var(--muted, #64706a);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.rca-header h1 {
-  margin: 0;
-  font: 600 clamp(30px, 4vw, 50px) / 1.1 "Manrope", sans-serif;
-  letter-spacing: -0.035em;
+  padding-bottom: 60px;
 }
 
 .rca-intro {
-  max-width: 65ch;
-  margin: 12px 0 0;
+  max-width: 62ch;
+  margin: 14px 0 0;
   color: var(--muted, #64706a);
   font-size: 14px;
   line-height: 1.7;
 }
 
-.rca-header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.rca-ghost-button,
-.rca-primary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-height: 44px;
-  padding: 11px 18px;
-  border: 1px solid var(--line, #e2e8e2);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--sage, #4a675c);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.rca-primary-button {
-  border-color: var(--sage, #4a675c);
-  background: var(--sage, #4a675c);
-  color: #fff;
-}
-
-.rca-ghost-button:hover {
-  background: var(--sage-soft, #e8efea);
-}
-
-.rca-primary-button:hover {
-  background: #3b564b;
-}
-
-.rca-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.rca-metric {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 104px;
-  padding: 18px 20px;
-  border: 1px solid var(--line, #e2e8e2);
-  border-radius: 18px;
-  background: #fff;
-}
-
-.rca-metric span {
-  color: var(--muted, #64706a);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.rca-metric strong {
-  margin-top: 16px;
-  font: 600 30px "Manrope", sans-serif;
-}
-
-.rca-metric.is-amber {
-  border-color: #eadfca;
-  background: #faf3e6;
-}
-
-.rca-metric.is-amber strong {
-  color: #9a773c;
-}
-
 .rca-create {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 2fr);
-  gap: 24px;
-  margin-bottom: 24px;
-  padding: 22px 24px;
-  border: 1px dashed #bfd0c4;
-  border-radius: 20px;
-  background: #f4f8f3;
-}
-
-.rca-create-copy {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.rca-create-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  background: #e1ece4;
-  color: var(--sage, #4a675c);
-}
-
-.rca-create-copy h2 {
-  margin: 0;
-  font: 600 18px "Manrope", sans-serif;
-}
-
-.rca-create-copy p {
-  margin: 6px 0 0;
-  color: var(--muted, #64706a);
-  font-size: 12px;
+  margin-bottom: 28px;
 }
 
 .rca-create-fields {
@@ -169,6 +21,7 @@
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
+  width: 100%;
 }
 
 .rca-create-fields input {
@@ -179,6 +32,39 @@
   background: #fff;
   color: var(--ink, #1c2622);
   font: 14px "IBM Plex Sans", sans-serif;
+}
+
+.rca-metric {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 118px;
+  padding: 20px 22px;
+  border: 1px solid var(--line, #e2e8e2);
+  border-radius: 20px;
+  background: #fff;
+}
+
+.rca-metric-label {
+  color: var(--muted, #64706a);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rca-metric strong {
+  margin-top: 18px;
+  font: 600 32px "Manrope", sans-serif;
+}
+
+.rca-metric--amber {
+  border-color: #eadfca;
+  background: #faf3e6;
+}
+
+.rca-metric--amber strong {
+  color: #9a773c;
 }
 
 .rca-list {
@@ -238,6 +124,51 @@
   font-size: 11px;
 }
 
+.rca-progress {
+  margin-top: 12px;
+}
+
+.rca-progress-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  color: var(--muted, #64706a);
+  font-size: 11px;
+}
+
+.rca-progress-copy b {
+  color: var(--sage, #4a675c);
+}
+
+.rca-progress-track {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8efea;
+}
+
+.rca-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sage, #4a675c);
+  transition: width 200ms ease;
+}
+
+.rca-progress-track span.is-indeterminate {
+  width: 45%;
+  animation: rca-indeterminate 1.4s ease-in-out infinite;
+}
+
+.rca-progress--failed {
+  margin: 12px 0 0;
+  color: #a85b4b;
+  font-size: 12px;
+}
+
 .rca-card-actions {
   display: flex;
   align-items: center;
@@ -288,20 +219,17 @@
   font-size: 13px;
 }
 
+@keyframes rca-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(220%);
+  }
+}
+
 @media (max-width: 1000px) {
-  .rca-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .rca-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .rca-create {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .rca-create-fields {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -317,8 +245,9 @@
   }
 }
 
-@media (max-width: 640px) {
-  .rca-metrics {
-    grid-template-columns: minmax(0, 1fr);
+@media (prefers-reduced-motion: reduce) {
+  .rca-progress-track span.is-indeterminate {
+    animation: none;
+    width: 100%;
   }
 }
