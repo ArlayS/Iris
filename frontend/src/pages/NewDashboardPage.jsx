@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import "@/NewDashboard.css";
+import { useEffect } from "react";
 
 export default function NewDashboardPage({
   stats,
@@ -28,7 +29,10 @@ export default function NewDashboardPage({
   const myTickets = tickets.filter(
     (t) => t.assigned_helper?.id === helper?.id
   );
-
+useEffect(() => {
+  document.body.classList.add("dashboard-no-nav");
+  return () => document.body.classList.remove("dashboard-no-nav");
+}, []);
   const pills = [
     isHelper && { label: "Helper", cls: "pill-helper" },
     isStaff && { label: "Staff", cls: "pill-staff" },
