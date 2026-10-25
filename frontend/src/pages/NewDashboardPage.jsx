@@ -11,8 +11,9 @@ import {
   Archive,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import "@/NewDashboard.css";
 
-export default function DashboardPage({
+export default function NewDashboardPage({
   stats,
   tickets,
   helper,
@@ -26,53 +27,53 @@ export default function DashboardPage({
   const latest = tickets[0];
   const pseudo = helper?.display_name || helper?.username || "toi";
 
-  const accessPills = [
-    isHelper && { label: "Helper", color: "pill-helper" },
-    isStaff && { label: "Staff", color: "pill-staff" },
-    isResponsable && { label: "Responsable", color: "pill-responsable" },
-    isAnimateur && { label: "Animateur", color: "pill-animateur" },
-    isOperateur && { label: "Opérateur", color: "pill-operateur" },
-    isAdmin && { label: "Admin", color: "pill-admin" },
+  const pills = [
+    isHelper && { label: "Helper", cls: "pill-helper" },
+    isStaff && { label: "Staff", cls: "pill-staff" },
+    isResponsable && { label: "Responsable", cls: "pill-responsable" },
+    isAnimateur && { label: "Animateur", cls: "pill-animateur" },
+    isOperateur && { label: "Opérateur", cls: "pill-operateur" },
+    isAdmin && { label: "Admin", cls: "pill-admin" },
   ].filter(Boolean);
 
   const modules = [
-    canSeeHelper(isHelper, isResponsable, isAdmin) && {
+    (isHelper || isResponsable || isAdmin) && {
       to: "/new",
       icon: <Plus size={22} />,
       title: "Nouveau suivi",
       desc: "Importer un salon Discord",
     },
-    canSeeHelper(isHelper, isResponsable, isAdmin) && {
-      to: "/tickets",
+    (isHelper || isResponsable || isAdmin) && {
+      to: "/archives",
       icon: <HeartHandshake size={22} />,
       title: "Mes suivis",
-      desc: `${stats.active_count} suivi(s) ouvert(s)`,
+      desc: `${stats.active_count} ouvert(s) · ${stats.archived_count} archivé(s)`,
     },
-    canSeeStaff && {
+    isStaff && {
       to: "/staff/calendrier",
       icon: <CalendarDays size={22} />,
       title: "Calendrier staff",
       desc: "Absences et disponibilités",
     },
-    canSeeStaff && {
+    isStaff && {
       to: "/staff/meetings",
-      icon: <FileText size={22} />,
+      icon: <BookHeart size={22} />,
       title: "Réunions",
       desc: "Comptes-rendus et médias",
     },
-    canSeeStaff && {
+    isStaff && {
       to: "/staff/taches",
       icon: <ShieldCheck size={22} />,
       title: "Tâches trimestrielles",
       desc: "Périodes et volontaires",
     },
-    canSeeAnimateur(isAnimateur, isResponsable) && {
+    (isAnimateur || isResponsable) && {
       to: "/animateur/projects",
       icon: <FolderKanban size={22} />,
       title: "Projets animateur",
       desc: "Projets, tâches et ressources",
     },
-    canSeeOperateur && {
+    isOperateur && {
       to: "/moderation/casiers",
       icon: <Users size={22} />,
       title: "Casiers de modération",
@@ -105,52 +106,44 @@ export default function DashboardPage({
   ].filter(Boolean);
 
   return (
-    <section className="page-content dashboard-page" data-testid="dashboard-page">
-      <header className="dashboard-welcome">
+    <section className="nd-page" data-testid="new-dashboard-page">
+      <header className="nd-welcome">
         <h1>Bienvenue {pseudo}</h1>
-        <div className="access-pills">
-          {accessPills.map((pill) => (
-            <span key={pill.label} className={`access-pill ${pill.color}`}>
-              {pill.label}
+        <div className="nd-pills">
+          {pills.map((p) => (
+            <span key={p.label} className={`nd-pill ${p.cls}`}>
+              {p.label}
             </span>
           ))}
         </div>
       </header>
 
-      <div className="module-grid">
-        {modules.map((mod) => (
-          <Link key={mod.to} to={mod.to} className="module-card">
-            <div className="module-icon">{mod.icon}</div>
-            <div className="module-text">
-              <strong>{mod.title}</strong>
-              <span>{mod.desc}</span>
+      <div className="nd-grid">
+        {modules.map((m) => (
+          <Link key={m.to} to={m.to} className="nd-card">
+            <div className="nd-icon">{m.icon}</div>
+            <div className="nd-text">
+              <strong>{m.title}</strong>
+              <span>{m.desc}</span>
             </div>
-            <ArrowRight size={18} className="module-arrow" />
+            <ArrowRight size={18} className="nd-arrow" />
           </Link>
         ))}
       </div>
 
-      {canSeeHelper(isHelper, isResponsable, isAdmin) && (
-        <section className="dashboard-recent">
+      {(isHelper || isResponsable || isAdmin) && (
+        <section className="nd-recent">
           <h2>Dernier suivi</h2>
           {latest ? (
-            <Link to={`/tickets/${latest.id}`} className="recent-ticket">
+            <Link to={`/tickets/${latest.id}`} className="nd-recent-card">
               <span>{latest.title}</span>
               <ArrowRight size={16} />
             </Link>
           ) : (
-            <p>Aucun suivi pour le moment.</p>
+            <p className="nd-empty">Aucun suivi pour le moment.</p>
           )}
         </section>
       )}
     </section>
   );
-}
-
-function canSeeHelper(isHelper, isResponsable, isAdmin) {
-  return isHelper || isResponsable || isAdmin;
-}
-
-function canSeeAnimateur(isAnimateur, isResponsable) {
-  return isAnimateur || isResponsable;
 }
