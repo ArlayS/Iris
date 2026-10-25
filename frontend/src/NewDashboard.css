@@ -1930,3 +1930,43 @@ body.dashboard-no-nav .app-shell > .app-main {
 .nd-page .nd-anim-calendar .nd-anim-message {
   color: #765c8b;
 }
+/* Pilules : Responsable, Coordinateur, Opérateur, Helper, Animateur */
+
+.nd-page .nd-pill {
+  border: 1px solid transparent;
+}
+
+/* Responsable — rouge pastel */
+.nd-page .nd-pill--responsable {
+  background: #f8e2e3;
+  border-color: #ecc3c6;
+  color: #a13945;
+}
+
+/* Coordinateur — orange pastel */
+.nd-page .nd-pill--admin {
+  background: #fbe9d5;
+  border-color: #efd2af;
+  color: #a45d23;
+}
+
+/* Opérateur — rose pastel */
+.nd-page .nd-pill--operateur {
+  background: #f8e1ee;
+  border-color: #ecc3da;
+  color: #a34378;
+}
+
+/* Helper — vert sauge */
+.nd-page .nd-pill--helper {
+  background: #e8efea;
+  border-color: #cfddd3;
+  color: #4a675c;
+}
+
+/* Animateur — violet pastel */
+.nd-page .nd-pill--animateur {
+  background: #ebdff5;
+  border-color: #d5bee7;
+  color: #765094;
+}
