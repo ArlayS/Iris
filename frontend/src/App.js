@@ -146,7 +146,16 @@ function AuthenticatedApp({
               )
             }
           />
-
+<Route
+  path="/suivis"
+  element={
+    canSeeHelper ? (
+      <DashboardPage stats={stats} tickets={tickets} />
+    ) : (
+      <Navigate to={defaultRoute} replace />
+    )
+  }
+/>
           <Route
             path="/tickets/:ticketId"
             element={
