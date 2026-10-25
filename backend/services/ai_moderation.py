@@ -962,8 +962,16 @@ async def handle_message(message: discord.Message) -> None:
 
     if _queue is None:  # module non démarré (désactivé ou clé manquante)
         return
-    if channel_id in IGNORED_CHANNEL_IDS:
-        logger.debug("Message %s ignoré : salon %s dans la liste des salons ignorés.", message.id, channel_id)
+    parent_id = getattr(message.channel, "parent_id", None)       # thread ou post de forum -> salon/forum parent
+    category_id = getattr(message.channel, "category_id", None)   # salon normal -> catégorie
+    if parent_id is None and getattr(message.channel, "parent", None) is not None:
+        category_id = getattr(message.channel.parent, "category_id", None)  # thread -> catégorie du parent
+
+    if IGNORED_CHANNEL_IDS & {channel_id, parent_id, category_id}:
+        logger.debug(
+            "Message %s ignoré : salon %s (parent %s, catégorie %s) dans la liste des salons ignorés.",
+            message.id, channel_id, parent_id, category_id,
+        )
         return
     if not worth_analyzing(text):
         logger.debug("Message %s ignoré : trop court / emojis seuls.", message.id)
