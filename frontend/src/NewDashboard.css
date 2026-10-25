@@ -1,100 +1,12 @@
-.nd-page {
-  padding: 24px;
-  color: inherit;
-}
-
-.nd-welcome {
-  margin-bottom: 24px;
-}
-
-.nd-welcome h1 {
-  font-size: 2.4rem;
-  font-weight: 700;
-  text-align: left;
-  margin: 0;
-}
-
-.nd-pills {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-}
-
-.nd-pill {
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
+.nd-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.nd-pill { padding: 4px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
 .pill-helper { background: #5865f2; color: #fff; }
 .pill-staff { background: #3ba55c; color: #fff; }
 .pill-responsable { background: #faa61a; color: #000; }
 .pill-animateur { background: #9b59b6; color: #fff; }
 .pill-operateur { background: #e67e22; color: #fff; }
 .pill-admin { background: #ed4245; color: #fff; }
-
-.nd-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.nd-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.2s;
-}
-
-.nd-card:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.nd-icon {
-  color: #5865f2;
-}
-
-.nd-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.nd-text strong {
-  font-size: 1rem;
-}
-
-.nd-text span {
-  font-size: 0.85rem;
-  opacity: 0.7;
-}
-
-.nd-arrow {
-  margin-left: auto;
-  opacity: 0.5;
-}
-
-.nd-recent {
-  margin-top: 24px;
-}
-
-.nd-recent-card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  text-decoration: none;
-  color: inherit;
-}
-
-.nd-empty {
-  opacity: 0.6;
-}
+.nd-modules { display: flex; flex-direction: column; gap: 8px; }
+.nd-module { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.05); text-decoration: none; color: inherit; }
+.nd-module:hover { background: rgba(255,255,255,0.1); }
+.nd-module span { flex: 1; }
