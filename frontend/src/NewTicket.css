@@ -1,0 +1,38 @@
+body.new-ticket-no-nav .app-shell { display:block !important; grid-template-columns:minmax(0,1fr) !important; padding-left:0 !important; }
+body.new-ticket-no-nav .app-shell > .sidebar { display:none !important; }
+body.new-ticket-no-nav .app-shell > .app-main { grid-column:1 / -1 !important; margin-left:0 !important; margin-inline-start:0 !important; padding-left:0 !important; width:100% !important; max-width:none !important; min-width:0; }
+.nt-page { box-sizing:border-box; width:100%; min-height:100vh; margin:0; padding:clamp(24px,4vw,64px); color:var(--ink,#1c2622); background:var(--canvas,#f9f9f7); font-family:"IBM Plex Sans",sans-serif; }
+.nt-page *, .nt-page *::before, .nt-page *::after { box-sizing:border-box; }
+.nt-page a { text-decoration:none; }
+.nt-page button, .nt-page input, .nt-page select, .nt-page textarea { font-family:inherit; }
+.nt-page button { cursor:pointer; }
+.nt-page button:disabled { opacity:.6; cursor:default; }
+.nt-page a:focus-visible, .nt-page button:focus-visible { outline:3px solid var(--sage,#4a675c); outline-offset:3px; }
+
+.nt-page .nt-header { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:34px; }
+.nt-page .nt-eyebrow { margin:0 0 12px; color:var(--muted,#64706a); font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; }
+.nt-page h1 { margin:0; font:600 clamp(32px,4vw,56px)/1.15 "Manrope",sans-serif; letter-spacing:-.035em; }
+.nt-page .nt-intro { max-width:70ch; margin:14px 0 0; color:var(--muted,#64706a); font-size:14px; line-height:1.7; }
+.nt-page .nt-home { display:inline-flex; align-items:center; gap:20px; flex-shrink:0; padding:12px 20px; border:1px solid var(--line,#e2e8e2); border-radius:999px; background:#fff; color:var(--sage,#4a675c); font-size:13px; font-weight:600; }
+.nt-page .nt-layout { display:grid; grid-template-columns:minmax(280px,.85fr) minmax(0,1.15fr); align-items:start; gap:24px; }
+.nt-page .nt-guide { padding:30px; border:1px solid #d9e3db; border-radius:20px; background:#edf3ed; }
+.nt-page .nt-guide h2 { margin:0; max-width:24ch; font:600 26px/1.4 "Manrope",sans-serif; letter-spacing:-.025em; }
+.nt-page .nt-steps { display:flex; flex-direction:column; gap:24px; margin-top:30px; }
+.nt-page .nt-step { display:flex; align-items:flex-start; gap:14px; }
+.nt-page .nt-step-icon, .nt-page .nt-form-icon { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:44px; height:44px; border-radius:13px; background:#dce8df; color:var(--sage,#4a675c); }
+.nt-page .nt-step small { color:#7a8d80; font-size:10px; letter-spacing:.08em; }
+.nt-page .nt-step h3 { margin:4px 0 6px; font:600 14px "Manrope",sans-serif; }
+.nt-page .nt-step p, .nt-page .nt-tip { margin:0; color:var(--muted,#64706a); font-size:13px; line-height:1.7; }
+.nt-page .nt-tip { margin-top:28px; padding-top:20px; border-top:1px solid #d2dfd5; font-size:12px; }
+.nt-page .nt-form-card { overflow:hidden; border:1px solid var(--line,#e2e8e2); border-radius:20px; background:#fff; }
+.nt-page .nt-form-card > header { display:flex; align-items:center; gap:14px; padding:26px 30px; border-bottom:1px solid var(--line,#e2e8e2); background:#f7f9f5; }
+.nt-page .nt-form-card header h2 { margin:0; font:600 21px "Manrope",sans-serif; }
+.nt-page .nt-form-card header .nt-eyebrow { margin-bottom:7px; }
+.nt-page .nt-form-wrap { padding:30px; }
+.nt-page .nt-form-wrap form { display:flex; flex-direction:column; gap:16px; width:100%; max-width:none; margin:0; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.nt-page .nt-form-wrap label { display:flex; flex-direction:column; gap:8px; color:var(--ink,#1c2622); font-size:13px; font-weight:600; }
+.nt-page .nt-form-wrap input, .nt-page .nt-form-wrap textarea, .nt-page .nt-form-wrap select { width:100%; padding:13px 15px; border:1px solid #dce5de; border-radius:12px; background:#fcfdfb; color:var(--ink,#1c2622); font-size:14px; }
+.nt-page .nt-form-wrap input:focus, .nt-page .nt-form-wrap textarea:focus { outline:none; border-color:#88a492; box-shadow:0 0 0 3px rgba(74,103,92,.1); }
+.nt-page .nt-form-wrap button[type=submit] { display:inline-flex; justify-content:center; align-items:center; gap:9px; min-height:44px; padding:12px 20px; border:0; border-radius:999px; background:var(--sage,#4a675c); color:#fff; font-size:13px; font-weight:600; }
+@media(max-width:900px) { .nt-page .nt-layout { grid-template-columns:1fr; } }
+@media(max-width:640px) { .nt-page { padding:24px 16px; } .nt-page .nt-header { flex-direction:column; align-items:flex-start; } .nt-page .nt-guide, .nt-page .nt-form-wrap { padding:22px; } .nt-page .nt-form-card > header { padding:22px; } }
