@@ -10,6 +10,15 @@ from routers import admin, auth, members, profiles, resources, staff, tickets, a
 from services.storage_service import init_storage
 from services.moderation_bot import start_moderation_bot, stop_moderation_bot
 
+# Agenda (refonte en cours) : branché seulement si tous ses modules sont présents,
+# pour que l'API démarre même tant que l'agenda est incomplet.
+try:
+    from routers import agenda
+    from services import agenda_indexes, agenda_reminders
+except ImportError as error:
+    agenda = agenda_indexes = agenda_reminders = None
+    logging.getLogger(__name__).warning("Agenda non chargé (modules incomplets) : %s", error)
+
 
 app = FastAPI(title="Iris API")
 
@@ -65,6 +74,8 @@ app.include_router(resources.router, prefix="/api")
 app.include_router(members.router, prefix="/api")
 app.include_router(tickets.router, prefix="/api")
 app.include_router(staff.router, prefix="/api")
+if agenda:
+    app.include_router(agenda.router, prefix="/api")
 app.include_router(animateur.router, prefix="/api")
 app.include_router(animateur_calendar.router, prefix="/api")
 app.include_router(animateur.tasks_router, prefix="/api")
@@ -103,6 +114,15 @@ async def startup() -> None:
     except Exception as error:
         logger.warning("Stockage de ressources indisponible au démarrage : %s", error)
 
+    # Agenda : index et migration idempotente des champs de recherche, puis planificateur des rappels.
+    if agenda_indexes and agenda_reminders:
+        try:
+            await agenda_indexes.ensure_agenda_indexes()
+            await agenda_indexes.backfill_meeting_derived_fields()
+        except Exception:
+            logger.exception("Agenda : index ou migration impossibles au démarrage")
+        agenda_reminders.start_scheduler()
+
     _bot_task = asyncio.create_task(start_moderation_bot())
     _bot_task.add_done_callback(
         lambda t: logger.error("Bot de modération arrêté : %s", t.exception())
@@ -116,4 +136,9 @@ async def shutdown_db_client():
     await stop_moderation_bot()
     if _bot_task:
         _bot_task.cancel()
+    if agenda_reminders:
+        try:
+            await agenda_reminders.stop_scheduler()
+        except Exception:
+            logger.exception("Agenda : arrêt du planificateur des rappels impossible")
     client.close()

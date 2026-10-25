@@ -8,11 +8,22 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 
-def _int_env(name: str, default: int) -> int:
+def _int_env(name: str, default: int, minimum: int | None = None) -> int:
+    """Entier lu dans l'environnement ; valeur illisible (ou sous `minimum`) → `default`."""
     try:
-        return int(os.environ.get(name, default))
+        value = int(os.environ.get(name, default))
     except (TypeError, ValueError):
         return default
+    if minimum is not None and value < minimum:
+        return default
+    return value
+
+
+def _bool_env(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _parse_origins(raw: str) -> list[str]:
@@ -74,15 +85,16 @@ def missing_discord_bot_settings() -> list[str]:
     return [name for name, value in required.items() if not value]
 
 
-VALID_SANCTION_TYPES = {"avertissement", "bannissement", "kick", "rappel_a_lordre"}
+VALID_SANCTION_TYPES = {"avertissement", "mute", "bannissement", "kick", "rappel_a_lordre"}
 
 
 def parse_moderation_channels(raw: str) -> dict[int, str]:
     """
     Parse DISCORD_MODERATION_CHANNELS au format:
-       "avertissement:111111111111111111,kick:222222222222222222,
+       "avertissement:111111111111111111,mute:555555555555555555,kick:222222222222222222,
         bannissement:333333333333333333,rappel_a_lordre:444444444444444444"
-       -> {111111111111111111: "avertissement", 222222222222222222: "kick", ...}
+       -> {111111111111111111: "avertissement", 555555555555555555: "mute", ...}
+    Les entrées au type inconnu ou à l'identifiant non numérique sont ignorées.
     """
     mapping: dict[int, str] = {}
 
@@ -92,7 +104,7 @@ def parse_moderation_channels(raw: str) -> dict[int, str]:
             continue
 
         sanction_type, channel_id = pair.split(":", 1)
-        sanction_type = sanction_type.strip()
+        sanction_type = sanction_type.strip().lower()
         channel_id = channel_id.strip()
 
         if sanction_type not in VALID_SANCTION_TYPES:
@@ -106,11 +118,27 @@ def parse_moderation_channels(raw: str) -> dict[int, str]:
 
 
 # Exemple .env :
-# DISCORD_MODERATION_CHANNELS=avertissement:ID_SALON_AVERT,
+# DISCORD_MODERATION_CHANNELS=avertissement:ID_SALON_AVERT,mute:ID_SALON_MUTE,
 #   kick:ID_SALON_KICK,bannissement:ID_SALON_BAN,rappel_a_lordre:ID_SALON_RAPPEL
 DISCORD_MODERATION_CHANNEL_TYPES = parse_moderation_channels(
     os.getenv("DISCORD_MODERATION_CHANNELS", "")
 )
+
+# --- Casier : fichiers des sanctions ---
+# Plafond par fichier copié depuis un log Discord (25 Mo par défaut).
+CASIER_ATTACHMENT_MAX_BYTES = _int_env("CASIER_ATTACHMENT_MAX_BYTES", 25 * 1024 * 1024, minimum=1)
+# Plafond par fichier ajouté à la main sur une sanction (10 Mo par défaut).
+CASIER_UPLOAD_MAX_BYTES = _int_env("CASIER_UPLOAD_MAX_BYTES", 10 * 1024 * 1024, minimum=1)
+
+# --- Signalements de la modération IA (collection ai_moderation_flags) ---
+# Rétention (index TTL sur created_at) : 180 jours par défaut, 0 = conservation illimitée.
+AI_MODERATION_FLAG_TTL_DAYS = _int_env("AI_MODERATION_FLAG_TTL_DAYS", 180, minimum=0)
+# Salons/catégories d'écoute dont les signalements ne sont jamais enregistrés dans Iris,
+# en plus des catégories de tickets (ALLOWED_TICKET_CATEGORY_IDS). L'alerte Discord n'est pas affectée.
+AI_MODERATION_FLAG_SKIP_IDS = frozenset(_parse_ids(os.environ.get("AI_MODERATION_FLAG_SKIP_IDS", "")))
+# Texte des messages que le modèle a refusé d'analyser (souvent des messages de détresse) :
+# non conservé par défaut, seuls l'auteur, le salon, la date et le lien sont gardés.
+AI_MODERATION_FLAG_STORE_REFUSAL_CONTENT = _bool_env("AI_MODERATION_FLAG_STORE_REFUSAL_CONTENT", False)
 
 
 def missing_oauth_settings() -> list[str]:

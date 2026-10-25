@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Search,
@@ -6,8 +7,24 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  ArrowRight,
 } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
+import {
+  CASIER_EVENT_LABELS,
+  CASIER_EVENT_TYPES,
+  casierEventTone,
+  isCasierEvent,
+  reviewMeta,
+  sanctionTypeMeta,
+  statusMeta,
+} from "../components/casier/casierConstants";
+import { casierLogLink, formatBytes } from "../components/casier/formatters";
+
+const AGENDA_EVENT_LABELS = {
+  "agenda.settings.updated": "Agenda : réglages des rappels modifiés",
+  "agenda.settings.test_sent": "Agenda : message de test envoyé",
+};
 
 const EVENT_LABELS = {
   "auth.login.started": "Connexion démarrée",
@@ -29,7 +46,44 @@ const EVENT_LABELS = {
   "project.task.deleted": "Tâche supprimée",
   "project.resource.uploaded": "Ressource ajoutée",
   "project.resource.deleted": "Ressource supprimée",
+
+  ...CASIER_EVENT_LABELS,
+  ...AGENDA_EVENT_LABELS,
 };
+
+// Options du filtre « événement », regroupées (filtre exact côté serveur).
+const EVENT_GROUPS = [
+  {
+    label: "Connexions",
+    types: [
+      "auth.login.started",
+      "auth.login.success",
+      "auth.login.failure",
+      "auth.logout",
+      "auth.session.invalid",
+      "auth.session.check_failed",
+      "authz.forbidden",
+    ],
+  },
+  {
+    label: "Projets",
+    types: [
+      "project.viewed",
+      "project.created",
+      "project.content.updated",
+      "project.deleted",
+      "project.member.added",
+      "project.task.created",
+      "project.task.submitted",
+      "project.task.validated",
+      "project.task.deleted",
+      "project.resource.uploaded",
+      "project.resource.deleted",
+    ],
+  },
+  { label: "Casiers", types: CASIER_EVENT_TYPES },
+  { label: "Agenda", types: Object.keys(AGENDA_EVENT_LABELS) },
+];
 
 function formatDateTime(value) {
   if (!value) return "—";
@@ -64,9 +118,14 @@ function EventBadge({ eventType }) {
         eventType === "project.resource.deleted"
       ? "status-bad"
       : "";
+  const tone = isCasierEvent(eventType)
+    ? casierEventTone(eventType)
+    : AGENDA_EVENT_LABELS[eventType]
+    ? "status-pending"
+    : colorClass;
 
   return (
-    <span className={`status-badge ${colorClass}`}>
+    <span className={`status-badge ${tone}`}>
       {EVENT_LABELS[eventType] || eventType}
     </span>
   );
@@ -78,6 +137,93 @@ function DetailLine({ label, value }) {
     <span style={{ fontSize: 12, color: "var(--muted)" }}>
       {label} : {String(value)}
     </span>
+  );
+}
+
+const yesNo = (value) => (value === undefined || value === null ? undefined : value ? "Oui" : "Non");
+
+function transition(before, after, label) {
+  if (!before && !after) return undefined;
+  if (before && after && before !== after) return `${label(before)} → ${label(after)}`;
+  return label(after || before);
+}
+
+// Détails lisibles d'une entrée casier.* (sans dupliquer member_id / member_username).
+function CasierLogDetails({ eventType, details }) {
+  const data = details || {};
+  const link = casierLogLink(eventType, data);
+  const member =
+    data.member_username || data.member_id
+      ? `${data.member_username || "Membre"}${data.member_id ? ` (${data.member_id})` : ""}`
+      : undefined;
+  const files =
+    data.files_found !== undefined || data.files_queued !== undefined
+      ? `${data.files_found ?? 0} trouvé${Number(data.files_found) > 1 ? "s" : ""} · ${data.files_queued ?? 0} en copie`
+      : undefined;
+  const fileSize = formatBytes(data.size);
+  const file = data.original_filename
+    ? `${data.original_filename}${fileSize ? ` (${fileSize})` : ""}`
+    : undefined;
+
+  return (
+    <>
+      <DetailLine label="Membre" value={member} />
+      <DetailLine label="Casier en prévention" value={yesNo(data.is_prevention)} />
+      <DetailLine
+        label="Sanction"
+        value={data.sanction_type ? sanctionTypeMeta(data.sanction_type).label : undefined}
+      />
+      <DetailLine
+        label="Statut"
+        value={transition(data.status_before, data.status_after, (value) => statusMeta(value).label)}
+      />
+      <DetailLine label="Extrait" value={data.reason_excerpt} />
+      <DetailLine label="Durée" value={data.duration} />
+      <DetailLine label="Créée depuis un signalement IA" value={data.ai_flag_id ? "Oui" : undefined} />
+      <DetailLine label="Fiche S" value={data.fiche_title} />
+      <DetailLine label="Titre précédent" value={data.previous_title} />
+      <DetailLine label="Version n°" value={data.revision_number} />
+      <DetailLine label="Fichier" value={file} />
+      <DetailLine label="Fichiers du log" value={files} />
+      <DetailLine label="Modérateur complété" value={yesNo(data.moderator_filled)} />
+      <DetailLine
+        label="Décision"
+        value={transition(data.review_before, data.review_after, (value) => reviewMeta(value).label)}
+      />
+      <DetailLine
+        label="Commentaire"
+        value={Number(data.comment_length) > 0 ? `${data.comment_length} caractères` : undefined}
+      />
+
+      {(data.before_length !== undefined || data.after_length !== undefined) && (
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>
+          Contenu : {data.before_length ?? 0} → {data.after_length ?? 0} caractères
+        </span>
+      )}
+      {data.content_length !== undefined && data.before_length === undefined && (
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>
+          Contenu : {data.content_length} caractères
+        </span>
+      )}
+
+      {link && (
+        <Link
+          to={link}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            marginTop: 2,
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--sage)",
+          }}
+        >
+          {data.casier_id ? "Ouvrir le casier" : "Voir le signalement"}
+          <ArrowRight size={13} aria-hidden="true" />
+        </Link>
+      )}
+    </>
   );
 }
 
@@ -166,7 +312,7 @@ export default function ResponsableAuthLogsPage() {
           <p className="eyebrow">ESPACE RESPONSABLE</p>
           <h1>Logs de plateforme</h1>
           <p style={{ color: "var(--muted)", marginTop: 6 }}>
-            Historique des connexions, accès refusés et actions sur les projets.
+            Historique des connexions, accès refusés, actions sur les projets et modifications des casiers.
           </p>
         </div>
       </header>
@@ -192,25 +338,15 @@ export default function ResponsableAuthLogsPage() {
           >
             <option value="">Tous les événements</option>
 
-            <option value="auth.login.started">Connexion démarrée</option>
-            <option value="auth.login.success">Connexion réussie</option>
-            <option value="auth.login.failure">Connexion échouée</option>
-            <option value="auth.logout">Déconnexion</option>
-            <option value="auth.session.invalid">Session invalide</option>
-            <option value="auth.session.check_failed">Vérification session échouée</option>
-            <option value="authz.forbidden">Accès refusé</option>
-
-            <option value="project.viewed">Projet consulté</option>
-            <option value="project.created">Projet créé</option>
-            <option value="project.content.updated">Projet modifié</option>
-            <option value="project.deleted">Projet supprimé</option>
-            <option value="project.member.added">Membre ajouté</option>
-            <option value="project.task.created">Tâche créée</option>
-            <option value="project.task.submitted">Tâche rendue</option>
-            <option value="project.task.validated">Tâche validée</option>
-            <option value="project.task.deleted">Tâche supprimée</option>
-            <option value="project.resource.uploaded">Ressource ajoutée</option>
-            <option value="project.resource.deleted">Ressource supprimée</option>
+            {EVENT_GROUPS.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.types.map((type) => (
+                  <option key={type} value={type}>
+                    {EVENT_LABELS[type] || type}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
           </select>
 
           <input
@@ -306,46 +442,52 @@ export default function ResponsableAuthLogsPage() {
                       <td style={tdStyle}>{log.status_code ?? "—"}</td>
                       <td style={tdStyle}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          <DetailLine label="Raison" value={log.details?.reason} />
-                          <DetailLine label="Provider" value={log.details?.provider} />
-                          <DetailLine label="Mode" value={log.details?.mode} />
-                          <DetailLine label="Projet" value={log.details?.title} />
-                          <DetailLine label="ID projet" value={log.details?.project_id} />
-                          <DetailLine label="ID tâche" value={log.details?.task_id} />
-                          <DetailLine label="ID ressource" value={log.details?.resource_id} />
-                          <DetailLine label="ID membre" value={log.details?.member_id} />
-                          <DetailLine label="Utilisateur membre" value={log.details?.member_username} />
-                          <DetailLine label="Fichier" value={log.details?.original_filename} />
-                          <DetailLine label="A un fichier" value={
-                            log.details?.has_file !== undefined
-                              ? log.details.has_file ? "Oui" : "Non"
-                              : undefined
-                          } />
-                          <DetailLine label="IP client" value={log.details?.client_ip} />
-                          <DetailLine label="User-Agent" value={log.details?.user_agent} />
+                          {isCasierEvent(log.event_type) ? (
+                            <CasierLogDetails eventType={log.event_type} details={log.details} />
+                          ) : (
+                            <>
+                              <DetailLine label="Raison" value={log.details?.reason} />
+                              <DetailLine label="Provider" value={log.details?.provider} />
+                              <DetailLine label="Mode" value={log.details?.mode} />
+                              <DetailLine label="Projet" value={log.details?.title} />
+                              <DetailLine label="ID projet" value={log.details?.project_id} />
+                              <DetailLine label="ID tâche" value={log.details?.task_id} />
+                              <DetailLine label="ID ressource" value={log.details?.resource_id} />
+                              <DetailLine label="ID membre" value={log.details?.member_id} />
+                              <DetailLine label="Utilisateur membre" value={log.details?.member_username} />
+                              <DetailLine label="Fichier" value={log.details?.original_filename} />
+                              <DetailLine label="A un fichier" value={
+                                log.details?.has_file !== undefined
+                                  ? log.details.has_file ? "Oui" : "Non"
+                                  : undefined
+                              } />
+                              <DetailLine label="IP client" value={log.details?.client_ip} />
+                              <DetailLine label="User-Agent" value={log.details?.user_agent} />
 
-                          {(log.details?.before_length !== undefined ||
-                            log.details?.after_length !== undefined) && (
-                            <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                              Contenu : {log.details?.before_length ?? 0} → {log.details?.after_length ?? 0} caractères
-                            </span>
+                              {(log.details?.before_length !== undefined ||
+                                log.details?.after_length !== undefined) && (
+                                <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                                  Contenu : {log.details?.before_length ?? 0} → {log.details?.after_length ?? 0} caractères
+                                </span>
+                              )}
+
+                              {(log.details?.before?.content_length !== undefined ||
+                                log.details?.after?.content_length !== undefined) && (
+                                <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                                  Contenu : {log.details?.before?.content_length ?? 0} → {log.details?.after?.content_length ?? 0} caractères
+                                </span>
+                              )}
+
+                              <DetailLine label="Avant - titre" value={log.details?.before?.title} />
+                              <DetailLine label="Après - titre" value={log.details?.after?.title} />
+                              <DetailLine label="Avant - description" value={log.details?.before?.description} />
+                              <DetailLine label="Après - description" value={log.details?.after?.description} />
+                              <DetailLine label="Avant - fin" value={log.details?.before?.end_date} />
+                              <DetailLine label="Après - fin" value={log.details?.after?.end_date} />
+                              <DetailLine label="Avant - statut" value={log.details?.before?.status} />
+                              <DetailLine label="Après - statut" value={log.details?.after?.status} />
+                            </>
                           )}
-
-                          {(log.details?.before?.content_length !== undefined ||
-                            log.details?.after?.content_length !== undefined) && (
-                            <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                              Contenu : {log.details?.before?.content_length ?? 0} → {log.details?.after?.content_length ?? 0} caractères
-                            </span>
-                          )}
-
-                          <DetailLine label="Avant - titre" value={log.details?.before?.title} />
-                          <DetailLine label="Après - titre" value={log.details?.after?.title} />
-                          <DetailLine label="Avant - description" value={log.details?.before?.description} />
-                          <DetailLine label="Après - description" value={log.details?.after?.description} />
-                          <DetailLine label="Avant - fin" value={log.details?.before?.end_date} />
-                          <DetailLine label="Après - fin" value={log.details?.after?.end_date} />
-                          <DetailLine label="Avant - statut" value={log.details?.before?.status} />
-                          <DetailLine label="Après - statut" value={log.details?.after?.status} />
 
                           {(!log.details || Object.keys(log.details).length === 0) && "—"}
                         </div>
@@ -396,7 +538,7 @@ export default function ResponsableAuthLogsPage() {
 
       <div className="lock-banner" style={{ marginTop: 20 }}>
         <Shield size={14} />
-        Ces logs sont conservés sans suppression automatique.
+        Ces logs sont conservés pendant une durée limitée (180 jours par défaut, AUTH_LOG_TTL_DAYS).
       </div>
     </section>
   );

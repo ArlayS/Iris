@@ -3,12 +3,11 @@ import logging
 import mimetypes
 import os
 import re
-import tempfile
 from datetime import datetime, timezone
-from urllib.parse import urlsplit
 from uuid import uuid4
 
-import httpx
+# Gardé sur ce module : les tests remplacent `channel_archives.httpx.AsyncClient`.
+import httpx  # noqa: F401
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
@@ -21,6 +20,7 @@ from models.channel_archive import (
     ChannelArchiveSummary,
 )
 from models.ticket import AuthenticatedHelper
+from services import file_response_service
 from services.auth_service import current_responsable
 from services.discord_service import DiscordService
 from services.file_response_service import stream_local_file
@@ -49,19 +49,12 @@ ATTACHMENT_CONCURRENCY = 6
 
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
-# Seuls les fichiers hébergés par le CDN Discord sont copiés localement.
-ALLOWED_ATTACHMENT_HOSTS = {"cdn.discordapp.com", "media.discordapp.net"}
-
-# Seules ces images matricielles peuvent s'afficher dans le navigateur ; tout le reste
-# (HTML, SVG, PDF, texte...) est servi en téléchargement.
-INLINE_IMAGE_TYPES = {
-    "png": "image/png",
-    "jpg": "image/jpeg",
-    "jpeg": "image/jpeg",
-    "gif": "image/gif",
-    "webp": "image/webp",
-}
-_CONTENT_TYPE_ALIASES = {"image/jpg": "image/jpeg", "image/pjpeg": "image/jpeg"}
+# Helpers partagés avec le casier (services/file_response_service.py) ; anciens noms conservés.
+ALLOWED_ATTACHMENT_HOSTS = file_response_service.ALLOWED_DISCORD_CDN_HOSTS
+INLINE_IMAGE_TYPES = file_response_service.INLINE_IMAGE_TYPES
+_attachment_extension = file_response_service.attachment_extension
+_is_discord_cdn_url = file_response_service.is_discord_cdn_url
+_inline_image_type = file_response_service.inline_image_type
 
 # Fréquence minimale (en secondes) entre deux écritures de progression en base, pour ne
 # pas spammer Mongo sur un salon de plusieurs milliers de messages/fichiers.
@@ -72,50 +65,10 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _attachment_extension(filename: str) -> str:
-    return filename.rsplit(".", 1)[-1] if "." in filename else "bin"
-
-
-def _is_discord_cdn_url(url: str) -> bool:
-    try:
-        parts = urlsplit(url)
-    except ValueError:
-        return False
-    return parts.scheme == "https" and (parts.hostname or "").lower() in ALLOWED_ATTACHMENT_HOSTS
-
-
-def _inline_image_type(content_type: str | None, filename: str) -> str | None:
-    """Type image sûr si l'extension ET le type déclaré désignent une image matricielle."""
-    by_extension = INLINE_IMAGE_TYPES.get(_attachment_extension(filename).lower())
-    if not by_extension:
-        return None
-    declared = (content_type or "").split(";", 1)[0].strip().lower()
-    declared = _CONTENT_TYPE_ALIASES.get(declared, declared)
-    if not declared:
-        return by_extension
-    return declared if declared in INLINE_IMAGE_TYPES.values() else None
-
-
 async def _download_to_temp_file(url: str) -> str:
-    """Télécharge en flux vers un fichier temporaire, en s'arrêtant dès que la limite est dépassée."""
-    temp_path = None
-    try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            async with client.stream("GET", url) as response:
-                response.raise_for_status()
-                total_size = 0
-                with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                    temp_path = temp_file.name
-                    async for chunk in response.aiter_bytes(DOWNLOAD_CHUNK_SIZE):
-                        total_size += len(chunk)
-                        if total_size > MAX_ATTACHMENT_SIZE:
-                            raise ValueError("Pièce jointe trop volumineuse pour être copiée localement.")
-                        temp_file.write(chunk)
-        return temp_path
-    except BaseException:
-        if temp_path and os.path.exists(temp_path):
-            os.unlink(temp_path)
-        raise
+    # Constantes lues à l'appel : les tests les remplacent sur ce module.
+    return await file_response_service.download_to_temp_file(
+        url, max_bytes=MAX_ATTACHMENT_SIZE, chunk_size=DOWNLOAD_CHUNK_SIZE)
 
 
 async def _mirror_attachment(archive_id: str, message_id: str, attachment: dict) -> ChannelArchiveAttachment:

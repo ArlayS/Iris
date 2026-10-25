@@ -1,0 +1,748 @@
+/* Casier : barre de recherche, liste, métriques et modale de création (après Casier.css). */
+
+/* Barre de recherche */
+
+.cz-searchbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cz-searchbar-query {
+  min-width: 0;
+}
+
+/* Le texte d'aide long se termine par « … » quand le champ est étroit. */
+.cz-searchbar-field input {
+  text-overflow: ellipsis;
+}
+
+.cz-searchbar-notice:not(:empty) {
+  margin-top: 8px;
+}
+
+.cz-searchbar-busy {
+  flex-shrink: 0;
+  color: var(--cz-muted);
+}
+
+.cz-searchbar-kbd {
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.cz-searchbar .cz-chip {
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+.cz-searchbar .cz-chips {
+  gap: 6px;
+}
+
+.cz-searchbar-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cz-searchbar-scope > .cz-chips {
+  flex: 1 1 auto;
+}
+
+.cz-searchbar-label {
+  flex-shrink: 0;
+  color: var(--cz-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cz-searchbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cz-searchbar-toggle {
+  border-color: var(--cz-line);
+  background: var(--cz-surface);
+  color: var(--cz-sage);
+  font-weight: 600;
+}
+
+.cz-searchbar-toggle[aria-expanded="true"] {
+  border-color: var(--cz-sage-line);
+  background: var(--cz-sage-soft);
+}
+
+.cz-searchbar-chevron {
+  transition: transform 160ms ease;
+}
+
+.cz-searchbar-toggle[aria-expanded="true"] .cz-searchbar-chevron {
+  transform: rotate(180deg);
+}
+
+.cz-searchbar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--cz-sage);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cz-searchbar-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--cz-line);
+}
+
+/* Puces resserrées : statuts et bascules tiennent sur une ligne dans la colonne de 400 px. */
+.cz-searchbar-filters .cz-chip {
+  gap: 5px;
+  padding-right: 9px;
+  padding-left: 9px;
+}
+
+.cz-searchbar-filters[hidden] {
+  display: none;
+}
+
+.cz-searchbar-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.cz-searchbar-dot--banni {
+  background: #8a3a3f;
+}
+
+.cz-searchbar-dot--kick {
+  background: var(--cz-clay);
+}
+
+.cz-searchbar-dot--mute {
+  background: #48658a;
+}
+
+.cz-searchbar-dot--averti {
+  background: var(--cz-gold);
+}
+
+.cz-searchbar-dot--vierge {
+  background: var(--cz-sage);
+}
+
+.cz-searchbar-sort {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cz-searchbar-select {
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+/* Liste des casiers */
+
+.cz-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cz-list-wrap.is-updating .cz-list {
+  opacity: 0.6;
+  transition: opacity 160ms ease;
+}
+
+.cz-list-item + .cz-list-item {
+  border-top: 1px solid var(--cz-line);
+}
+
+.cz-list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 14px 24px;
+  border: 0;
+  background: transparent;
+  color: var(--cz-ink);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.cz-list-row:hover {
+  background: #f8faf6;
+}
+
+.cz-list-row[aria-current="true"] {
+  background: #f1f6f2;
+  box-shadow: inset 3px 0 0 var(--cz-sage);
+}
+
+/* Contour à l'intérieur : le panneau et la zone qui défile coupent ce qui dépasse. */
+.cz-list-row:focus-visible {
+  outline: 3px solid var(--cz-sage);
+  outline-offset: -3px;
+}
+
+.cz-list-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cz-list-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cz-list-ident {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cz-list-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font: 600 15px / 1.35 "Manrope", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cz-list-date {
+  flex-shrink: 0;
+  color: var(--cz-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Le pseudo rétrécit avant le nom affiché. */
+.cz-list-handle {
+  flex: 0 8 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--cz-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cz-list-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.cz-list-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 8px;
+  border: 1px solid var(--cz-line);
+  border-radius: 999px;
+  background: var(--cz-surface);
+  color: var(--cz-muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.cz-list-flag svg {
+  flex-shrink: 0;
+}
+
+.cz-list-flag--fiche {
+  justify-content: center;
+  min-width: 24px;
+  border-color: var(--cz-violet-line);
+  background: var(--cz-violet-soft);
+  color: var(--cz-violet);
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+}
+
+.cz-list-flag--prevention {
+  border-style: dashed;
+  border-color: #d8dcd6;
+}
+
+.cz-list-flag--ia {
+  border-color: var(--cz-blue-line);
+  background: var(--cz-blue-soft);
+  color: var(--cz-blue);
+}
+
+.cz-list-flag--mute {
+  border-color: var(--cz-blue-line);
+  color: #48658a;
+}
+
+.cz-list-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-left: 10px;
+  border-left: 2px solid var(--cz-red-line);
+}
+
+.cz-list-match {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--cz-ink);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.cz-list-match-label {
+  color: var(--cz-muted);
+  font-weight: 600;
+}
+
+.cz-list-match-more {
+  color: var(--cz-muted);
+  font-size: 11px;
+}
+
+.cz-list-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--cz-line);
+}
+
+.cz-list-more .cz-meta {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Métriques du casier (modèle .nd-metrics) */
+
+.cz-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--cz-line);
+  border-radius: 18px;
+  background: var(--cz-surface);
+}
+
+.cz-metric {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px 22px;
+}
+
+.cz-metric + .cz-metric {
+  border-left: 1px solid var(--cz-line);
+}
+
+.cz-metric-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--cz-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cz-metric-label svg {
+  flex-shrink: 0;
+}
+
+.cz-metric--sanctions .cz-metric-label svg {
+  color: var(--cz-red);
+}
+
+.cz-metric--rappels .cz-metric-label svg {
+  color: var(--cz-muted);
+}
+
+.cz-metric--fiches .cz-metric-label svg {
+  color: var(--cz-violet);
+}
+
+.cz-metric--ia .cz-metric-label svg {
+  color: var(--cz-blue);
+}
+
+.cz-metric-value {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  margin: 14px 0 0;
+}
+
+.cz-metric-value strong {
+  color: var(--cz-ink);
+  font: 600 30px / 1.1 "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.cz-metric-unit {
+  color: var(--cz-muted);
+  font-size: 13px;
+}
+
+.cz-metric-detail {
+  margin: 6px 0 0;
+  color: var(--cz-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Modale « Créer un casier » (en portail, dans .cz-dialog-root) */
+
+.cz-create-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.cz-create .cz-callout {
+  margin: 0;
+}
+
+.cz-create-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cz-create-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 64px;
+  padding: 14px 16px;
+  border: 1px solid var(--cz-line);
+  border-radius: 16px;
+  background: var(--cz-surface);
+  color: var(--cz-muted);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.cz-create-mode svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--cz-sage);
+}
+
+.cz-create-mode:not(:disabled):hover {
+  border-color: var(--cz-sage-line);
+}
+
+.cz-create-mode[aria-pressed="true"] {
+  border-color: var(--cz-sage);
+  background: var(--cz-sage-soft);
+  color: var(--cz-sage);
+  box-shadow: inset 0 0 0 1px var(--cz-sage);
+}
+
+.cz-create-mode:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cz-create-mode-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cz-create-mode-copy strong {
+  color: var(--cz-ink);
+  font: 600 14px / 1.3 "Manrope", sans-serif;
+}
+
+.cz-create-mode-copy small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.cz-create-search {
+  padding-right: 12px;
+}
+
+.cz-create-spin {
+  flex-shrink: 0;
+  color: var(--cz-muted);
+}
+
+.cz-create-results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 296px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--cz-line);
+  border-radius: 14px;
+  background: var(--cz-surface);
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+.cz-create-results[hidden] {
+  display: none;
+}
+
+.cz-create-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.cz-create-option:hover,
+.cz-create-option.is-active {
+  background: var(--cz-sage-soft);
+}
+
+/* Option active au clavier (aria-activedescendant) : le focus reste dans le champ. */
+.cz-create-option.is-active {
+  box-shadow: inset 0 0 0 2px var(--cz-sage);
+}
+
+.cz-create-option-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cz-create-option-copy strong {
+  overflow: hidden;
+  font: 600 14px / 1.35 "Manrope", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cz-create-option-copy span {
+  overflow: hidden;
+  color: var(--cz-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cz-create-results-state {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px dashed #d8dcd6;
+  border-radius: 14px;
+  color: var(--cz-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.cz-create-results-state p {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 0;
+}
+
+.cz-create-results-state svg {
+  flex-shrink: 0;
+}
+
+.cz-create-results-state.is-error {
+  border-style: solid;
+  border-color: var(--cz-danger-line);
+  background: var(--cz-danger-soft);
+  color: var(--cz-danger);
+}
+
+.cz-create-member {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--cz-sage-line);
+  border-radius: 16px;
+  background: #f6faf6;
+}
+
+.cz-create-member-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cz-create-member-copy strong {
+  font: 600 16px / 1.3 "Manrope", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.cz-create-member-copy span {
+  color: var(--cz-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* Responsive */
+
+@media (pointer: coarse) {
+  .cz-searchbar-select {
+    min-height: 44px;
+  }
+}
+
+/* Raccourci clavier inutile sans clavier physique. */
+@media (hover: none) {
+  .cz-searchbar-kbd {
+    display: none;
+  }
+}
+
+@media (max-width: 1199px) {
+  .cz-list-row {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .cz-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cz-metric + .cz-metric {
+    border-left: 0;
+  }
+
+  .cz-metric:nth-child(even) {
+    border-left: 1px solid var(--cz-line);
+  }
+
+  .cz-metric:nth-child(n + 3) {
+    border-top: 1px solid var(--cz-line);
+  }
+}
+
+@media (max-width: 640px) {
+  .cz-searchbar-scope .cz-chip {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+
+  /* Volet ouvert à la demande : toutes les puces restent visibles (retour à la ligne). */
+  .cz-searchbar-filters .cz-chips {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .cz-searchbar-select {
+    flex: 1 1 auto;
+  }
+
+  .cz-list-row {
+    gap: 12px;
+    padding: 14px 20px;
+  }
+
+  .cz-list-more {
+    padding: 14px 20px 18px;
+  }
+
+  .cz-metric {
+    padding: 16px;
+  }
+
+  .cz-metric-value {
+    margin-top: 10px;
+  }
+
+  .cz-metric-value strong {
+    font-size: 26px;
+  }
+
+  .cz-create-modes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cz-create-mode {
+    min-height: 56px;
+  }
+
+  .cz-create-member {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cz-list-row,
+  .cz-list-wrap.is-updating .cz-list,
+  .cz-searchbar-chevron,
+  .cz-create-mode {
+    transition: none;
+  }
+}

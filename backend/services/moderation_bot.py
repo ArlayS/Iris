@@ -38,16 +38,29 @@ Tout le texte utile est concentré dans UN seul Text Display :
     "(`1153638521786093578`)"
   - la raison, dans un bloc de code ``` ``` juste après le libellé
     "Raison de l'ajout".
+
+Les logs de mute (salon déclaré « mute:<id> ») suivent le même format. En plus du motif, le bot
+relève (services/casier_log_parser.py) :
+  - la durée si le log en donne une (champ « Durée : », horodatage <t:…>, « pendant … ») ;
+  - le modérateur réel (« <@MOD_ID> a mit <@MEMBRE> … »), enregistré dans `moderator` ;
+  - les fichiers du message (pièces jointes, composants Fichier / Galerie / Miniature, images
+    d'embed) hébergés sur le CDN Discord, copiés localement en tâche de fond par
+    services/casier_attachments.py.
+Aucune de ces lectures ne peut empêcher l'enregistrement de la sanction : chacune est isolée et
+retombe sur une valeur vide en cas d'erreur.
 """
 
+import asyncio
 import logging
 import os
 import re
+from datetime import datetime, timezone
 
 import discord
 import httpx
 
 from config import DISCORD_BOT_TOKEN, DISCORD_MODERATION_CHANNEL_TYPES
+from services import casier_log_parser
 from services.casier_service import add_sanction
 
 # ai_moderation.py est dans le même dossier (services/). Importé APRÈS config, qui
@@ -280,6 +293,26 @@ def is_trusted_log_author(message: discord.Message) -> bool:
     return bool(getattr(author, "bot", False))
 
 
+async def resolve_log_moderator(message, mod_id: str) -> dict:
+    """Modérateur cité dans le log : nom via la guilde si possible, sinon l'id seul."""
+    moderator = {"id": str(mod_id), "username": None, "display_name": None}
+    guild = getattr(message, "guild", None)
+    if guild is None:
+        return moderator
+
+    member = guild.get_member(int(mod_id))
+    if member is None:
+        try:
+            member = await asyncio.wait_for(guild.fetch_member(int(mod_id)), 5)
+        except (discord.NotFound, discord.HTTPException, asyncio.TimeoutError):
+            member = None
+
+    if member is not None:
+        moderator["username"] = getattr(member, "name", None)
+        moderator["display_name"] = getattr(member, "display_name", None)
+    return moderator
+
+
 async def handle_sanction_log_message(message: discord.Message):
     sanction_type = DISCORD_MODERATION_CHANNEL_TYPES.get(message.channel.id)
     if sanction_type is None:
@@ -328,6 +361,27 @@ async def handle_sanction_log_message(message: discord.Message):
         "message_url": message.jump_url,
     }
 
+    # Lectures facultatives : aucune ne doit empêcher l'enregistrement de la sanction.
+    created = getattr(message, "created_at", None) or datetime.now(timezone.utc)
+    try:
+        duration = casier_log_parser.extract_duration(full_text, now=created)
+    except Exception:
+        logger.exception("Durée illisible dans le log %s.", message.id)
+        duration = casier_log_parser.DurationInfo(None, None, None)
+    try:
+        files = casier_log_parser.extract_message_files(raw_message)
+    except Exception:
+        logger.exception("Fichiers illisibles dans le log %s.", message.id)
+        files = []
+    moderator = None
+    try:
+        mod_id = casier_log_parser.extract_moderator_id(full_text, discord_id)
+        if mod_id:
+            moderator = await resolve_log_moderator(message, mod_id)
+    except Exception:
+        logger.exception("Modérateur illisible dans le log %s.", message.id)
+        moderator = None
+
     try:
         await add_sanction(
             discord_id=discord_id,
@@ -337,6 +391,11 @@ async def handle_sanction_log_message(message: discord.Message):
             created_by=None,
             source=source,
             dedupe_message_id=str(message.id),
+            duration=duration.label,
+            duration_seconds=duration.seconds,
+            expires_at=duration.expires_at,
+            attachments=files or None,
+            moderator=moderator,
         )
         logger.info(
             "Sanction '%s' enregistrée pour %s (message %s, salon %s).",

@@ -3,7 +3,9 @@ from datetime import datetime, timezone
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import UpdateOne
+from pymongo.errors import OperationFailure
 
+import config
 from config import AUTH_LOG_TTL_DAYS, DB_NAME, MONGO_URL
 
 logger = logging.getLogger(__name__)
@@ -12,6 +14,7 @@ client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
 
 AUTH_LOG_TTL_SECONDS = AUTH_LOG_TTL_DAYS * 24 * 3600
+DAY_SECONDS = 24 * 3600
 
 
 async def _migrate_auth_log_dates() -> None:
@@ -58,6 +61,47 @@ async def _ensure_auth_logs_ttl() -> None:
             await db.auth_logs.create_index("created_at", expireAfterSeconds=AUTH_LOG_TTL_SECONDS)
 
 
+async def _ensure_ai_flags_ttl(ttl_days: int | None = None) -> None:
+    """Rétention des signalements IA : index TTL sur created_at, index simple si 0 (illimité).
+
+    `ttl_days` absent : config.AI_MODERATION_FLAG_TTL_DAYS, lu à l'appel.
+    """
+    days = getattr(config, "AI_MODERATION_FLAG_TTL_DAYS", 180) if ttl_days is None else ttl_days
+    seconds = max(int(days), 0) * DAY_SECONDS
+    collection = db.ai_moderation_flags
+    existing = (await collection.index_information()).get("created_at_1")
+
+    if seconds == 0:
+        if existing is not None and "expireAfterSeconds" in existing:
+            await collection.drop_index("created_at_1")
+            existing = None
+        if existing is None:
+            await collection.create_index("created_at")
+        return
+
+    if existing is None:
+        await collection.create_index("created_at", expireAfterSeconds=seconds)
+    elif existing.get("expireAfterSeconds") != seconds:
+        if "expireAfterSeconds" in existing:
+            await db.command(
+                {
+                    "collMod": "ai_moderation_flags",
+                    "index": {"keyPattern": {"created_at": 1}, "expireAfterSeconds": seconds},
+                }
+            )
+        else:
+            await collection.drop_index("created_at_1")
+            await collection.create_index("created_at", expireAfterSeconds=seconds)
+
+
+async def _create_index_or_log(collection, keys, **kwargs) -> None:
+    """Index ajouté par la refonte du casier : un conflit avec un index existant ne bloque pas le démarrage."""
+    try:
+        await collection.create_index(keys, **kwargs)
+    except OperationFailure:
+        logger.exception("Index %s impossible à créer sur %s", kwargs.get("name") or keys, collection.name)
+
+
 async def initialize_indexes() -> None:
     await db.tickets.create_index("id", unique=True)
     await db.tickets.create_index("channel_id", unique=True)
@@ -90,8 +134,27 @@ async def initialize_indexes() -> None:
     await db.auth_logs.create_index([("event_type", 1), ("created_at", -1)])
 
     await db.casiers.create_index([("sanctions.source.message_id", 1)], name="sanctions_source_message_id")
+    # Non unique : des doublons historiques sont possibles.
+    await _create_index_or_log(db.casiers, "discord_id", name="casiers_discord_id")
+
+    flags = db.ai_moderation_flags
+    await _create_index_or_log(flags, "id", unique=True)
+    await _create_index_or_log(flags, "message.id", unique=True, sparse=True)
+    await _create_index_or_log(flags, [("discord_id", 1), ("created_at", -1)])
+    await _create_index_or_log(flags, [("review.status", 1), ("created_at", -1)])
+    try:
+        await _ensure_ai_flags_ttl()
+    except Exception:
+        logger.exception("Impossible de configurer l'expiration (TTL) des signalements IA")
 
     await db.channel_archives.create_index("id", unique=True)
     await db.channel_archives.create_index("channel_id", unique=True)
     await db.channel_archives.create_index("created_at")
     await db.channel_archives.create_index("updated_at")
+
+    try:
+        from services.casier_migrations import migrate_casiers  # import local : évite l'import circulaire
+
+        await migrate_casiers()
+    except Exception:
+        logger.exception("Migration des casiers impossible")

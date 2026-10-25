@@ -1,0 +1,701 @@
+/* Casier : fiches S (liste, lecteur, éditeur) et signalements IA (vue, liste, cartes). */
+
+/* ---------- Fiches S : liste ---------- */
+
+.cz-fiche-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.cz-fiche-intro {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cz-fiche-intro > p {
+  flex: 1 1 260px;
+  min-width: 0;
+  margin: 0;
+}
+
+.cz-fiche-intro-count {
+  color: var(--cz-muted);
+}
+
+.cz-fiche-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px 22px;
+  border: 1px solid var(--cz-violet-line);
+  border-left: 4px solid var(--cz-violet);
+  border-radius: 18px;
+  background: var(--cz-surface);
+  scroll-margin-top: 24px;
+}
+
+.cz-fiche-card--closed {
+  border-color: var(--cz-line);
+  border-left-color: #c9cfc8;
+  background: #fcfcfa;
+}
+
+.cz-fiche-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.cz-fiche-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  min-width: 0;
+}
+
+.cz-fiche-title {
+  margin: 0;
+  color: var(--cz-ink);
+  font: 600 17px / 1.35 "Manrope", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.cz-fiche-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cz-fiche-lock {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px dashed #d8dcd6;
+  border-radius: 50%;
+  color: var(--cz-muted);
+  cursor: help;
+}
+
+.cz-fiche-lock-tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: min(260px, 70vw);
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: var(--cz-ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  white-space: normal;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.cz-fiche-lock:hover .cz-fiche-lock-tip,
+.cz-fiche-lock:focus .cz-fiche-lock-tip,
+.cz-fiche-lock:focus-visible .cz-fiche-lock-tip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.cz-fiche-body {
+  min-width: 0;
+  color: var(--cz-ink);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.cz-fiche-reader {
+  min-width: 0;
+}
+
+.cz-fiche-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cz-fiche-empty {
+  margin: 0;
+  color: var(--cz-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.cz-fiche-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cz-fiche-fallback-note {
+  margin: 0;
+  color: var(--cz-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.cz-fiche-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--cz-line);
+  color: var(--cz-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ---------- Fiches S : éditeur ---------- */
+
+.cz-fiche-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.cz-fiche-draft {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cz-fiche-draft-copy {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cz-fiche-draft-copy strong {
+  color: var(--cz-violet);
+  font-weight: 600;
+}
+
+.cz-fiche-draft-copy span {
+  color: var(--cz-ink);
+}
+
+.cz-fiche-title-input {
+  font: 600 17px / 1.4 "Manrope", sans-serif;
+}
+
+/* L'éditeur occupe toute la hauteur libre de la modale. */
+.cz-fiche-editor-field {
+  flex: 1 0 auto;
+}
+
+.cz-fiche-editor {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cz-fiche-editor .iris-editor {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 340px;
+}
+
+.cz-fiche-editor .iris-editor .bn-container {
+  flex: 1 1 auto;
+  min-height: 338px;
+}
+
+/* La zone ProseMirror a un tabindex : un seul indicateur de focus, porté par le cadre de l'éditeur. */
+.cz-fiche-editor .bn-editor:focus-visible {
+  outline: none;
+}
+
+.cz-fiche-editor .iris-editor:focus-within {
+  border-color: var(--cz-sage);
+  box-shadow: 0 0 0 3px rgba(74, 103, 92, 0.16);
+}
+
+/* ---------- Signalements IA : vue globale ---------- */
+
+.cz-flags-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cz-flags-search {
+  max-width: 560px;
+}
+
+.cz-flags-search-busy {
+  flex-shrink: 0;
+  color: var(--cz-muted);
+}
+
+.cz-flags-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  min-width: 0;
+}
+
+.cz-flags-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cz-flags-group-label {
+  flex-shrink: 0;
+  color: var(--cz-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cz-flags-selects {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cz-flags-body {
+  padding-top: 20px;
+}
+
+.cz-flags {
+  min-width: 0;
+}
+
+.cz-flags.is-updating .cz-flag-list {
+  opacity: 0.6;
+  transition: opacity 160ms ease;
+}
+
+/* ---------- Signalements IA : liste ---------- */
+
+.cz-flag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cz-flag-item {
+  min-width: 0;
+  scroll-margin-top: 24px;
+}
+
+.cz-flag-pinned {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  color: var(--cz-blue);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cz-flag-more-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cz-flag-more-bar .cz-meta {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.cz-flag-preparing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.cz-flag-skeleton {
+  gap: 14px;
+}
+
+/* ---------- Signalements IA : carte ---------- */
+
+.cz-flag-card {
+  --cz-flag-bar: #c9cfc8;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 20px 18px 25px;
+  overflow: hidden;
+  border: 1px solid var(--cz-line);
+  border-radius: 18px;
+  background: var(--cz-surface);
+}
+
+.cz-flag-card::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  background: var(--cz-flag-bar);
+  content: "";
+}
+
+.cz-flag-card--ia-1 {
+  --cz-flag-bar: var(--cz-gold);
+}
+
+.cz-flag-card--ia-2 {
+  --cz-flag-bar: #b9785e;
+}
+
+.cz-flag-card--ia-3 {
+  --cz-flag-bar: #a8474d;
+}
+
+.cz-flag-list--compact .cz-flag-card {
+  padding: 16px 18px 16px 23px;
+}
+
+.cz-flag-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cz-flag-who {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cz-flag-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.cz-flag-name {
+  margin: 0;
+  color: var(--cz-ink);
+  font: 600 15px / 1.35 "Manrope", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.cz-flag-where {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin: 4px 0 0;
+  color: var(--cz-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cz-flag-channel {
+  color: var(--cz-blue);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cz-flag-badges {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cz-flag-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cz-flag-text {
+  align-self: stretch;
+  margin: 0;
+  padding: 12px 16px;
+  border-left: 3px solid #b9c9e2;
+  border-radius: 0 12px 12px 0;
+  background: var(--cz-subtle);
+  color: var(--cz-ink);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cz-flag-text.is-clamped {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.cz-flag-more {
+  min-height: 32px;
+  font-size: 12px;
+}
+
+.cz-flag-redacted {
+  align-items: flex-start;
+}
+
+.cz-flag-redacted p,
+.cz-flag-missing {
+  margin: 0;
+}
+
+.cz-flag-missing {
+  color: var(--cz-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.cz-flag-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cz-flag-verdict {
+  margin: 0;
+  color: var(--cz-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.cz-flag-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.cz-flag-facts dt {
+  color: var(--cz-muted);
+  font-weight: 600;
+}
+
+.cz-flag-facts dd {
+  margin: 0;
+  color: var(--cz-ink);
+  overflow-wrap: anywhere;
+}
+
+.cz-flag-executed {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cz-flag-mode {
+  margin: 0;
+}
+
+.cz-flag-mode:empty {
+  display: none;
+}
+
+.cz-flag-review {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--cz-line);
+  border-radius: 12px;
+  background: #fafbf8;
+}
+
+.cz-flag-review .cz-meta {
+  margin: 0;
+}
+
+.cz-flag-comment {
+  margin: 0;
+  color: var(--cz-ink);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cz-flag-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cz-line);
+}
+
+.cz-flag-toggles {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cz-flag-toggle {
+  min-height: 40px;
+}
+
+.cz-flag-toggle--faux[aria-pressed="true"] {
+  border-color: #cfd5cd;
+  background: #e9ece7;
+  color: #3f4a44;
+}
+
+.cz-flag-toggle[aria-disabled="true"] {
+  border-style: dashed;
+  border-color: #d8dcd6;
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.cz-flag-actions-spacer {
+  flex: 1 1 0;
+}
+
+.cz-flag-comment-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cz-flag-comment-form .cz-textarea {
+  min-height: 110px;
+}
+
+.cz-flag-comment-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 899px) {
+  .cz-flags-search {
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .cz-fiche-card {
+    padding: 16px 16px 16px 18px;
+  }
+
+  .cz-fiche-head {
+    flex-direction: column;
+  }
+
+  .cz-fiche-actions {
+    width: 100%;
+  }
+
+  .cz-fiche-editor .iris-editor {
+    min-height: 50vh;
+  }
+
+  .cz-fiche-editor .iris-editor .bn-container {
+    min-height: calc(50vh - 2px);
+  }
+
+  .cz-flags-filters,
+  .cz-flags-group {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cz-flags-group,
+  .cz-flags-group .cz-chips,
+  .cz-flags-selects,
+  .cz-flags-selects .cz-select {
+    width: 100%;
+  }
+
+  .cz-flag-card {
+    padding: 16px 16px 16px 20px;
+  }
+
+  .cz-flag-head {
+    flex-wrap: wrap;
+  }
+
+  .cz-flag-badges {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .cz-flag-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .cz-flag-facts dd + dt {
+    margin-top: 6px;
+  }
+
+  .cz-flag-actions-spacer {
+    display: none;
+  }
+
+  .cz-flag-actions > .cz-button,
+  .cz-flag-actions > a.cz-button {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cz-fiche-lock-tip,
+  .cz-flags.is-updating .cz-flag-list {
+    transition: none;
+  }
+}

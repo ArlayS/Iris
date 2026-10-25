@@ -15,6 +15,11 @@ Fonctionnement :
 Le champ « Action » de l'alerte affiche la sanction suggérée par l'échelle de sanctions.
 Les alertes utilisent Components V2 (discord.py >= 2.6 : ui.LayoutView / ui.Container).
 
+Historique dans Iris : chaque alerte (violation, refus du modèle, réponse illisible) est aussi
+enregistrée dans la collection ai_moderation_flags (casier du membre), jamais les messages jugés OK
+ni ceux des salons de tickets/écoute. Cet enregistrement est borné dans le temps et ne bloque jamais
+le worker (voir _record_flag).
+
 Ping du rôle staff : une alerte ping le rôle AI_MODERATION_PING_ROLE_ID seulement si la gravité
 atteint AI_MODERATION_PING_MIN_GRAVITY ET si la confiance du modèle atteint
 AI_MODERATION_PING_MIN_CONFIDENCE (60 % par défaut). L'alerte est postée dans tous les cas.
@@ -163,6 +168,7 @@ MAX_OUTPUT_TOKENS = _env_int("AI_MODERATION_MAX_OUTPUT_TOKENS", 3000)  # plafond
 DELETE_MIN_CONFIDENCE = 0.8    # suppression auto : gravité >= 2 et confiance >= 0.8
 TIMEOUT_MIN_CONFIDENCE = 0.9   # timeout auto : gravité 3 et confiance >= 0.9
 TIMEOUT_MINUTES = 10
+FLAG_RECORD_TIMEOUT = 5        # secondes max pour enregistrer un signalement dans Iris
 
 _BASE_DIR = Path(__file__).resolve().parent
 USAGE_FILE = Path(os.getenv("AI_MODERATION_USAGE_FILE") or _BASE_DIR / "ai_moderation_usage.json")
@@ -425,6 +431,15 @@ def worth_analyzing(text: str) -> bool:
     return sum(char.isalnum() for char in stripped) >= MIN_ALNUM_CHARS
 
 
+def channel_location(channel) -> tuple[int | None, int | None]:
+    """(parent_id, category_id) d'un salon, utilisés pour les salons ignorés et les signalements Iris."""
+    parent_id = getattr(channel, "parent_id", None)       # thread ou post de forum -> salon/forum parent
+    category_id = getattr(channel, "category_id", None)   # salon normal -> catégorie
+    if parent_id is None and getattr(channel, "parent", None) is not None:
+        category_id = getattr(channel.parent, "category_id", None)  # thread -> catégorie du parent
+    return parent_id, category_id
+
+
 def build_context(channel_id: int, now: float) -> list[str]:
     lines = [
         f"{author} : {text}"
@@ -581,10 +596,11 @@ async def send_alert(
     verdict: Verdict | None,
     action_line: str,
     ping: bool = True,
-) -> None:
+) -> discord.Message | None:
+    """Poste l'alerte ; renvoie le message envoyé, ou None si elle n'a pas pu être postée."""
     channel = await _get_alert_channel()
     if channel is None:
-        return
+        return None
 
     message = job.message
     author = message.author
@@ -641,16 +657,115 @@ async def send_alert(
     view.add_item(container)
 
     try:
-        await channel.send(view=view, allowed_mentions=mentions)
+        sent = await channel.send(view=view, allowed_mentions=mentions)
         logger.info(
             "Alerte postée dans le salon %s (message %s, ping=%s).",
             ALERT_CHANNEL_ID, message.id, bool(ping and PING_ROLE_ID),
         )
+        return sent
     except (discord.Forbidden, discord.HTTPException):
         logger.exception(
             "Échec de l'envoi de l'alerte d'automodération (permissions View/Send du salon %s ?).",
             ALERT_CHANNEL_ID,
         )
+        return None
+
+
+# --------------------------------------------------------------------------- #
+# Historique des signalements dans Iris (collection ai_moderation_flags)
+# --------------------------------------------------------------------------- #
+
+
+def _id_str(value) -> str | None:
+    return str(value) if value is not None else None
+
+
+def _verdict_payload(verdict: Verdict | None) -> dict | None:
+    if verdict is None:
+        return None
+    return {
+        field: getattr(verdict, field, None)
+        for field in ("violation", "categorie", "gravite", "confiance", "raison", "sanction")
+    }
+
+
+def _build_flag_payload(job: Job, *, kind, verdict, planned, executed, pinged, alert_message) -> dict:
+    """Payload de casier_ai_flags.record_ai_flag (lectures défensives : testable avec des SimpleNamespace)."""
+    message = getattr(job, "message", None)
+    author = getattr(message, "author", None)
+    channel = getattr(message, "channel", None)
+    parent_id, category_id = channel_location(channel)
+    posted = alert_message is not None
+    alert_channel = getattr(alert_message, "channel", None)
+
+    return {
+        "discord_id": _id_str(getattr(author, "id", None)),
+        "author": {
+            "id": _id_str(getattr(author, "id", None)),
+            "username": getattr(author, "name", None),
+            "display_name": getattr(author, "display_name", None),
+            "avatar_url": getattr(getattr(author, "display_avatar", None), "url", None),
+        },
+        "guild_id": _id_str(getattr(getattr(message, "guild", None), "id", None)),
+        "channel": {
+            "id": _id_str(getattr(channel, "id", None)),
+            "name": getattr(channel, "name", None),
+            "parent_id": _id_str(parent_id),
+            "category_id": _id_str(category_id),
+        },
+        "message": {
+            "id": _id_str(getattr(message, "id", None)),
+            "content": getattr(message, "clean_content", None),
+            "created_at": getattr(message, "created_at", None),
+            "jump_url": getattr(message, "jump_url", None),
+        },
+        "kind": kind,
+        "verdict": _verdict_payload(verdict),
+        "mode": "act" if MODE == "act" else "log",
+        "planned_action": planned,
+        "executed": list(executed or []),
+        "alert": {
+            "posted": posted,
+            "channel_id": _id_str(getattr(alert_channel, "id", None) or ALERT_CHANNEL_ID or None) if posted else None,
+            "message_id": _id_str(getattr(alert_message, "id", None)),
+            "jump_url": getattr(alert_message, "jump_url", None),
+            "pinged": bool(pinged) and posted,
+        },
+        "model": MODEL,
+    }
+
+
+async def _record_flag(
+    job: Job,
+    *,
+    kind: str,
+    verdict: Verdict | None,
+    planned: str | None,
+    executed: list[str],
+    pinged: bool,
+    alert_message: discord.Message | None,
+) -> str | None:
+    """Enregistre l'alerte dans Iris ; renvoie l'id du signalement ou None.
+
+    Ne lève jamais et rend la main au plus tard après FLAG_RECORD_TIMEOUT secondes : le worker
+    d'automodération ne dépend pas de MongoDB. L'exclusion des salons de tickets/écoute est
+    appliquée par casier_ai_flags.record_ai_flag.
+    """
+    message_id = getattr(getattr(job, "message", None), "id", None)
+    try:
+        from services import casier_ai_flags  # import local : aucune dépendance à Mongo au chargement du module
+
+        payload = _build_flag_payload(
+            job, kind=kind, verdict=verdict, planned=planned, executed=executed,
+            pinged=pinged, alert_message=alert_message,
+        )
+        flag_id = await asyncio.wait_for(casier_ai_flags.record_ai_flag(payload), FLAG_RECORD_TIMEOUT)
+    except Exception:
+        logger.exception("Signalement IA non enregistré dans Iris (message %s).", message_id)
+        return None
+    if flag_id:
+        logger.info("Signalement IA %s enregistré dans Iris (message %s, type %s).", flag_id, message_id, kind)
+    return flag_id
 
 
 async def apply_verdict(job: Job, verdict: Verdict) -> None:
@@ -683,14 +798,20 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
             verdict.confiance * 100, PING_MIN_CONFIDENCE * 100,
         )
 
+    pinged = bool(ping and PING_ROLE_ID)
+
     if MODE != "act":
-        await send_alert(
+        alert_message = await send_alert(
             job,
             title=" ",
             color=color,
             verdict=verdict,
             action_line=f"{suggestion}\n",
             ping=ping,
+        )
+        await _record_flag(
+            job, kind="violation", verdict=verdict, planned=planned, executed=[],
+            pinged=pinged, alert_message=alert_message,
         )
         return
 
@@ -716,13 +837,17 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
             done.append("timeout impossible (rôle du bot trop bas ?)")
 
     executed = ", ".join(done) if done else "aucune (signalement seul, à traiter par le staff)"
-    await send_alert(
+    alert_message = await send_alert(
         job,
         title="Mode actif",
         color=color,
         verdict=verdict,
         action_line=f"{suggestion}\nExécuté par le bot : {executed}.",
         ping=ping,
+    )
+    await _record_flag(
+        job, kind="violation", verdict=verdict, planned=planned, executed=done,
+        pinged=pinged, alert_message=alert_message,
     )
 
 
@@ -794,12 +919,16 @@ async def _process(job: Job) -> None:
         # Le classifieur de sécurité du modèle a refusé : le contenu est probablement
         # problématique, mais on n'agit jamais automatiquement sur cette base.
         logger.info("Message %s : refus du modèle (stop_reason=refusal) -> alerte manuelle.", job.message.id)
-        await send_alert(
+        alert_message = await send_alert(
             job,
             title="Refus du modèle",
             color=discord.Color.dark_red(),
             verdict=None,
             action_line="Le modèle a refusé d'analyser ce message. À vérifier manuellement.",
+        )
+        await _record_flag(
+            job, kind="refus", verdict=None, planned=None, executed=[],
+            pinged=bool(PING_ROLE_ID), alert_message=alert_message,
         )
         return
 
@@ -820,12 +949,16 @@ async def _process(job: Job) -> None:
             output, text[:600],
         )
         # Pas de faux négatif silencieux : le staff est prévenu qu'un message n'a pas pu être analysé.
-        await send_alert(
+        alert_message = await send_alert(
             job,
             title="Analyse échouée",
             color=discord.Color.dark_grey(),
             verdict=None,
             action_line=f"Réponse du modèle illisible (stop_reason={response.stop_reason}). À vérifier manuellement.",
+        )
+        await _record_flag(
+            job, kind="illisible", verdict=None, planned=None, executed=[],
+            pinged=bool(PING_ROLE_ID), alert_message=alert_message,
         )
         return
 
@@ -962,10 +1095,7 @@ async def handle_message(message: discord.Message) -> None:
 
     if _queue is None:  # module non démarré (désactivé ou clé manquante)
         return
-    parent_id = getattr(message.channel, "parent_id", None)       # thread ou post de forum -> salon/forum parent
-    category_id = getattr(message.channel, "category_id", None)   # salon normal -> catégorie
-    if parent_id is None and getattr(message.channel, "parent", None) is not None:
-        category_id = getattr(message.channel.parent, "category_id", None)  # thread -> catégorie du parent
+    parent_id, category_id = channel_location(message.channel)
 
     if IGNORED_CHANNEL_IDS & {channel_id, parent_id, category_id}:
         logger.debug(
