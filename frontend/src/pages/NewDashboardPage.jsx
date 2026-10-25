@@ -163,31 +163,6 @@ export default function NewDashboardPage({
       label: "Calendrier des projets",
       Icon: CalendarDays,
     },
-    isHelper && {
-      to: "/resources",
-      label: "Ressources",
-      Icon: BookHeart,
-    },
-    isResponsable && {
-      to: "/responsable/auth-logs",
-      label: "Logs d’authentification",
-      Icon: Archive,
-    },
-    isResponsable && {
-      to: "/responsable/archives-salons",
-      label: "Archives de salons",
-      Icon: Archive,
-    },
-    (isAdmin || isResponsable) && {
-      to: "/admin",
-      label: "Coordination",
-      Icon: Users,
-    },
-    {
-      to: "/profile",
-      label: "Mon profil",
-      Icon: Users,
-    },
   ].filter(Boolean);
 
   return (
