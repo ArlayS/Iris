@@ -152,8 +152,8 @@ function CreateCasierModal({ open, onClose, onCreated }) {
       const discordId = manualDiscordId.trim();
       const username = manualUsername.trim();
 
-      if (!/^\d{17,21}$/.test(discordId)) {
-        toast.error("L'ID Discord doit être une suite de 17 à 21 chiffres.");
+      if (!/^\d{17,20}$/.test(discordId)) {
+        toast.error("L'ID Discord doit être une suite de 17 à 20 chiffres.");
         return;
       }
       if (!username) {
@@ -290,7 +290,7 @@ function CreateCasierModal({ open, onClose, onCreated }) {
                   autoComplete="off"
                   inputMode="numeric"
                 />
-                <small>Suite de 17 à 21 chiffres (identifiant Discord du membre).</small>
+                <small>Suite de 17 à 20 chiffres (identifiant Discord du membre).</small>
               </div>
 
               <div className="moderation-field">

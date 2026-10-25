@@ -41,6 +41,7 @@ Tout le texte utile est concentré dans UN seul Text Display :
 """
 
 import logging
+import os
 import re
 
 import discord
@@ -56,6 +57,14 @@ from services import ai_moderation
 logger = logging.getLogger("moderation_bot")
 
 DISCORD_API_BASE = "https://discord.com/api/v10"
+
+# Auteurs autorisés à alimenter les casiers (IDs utilisateur / application / webhook, séparés par des virgules).
+# Vide = seuls les bots et applications (ex. OasisBot) sont pris en compte, jamais un humain.
+MODERATION_LOG_AUTHOR_IDS = {
+    value.strip()
+    for value in os.getenv("DISCORD_MODERATION_LOG_AUTHOR_IDS", "").split(",")
+    if value.strip()
+}
 
 # ID entre parenthèses, avec ou sans backticks autour : "(`123...`)" ou "(123...)"
 PAREN_ID_PATTERN = re.compile(r"\(\s*`?(\d{17,20})`?\s*\)")
@@ -255,9 +264,34 @@ async def on_message(message: discord.Message):
         logger.exception("Erreur dans l'automodération IA (message %s).", message.id)
 
 
+def is_trusted_log_author(message: discord.Message) -> bool:
+    author = getattr(message, "author", None)
+    if MODERATION_LOG_AUTHOR_IDS:
+        candidates = {
+            str(value)
+            for value in (
+                getattr(author, "id", None),
+                getattr(message, "webhook_id", None),
+                getattr(message, "application_id", None),
+            )
+            if value
+        }
+        return bool(candidates & MODERATION_LOG_AUTHOR_IDS)
+    return bool(getattr(author, "bot", False))
+
+
 async def handle_sanction_log_message(message: discord.Message):
     sanction_type = DISCORD_MODERATION_CHANNEL_TYPES.get(message.channel.id)
     if sanction_type is None:
+        return
+
+    if not is_trusted_log_author(message):
+        logger.warning(
+            "Message %s ignoré dans le salon de sanctions %s : auteur %s non autorisé.",
+            message.id,
+            message.channel.id,
+            getattr(getattr(message, "author", None), "id", None),
+        )
         return
 
     raw_message = await fetch_raw_message(message.channel.id, message.id)

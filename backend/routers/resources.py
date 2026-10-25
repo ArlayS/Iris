@@ -22,7 +22,7 @@ from fastapi.responses import StreamingResponse
 from database import db
 from models.resource import ResourceDocument, ResourceListResponse
 from models.ticket import AuthenticatedHelper
-from services.auth_service import current_admin, current_helper
+from services.auth_service import current_admin, current_ticket_helper
 from services.storage_service import (
     extension_from_filename,
     get_object,
@@ -58,7 +58,7 @@ async def resource_or_404(resource_id: str) -> dict:
 
 @router.get("", response_model=ResourceListResponse)
 async def list_resources(
-    _: AuthenticatedHelper = Depends(current_helper),
+    _: AuthenticatedHelper = Depends(current_ticket_helper),
 ) -> ResourceListResponse:
     resources = await db.resources.find(
         {"is_deleted": False},
@@ -130,7 +130,7 @@ async def upload_resource(
 async def download_resource(
     resource_id: str,
     request: Request,
-    _: AuthenticatedHelper = Depends(current_helper),
+    _: AuthenticatedHelper = Depends(current_ticket_helper),
 ):
     resource = await resource_or_404(resource_id)
 

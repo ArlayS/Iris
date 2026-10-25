@@ -12,6 +12,8 @@ Flux :
    Seuls les rôles « contrôleurs » (staff) peuvent mettre en pause / relancer
    et choisir la vidéo active parmi les fichiers du dossier.
 """
+import hashlib
+import hmac
 import logging
 import math
 import os
@@ -61,6 +63,22 @@ ACTIVITY_CONTROLLER_ROLE_IDS = {
 
 # True : la vidéo démarre dès l'ouverture de l'Activity. False : le staff doit lancer la lecture.
 ACTIVITY_AUTOSTART = os.environ.get("ACTIVITY_AUTOSTART", "true").lower() != "false"
+
+
+def _activity_token_key() -> str | None:
+    """Clé dédiée aux jetons vidéo, distincte de celle des cookies de session."""
+    explicit = os.environ.get("ACTIVITY_TOKEN_SECRET", "").strip()
+    if explicit:
+        return explicit
+    if not APP_SESSION_SECRET:
+        return None
+    # Dérivée de APP_SESSION_SECRET : aucune nouvelle variable d'environnement n'est requise.
+    return hmac.new(
+        APP_SESSION_SECRET.encode("utf-8"), b"iris-activity-video-token", hashlib.sha256
+    ).hexdigest()
+
+
+ACTIVITY_TOKEN_KEY = _activity_token_key()
 
 ROOM_TTL = 6 * 3600
 MAX_SEEK_SECONDS = 7 * 24 * 3600
@@ -131,9 +149,18 @@ def _is_configured() -> bool:
             ACTIVITY_CLIENT_ID,
             ACTIVITY_CLIENT_SECRET,
             DISCORD_GUILD_ID,
-            APP_SESSION_SECRET,
+            ACTIVITY_TOKEN_KEY,
         ]
     )
+
+
+def decode_video_token(token: str) -> dict | None:
+    if not ACTIVITY_TOKEN_KEY:
+        return None
+    try:
+        return jwt.decode(token, ACTIVITY_TOKEN_KEY, algorithms=["HS256"], audience=AUDIENCE)
+    except jwt.PyJWTError:
+        return None
 
 
 @router.post("/token")
@@ -187,7 +214,7 @@ async def activity_token(payload: ActivityTokenRequest) -> dict:
             "can_control": can_control,
             "exp": int(time.time()) + VIDEO_TOKEN_TTL,
         },
-        APP_SESSION_SECRET,
+        ACTIVITY_TOKEN_KEY,
         algorithm="HS256",
     )
 
@@ -239,9 +266,7 @@ def iter_file(path: Path, start: int, length: int):
 
 @router.get("/video")
 async def activity_video(request: Request, t: str) -> Response:
-    try:
-        jwt.decode(t, APP_SESSION_SECRET, algorithms=["HS256"], audience=AUDIENCE)
-    except jwt.PyJWTError:
+    if decode_video_token(t) is None:
         raise HTTPException(status_code=403, detail="Accès refusé.")
 
     path = current_video_path()
@@ -366,9 +391,8 @@ async def select_video(name: str) -> bool:
 
 @router.websocket("/ws")
 async def activity_ws(websocket: WebSocket, t: str, instance_id: str) -> None:
-    try:
-        claims = jwt.decode(t, APP_SESSION_SECRET, algorithms=["HS256"], audience=AUDIENCE)
-    except jwt.PyJWTError:
+    claims = decode_video_token(t)
+    if claims is None:
         await websocket.close(code=4403)
         return
     if not INSTANCE_ID_RE.match(instance_id):

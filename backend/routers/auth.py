@@ -1,9 +1,11 @@
+import logging
 import os
-from urllib.parse import quote
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
+from config import DISCORD_REDIRECT_URI
 from models.ticket import AuthSession
 from services.audit_service import log_auth_event
 from services.auth_service import (
@@ -19,14 +21,78 @@ from services.auth_service import (
 from services.rate_limit import invalid_log_throttle, session_rate_limit
 from services.request_utils import client_ip
 
+logger = logging.getLogger(__name__)
+
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://iris.loasis.app")
-COOKIE_DOMAIN = os.environ.get("COOKIE_DOMAIN", ".loasis.app")
+# Vide par défaut : cookies limités à l'hôte de l'API (jamais envoyés aux autres sous-domaines).
+COOKIE_DOMAIN = os.environ.get("COOKIE_DOMAIN", "").strip() or None
+# Ancien domaine partagé : ses cookies sont supprimés à chaque nettoyage (migration).
+LEGACY_COOKIE_DOMAINS = (".loasis.app",)
+
+
+def _same_domain(first: str | None, second: str | None) -> bool:
+    return bool(first and second) and first.lstrip(".").lower() == second.lstrip(".").lower()
+
+
+def _delete_legacy_cookie(response: Response, name: str) -> None:
+    """Supprime l'ancien cookie partagé sans toucher au cookie du domaine actuel."""
+    for domain in LEGACY_COOKIE_DOMAINS:
+        if not _same_domain(domain, COOKIE_DOMAIN):
+            response.delete_cookie(name, domain=domain, secure=True, httponly=True, samesite="lax")
+
+
+def _delete_cookie_everywhere(response: Response, name: str) -> None:
+    response.delete_cookie(name, secure=True, httponly=True, samesite="lax")
+    if COOKIE_DOMAIN:
+        response.delete_cookie(name, domain=COOKIE_DOMAIN, secure=True, httponly=True, samesite="lax")
+    _delete_legacy_cookie(response, name)
+
+
+_warned_host_pairs: set[tuple[str, str]] = set()
+
+
+def _warn_if_callback_on_other_host(request: Request) -> None:
+    """Cookies limités à l'hôte : le retour OAuth doit arriver sur l'hôte qui a servi la connexion."""
+    if COOKIE_DOMAIN or not DISCORD_REDIRECT_URI:
+        return
+    login_host = (request.url.hostname or "").lower()
+    callback_host = (urlparse(DISCORD_REDIRECT_URI).hostname or "").lower()
+    if not login_host or not callback_host or login_host == callback_host:
+        return
+    if (login_host, callback_host) in _warned_host_pairs:
+        return
+    _warned_host_pairs.add((login_host, callback_host))
+    logger.warning(
+        "L'URL de retour OAuth (%s) n'est pas sur l'hôte de connexion (%s) : le cookie d'état n'y sera pas "
+        "envoyé et chaque connexion échouera (state_expired). Définir COOKIE_DOMAIN ou aligner DISCORD_REDIRECT_URI.",
+        callback_host,
+        login_host,
+    )
+
+
+def _auth_error_code(error: HTTPException) -> str:
+    """Code court transmis au front (jamais de texte libre dans l'URL de la page de connexion)."""
+    detail = str(error.detail)
+    if error.status_code == 401:
+        return "oauth_refused"
+    if error.status_code == 403 and "ne fait pas partie du serveur" in detail:
+        return "not_in_guild"
+    if error.status_code == 403 and "rôle autorisé" in detail:
+        return "missing_role"
+    if error.status_code in (429, 502, 503, 504):
+        return "unavailable"
+    return "unknown"
+
+
+def _auth_error_redirect(code: str) -> RedirectResponse:
+    return RedirectResponse(f"{FRONTEND_URL}/?auth_error={code}", status_code=302)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.get("/discord/login")
 async def discord_login(request: Request) -> RedirectResponse:
+    _warn_if_callback_on_other_host(request)
     state = create_state()
 
     await log_auth_event(
@@ -59,12 +125,13 @@ async def discord_callback(code: str, state: str, request: Request) -> RedirectR
             request,
             helper=None,
             status_code=302,
-            details={"provider": "discord", "reason": "invalid_oauth_state"},
+            details={
+                "provider": "discord",
+                # Cookie absent : expiré, ou retour OAuth sur un autre hôte que la connexion.
+                "reason": "invalid_oauth_state" if STATE_COOKIE in request.cookies else "missing_oauth_state_cookie",
+            },
         )
-        return RedirectResponse(
-            f"{FRONTEND_URL}/?auth_error=Session+expir%C3%A9e%2C+r%C3%A9essayez.",
-            status_code=302,
-        )
+        return _auth_error_redirect("state_expired")
 
     try:
         helper = await exchange_code(code)
@@ -76,8 +143,7 @@ async def discord_callback(code: str, state: str, request: Request) -> RedirectR
             status_code=error.status_code,
             details={"provider": "discord", "reason": str(error.detail)},
         )
-        message = quote(str(error.detail))
-        return RedirectResponse(f"{FRONTEND_URL}/?auth_error={message}", status_code=302)
+        return _auth_error_redirect(_auth_error_code(error))
 
     await log_auth_event(
         "auth.login.success",
@@ -98,7 +164,8 @@ async def discord_callback(code: str, state: str, request: Request) -> RedirectR
         domain=COOKIE_DOMAIN,
     )
 
-    response.delete_cookie(STATE_COOKIE, domain=COOKIE_DOMAIN)
+    _delete_legacy_cookie(response, SESSION_COOKIE)
+    _delete_cookie_everywhere(response, STATE_COOKIE)
     return response
 
 
@@ -135,8 +202,7 @@ async def session(request: Request, response: Response) -> AuthSession:
                 status_code=200,
                 details={"reason": "invalid_or_expired_cookie"},
             )
-        response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
-        response.delete_cookie(SESSION_COOKIE)
+        _delete_cookie_everywhere(response, SESSION_COOKIE)
         return empty
 
     is_admin = False
@@ -170,8 +236,7 @@ async def session(request: Request, response: Response) -> AuthSession:
                     status_code=200,
                     details={"reason": "role_removed_or_not_allowed"},
                 )
-                response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
-                response.delete_cookie(SESSION_COOKIE)
+                _delete_cookie_everywhere(response, SESSION_COOKIE)
                 return empty
 
         except HTTPException as error:
@@ -182,8 +247,7 @@ async def session(request: Request, response: Response) -> AuthSession:
                 status_code=error.status_code,
                 details={"reason": str(error.detail)},
             )
-            response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
-            response.delete_cookie(SESSION_COOKIE)
+            _delete_cookie_everywhere(response, SESSION_COOKIE)
             return empty
 
     return AuthSession(
@@ -210,8 +274,7 @@ async def logout(request: Request, response: Response) -> AuthSession:
         details={"had_session": helper is not None},
     )
 
-    response.delete_cookie(SESSION_COOKIE, domain=COOKIE_DOMAIN)
-    response.delete_cookie(SESSION_COOKIE)
+    _delete_cookie_everywhere(response, SESSION_COOKIE)
     return AuthSession(
         authenticated=False,
         helper=None,

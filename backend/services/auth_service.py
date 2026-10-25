@@ -284,6 +284,26 @@ async def current_helper(request: Request) -> AuthenticatedHelper:
     return helper
 
 
+async def current_ticket_helper(request: Request) -> AuthenticatedHelper:
+    # Tickets d'écoute : réservés aux helpers (coordinateurs inclus) et aux responsables,
+    # comme l'interface (canSeeHelper). Staff, animateurs et opérateurs seuls n'y ont pas accès.
+    helper = await current_helper(request)
+    flags = await get_helper_role_flags(helper.id)
+    if not (flags["is_helper"] or flags["is_responsable"]):
+        await log_auth_event(
+            "authz.forbidden",
+            request,
+            helper=helper,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details={"reason": "ticket_access_requires_helper_or_responsable"},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Rôle Helper ou Responsable requis.",
+        )
+    return helper
+
+
 async def current_admin(request: Request) -> AuthenticatedHelper:
     helper = await current_helper(request)
     if not await is_admin_helper(helper.id):

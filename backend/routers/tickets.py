@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 import json
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -17,12 +18,13 @@ from models.ticket import (
     TicketSummary,
     TicketUpdate,
 )
-from services.auth_service import current_helper, is_admin_helper
+from services.auth_service import current_ticket_helper, is_admin_helper
 from services.ai_summary_service import ensure_ai_configuration, stream_summary
 from services.discord_service import DiscordService
 
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
+logger = logging.getLogger(__name__)
 
 
 def now_iso() -> str:
@@ -45,7 +47,7 @@ async def ticket_or_404(ticket_id: str, helper: AuthenticatedHelper) -> dict:
 
 @router.get("", response_model=list[TicketSummary])
 async def list_tickets(
-    _: AuthenticatedHelper = Depends(current_helper),
+    _: AuthenticatedHelper = Depends(current_ticket_helper),
 ) -> list[TicketSummary]:
     tickets = await db.tickets.find(ticket_scope(_), {"_id": 0, "transcript": 0, "notes": 0, "vocal_summary": 0}).sort(
         "updated_at", -1
@@ -54,7 +56,7 @@ async def list_tickets(
 
 
 @router.get("/stats", response_model=TicketStats)
-async def ticket_stats(helper: AuthenticatedHelper = Depends(current_helper)) -> TicketStats:
+async def ticket_stats(helper: AuthenticatedHelper = Depends(current_ticket_helper)) -> TicketStats:
     scope = ticket_scope(helper)
     active_count = await db.tickets.count_documents({"$and": [scope, {"status": "active"}]})
     archived_count = await db.tickets.count_documents({"$and": [scope, {"status": "archived"}]})
@@ -71,15 +73,15 @@ async def ticket_stats(helper: AuthenticatedHelper = Depends(current_helper)) ->
 @router.post("", response_model=TicketDetail, status_code=201)
 async def create_ticket(
     input_data: TicketCreate,
-    helper: AuthenticatedHelper = Depends(current_helper),
+    helper: AuthenticatedHelper = Depends(current_ticket_helper),
 ) -> TicketDetail:
     existing = await db.tickets.find_one({"$and": [{"channel_id": input_data.channel_id}, ticket_scope(helper)]}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=409, detail="Un ticket existe déjà pour ce salon Discord.")
     discord = DiscordService()
     member = await discord.fetch_member(input_data.member_id)
-    channel = await discord.fetch_text_channel(input_data.channel_id)
-    transcript = await discord.fetch_channel_history(input_data.channel_id)
+    channel = await discord.fetch_text_channel(input_data.channel_id, require_ticket_category=True)
+    transcript = await discord.fetch_channel_history(input_data.channel_id, require_ticket_category=True)
     timestamp = now_iso()
     ticket = TicketDetail(
         id=str(uuid4()),
@@ -108,7 +110,7 @@ async def create_ticket(
 async def create_ticket_note(
     ticket_id: str,
     input_data: TicketNoteCreate,
-    helper: AuthenticatedHelper = Depends(current_helper),
+    helper: AuthenticatedHelper = Depends(current_ticket_helper),
 ) -> TicketNote:
     await ticket_or_404(ticket_id, helper)
     timestamp = now_iso()
@@ -136,7 +138,7 @@ async def create_ticket_note(
 async def delete_ticket_note(
     ticket_id: str,
     note_id: str,
-    helper: AuthenticatedHelper = Depends(current_helper),
+    helper: AuthenticatedHelper = Depends(current_ticket_helper),
 ) -> None:
     ticket = await ticket_or_404(ticket_id, helper)
     note = next((item for item in ticket.get("notes_entries", []) if item.get("id") == note_id), None)
@@ -153,7 +155,7 @@ async def delete_ticket_note(
 @router.get("/{ticket_id}", response_model=TicketDetail)
 async def get_ticket(
     ticket_id: str,
-    _: AuthenticatedHelper = Depends(current_helper),
+    _: AuthenticatedHelper = Depends(current_ticket_helper),
 ) -> TicketDetail:
     return await ticket_or_404(ticket_id, _)
 
@@ -161,7 +163,7 @@ async def get_ticket(
 @router.post("/{ticket_id}/ai-summary/stream")
 async def generate_ai_summary(
     ticket_id: str,
-    helper: AuthenticatedHelper = Depends(current_helper),
+    helper: AuthenticatedHelper = Depends(current_ticket_helper),
 ) -> StreamingResponse:
     ensure_ai_configuration()
     ticket = await ticket_or_404(ticket_id, helper)
@@ -177,8 +179,12 @@ async def generate_ai_summary(
                     {"$set": {"ai_summary": payload.model_dump()}},
                 )
                 yield f"event: complete\ndata: {json.dumps(payload.model_dump())}\n\n"
-        except Exception as error:
-            yield f"event: error\ndata: {json.dumps({'message': str(error)})}\n\n"
+        except HTTPException as error:
+            yield f"event: error\ndata: {json.dumps({'message': str(error.detail)})}\n\n"
+        except Exception:
+            logger.exception("Échec de la génération du résumé IA du ticket %s", ticket_id)
+            message = "La génération du résumé a échoué. Réessayez dans un instant."
+            yield f"event: error\ndata: {json.dumps({'message': message})}\n\n"
 
     return StreamingResponse(
         event_generator(),
@@ -191,7 +197,7 @@ async def generate_ai_summary(
 async def update_ticket(
     ticket_id: str,
     input_data: TicketUpdate,
-    _: AuthenticatedHelper = Depends(current_helper),
+    _: AuthenticatedHelper = Depends(current_ticket_helper),
 ) -> TicketDetail:
     await ticket_or_404(ticket_id, _)
     updates = input_data.model_dump(exclude_none=True)
@@ -208,10 +214,10 @@ async def update_ticket(
 @router.post("/{ticket_id}/sync", response_model=TicketDetail)
 async def sync_ticket(
     ticket_id: str,
-    _: AuthenticatedHelper = Depends(current_helper),
+    _: AuthenticatedHelper = Depends(current_ticket_helper),
 ) -> TicketDetail:
     ticket = await ticket_or_404(ticket_id, _)
-    transcript = await DiscordService().fetch_channel_history(ticket["channel_id"])
+    transcript = await DiscordService().fetch_channel_history(ticket["channel_id"], require_ticket_category=True)
     timestamp = now_iso()
     await db.tickets.update_one(
         {"id": ticket_id},

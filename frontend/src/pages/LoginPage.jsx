@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, ArrowUpRight, RadioTower, ShieldCheck } from "lucide-react";
 
+// Le backend ne renvoie qu'un code : le texte affiché vient toujours d'ici.
+const AUTH_ERROR_MESSAGES = {
+  state_expired: "Session expirée, réessayez.",
+  oauth_refused: "La connexion Discord a été refusée. Réessayez.",
+  not_in_guild: "Votre compte Discord ne fait pas partie du serveur Iris.",
+  missing_role: "Votre compte Discord ne possède pas un rôle autorisé pour Iris.",
+  unavailable: "Connexion momentanément indisponible. Réessayez plus tard.",
+};
+const DEFAULT_AUTH_ERROR = "La connexion a échoué. Réessayez.";
+
 
 export default function LoginPage() {
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
@@ -10,7 +20,11 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const error = params.get("auth_error");
     if (error) {
-      setAuthError(error);
+      setAuthError(
+        Object.prototype.hasOwnProperty.call(AUTH_ERROR_MESSAGES, error)
+          ? AUTH_ERROR_MESSAGES[error]
+          : DEFAULT_AUTH_ERROR
+      );
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);

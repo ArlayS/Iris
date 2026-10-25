@@ -1,10 +1,13 @@
 import asyncio
+import logging
+import re
 from typing import Any
 
 import httpx
 from fastapi import HTTPException, status
 
 from config import (
+    ALLOWED_TICKET_CATEGORY_IDS,
     DISCORD_BOT_TOKEN,
     DISCORD_GUILD_ID,
     DISCORD_TICKET_CATEGORY_ID,
@@ -19,7 +22,21 @@ from models.ticket import (
     TranscriptMessage,
 )
 
+logger = logging.getLogger(__name__)
+
 DISCORD_API_BASE = "https://discord.com/api/v10"
+_DISCORD_ID_PATTERN = re.compile(r"[0-9]{1,25}")
+# 0 = texte, 2 = vocal (chat intégré), 5 = annonces, 13 = conférence ; 10, 11, 12 = fils.
+TICKET_CHANNEL_TYPES = {0, 2, 5, 13}
+THREAD_CHANNEL_TYPES = {10, 11, 12}
+
+
+def ensure_discord_id(value: str | int | None) -> str:
+    # Un identifiant Discord ne contient que des chiffres : empêche "..", "@me", "/", etc. dans l'URL.
+    value = "" if value is None else str(value)
+    if not _DISCORD_ID_PATTERN.fullmatch(value):
+        raise HTTPException(status_code=404, detail="Ressource Discord introuvable.")
+    return value
 
 
 def ensure_bot_configuration() -> None:
@@ -81,6 +98,7 @@ class DiscordService:
             return response.json()
 
     async def fetch_member(self, member_id: str) -> DiscordMember:
+        member_id = ensure_discord_id(member_id)
         payload = await self._get(f"/guilds/{DISCORD_GUILD_ID}/members/{member_id}")
         user = payload["user"]
         return DiscordMember(
@@ -92,6 +110,7 @@ class DiscordService:
         )
 
     async def fetch_member_role_ids(self, member_id: str) -> set[str]:
+        member_id = ensure_discord_id(member_id)
         payload = await self._get(f"/guilds/{DISCORD_GUILD_ID}/members/{member_id}")
         return set(payload.get("roles", []))
 
@@ -133,13 +152,50 @@ class DiscordService:
 
         return helpers
 
-    async def fetch_text_channel(self, channel_id: str) -> dict[str, Any]:
+    async def fetch_text_channel(
+        self, channel_id: str, *, require_ticket_category: bool = False
+    ) -> dict[str, Any]:
+        channel_id = ensure_discord_id(channel_id)
         channel = await self._get(f"/channels/{channel_id}")
 
         if channel.get("guild_id") != DISCORD_GUILD_ID:
             raise HTTPException(status_code=403, detail="Ce salon n’appartient pas au serveur Iris.")
 
+        if require_ticket_category:
+            await self._ensure_ticket_category(channel)
+
         return channel
+
+    async def _ensure_ticket_category(self, channel: dict[str, Any]) -> None:
+        channel_type = channel.get("type")
+        parent_id = channel.get("parent_id")
+        category_id = parent_id
+
+        if channel_type in THREAD_CHANNEL_TYPES:
+            # Pour un fil, parent_id désigne le salon parent : accepté si ce salon est lui-même
+            # dans la liste autorisée, sinon la catégorie retenue est celle de ce salon.
+            if parent_id in ALLOWED_TICKET_CATEGORY_IDS:
+                return
+            parent = await self._get(f"/channels/{ensure_discord_id(parent_id)}") if parent_id else {}
+            category_id = parent.get("parent_id") if parent.get("guild_id") == DISCORD_GUILD_ID else None
+        elif channel_type not in TICKET_CHANNEL_TYPES:
+            logger.warning(
+                "Salon %s refusé pour un ticket : type %s non textuel (parent %s).",
+                channel.get("id"), channel_type, parent_id,
+            )
+            raise HTTPException(status_code=422, detail="L’identifiant doit désigner un salon textuel.")
+
+        if not category_id or category_id not in ALLOWED_TICKET_CATEGORY_IDS:
+            # Journalisé pour savoir quelle catégorie ajouter à DISCORD_TICKET_CATEGORY_IDS si besoin.
+            logger.warning(
+                "Salon %s refusé pour un ticket : type %s, parent %s, catégorie %s absente de "
+                "DISCORD_TICKET_CATEGORY_ID / DISCORD_TICKET_CATEGORY_IDS.",
+                channel.get("id"), channel_type, parent_id, category_id,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="Ce salon n’appartient pas à une catégorie de tickets autorisée.",
+            )
 
     def _embed_to_text(self, embeds: list[dict[str, Any]]) -> str:
         parts: list[str] = []
@@ -257,14 +313,15 @@ class DiscordService:
             webhook_id=raw_message.get("webhook_id"),
         )
 
-    async def iter_channel_history(self, channel_id: str):
+    async def iter_channel_history(self, channel_id: str, *, require_ticket_category: bool = False):
         """Comme fetch_channel_history, mais yield chaque page de messages au fur et à mesure
         de leur récupération (ordre anti-chronologique, comme renvoyé par Discord), au lieu
         d'attendre l'intégralité du salon. Permet de suivre la progression sur les gros salons
         sans bloquer une seule requête HTTP pendant plusieurs minutes. L'appelant est
         responsable de réassembler et d'inverser l'ordre pour obtenir un historique
         chronologique, comme le fait fetch_channel_history."""
-        await self.fetch_text_channel(channel_id)
+        channel_id = ensure_discord_id(channel_id)
+        await self.fetch_text_channel(channel_id, require_ticket_category=require_ticket_category)
 
         before: str | None = None
 
@@ -284,8 +341,11 @@ class DiscordService:
 
             before = page[-1]["id"]
 
-    async def fetch_channel_history(self, channel_id: str) -> list[TranscriptMessage]:
-        await self.fetch_text_channel(channel_id)
+    async def fetch_channel_history(
+        self, channel_id: str, *, require_ticket_category: bool = False
+    ) -> list[TranscriptMessage]:
+        channel_id = ensure_discord_id(channel_id)
+        await self.fetch_text_channel(channel_id, require_ticket_category=require_ticket_category)
 
         messages: list[TranscriptMessage] = []
         before: str | None = None

@@ -20,6 +20,10 @@ def _parse_origins(raw: str) -> list[str]:
     return origins or ["https://iris.loasis.app"]
 
 
+def _parse_ids(raw: str) -> set[str]:
+    return {item.strip() for item in raw.split(",") if item.strip().isdigit()}
+
+
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
 # "*" est ignoré : incompatible avec allow_credentials=True. Défaut = le front de prod.
@@ -33,6 +37,13 @@ APP_SESSION_SECRET = os.environ.get("APP_SESSION_SECRET")
 DISCORD_HELPER_ROLE_ID = os.environ.get("DISCORD_HELPER_ROLE_ID")
 DISCORD_ADMIN_ROLE_ID = os.environ.get("DISCORD_ADMIN_ROLE_ID")
 DISCORD_TICKET_CATEGORY_ID = os.environ.get("DISCORD_TICKET_CATEGORY_ID")
+# Catégories de tickets supplémentaires, séparées par des virgules (ex. catégorie où le bot
+# range les tickets fermés, ou salon qui héberge les fils de tickets). DISCORD_TICKET_CATEGORY_ID
+# reste toujours autorisée. Chaque refus est journalisé avec la catégorie du salon.
+DISCORD_TICKET_CATEGORY_IDS = _parse_ids(os.environ.get("DISCORD_TICKET_CATEGORY_IDS", ""))
+ALLOWED_TICKET_CATEGORY_IDS = frozenset(
+    DISCORD_TICKET_CATEGORY_IDS | ({DISCORD_TICKET_CATEGORY_ID} if DISCORD_TICKET_CATEGORY_ID else set())
+)
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
 DISCORD_STAFF_ROLE_ID = os.environ.get("DISCORD_STAFF_ROLE_ID")
 DISCORD_RESPONSABLE_ROLE_ID = os.environ.get("DISCORD_RESPONSABLE_ROLE_ID")

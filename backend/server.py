@@ -1,6 +1,7 @@
 import asyncio
 
 from fastapi import FastAPI
+from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
 import logging
 from config import CORS_ORIGINS
@@ -11,6 +12,45 @@ from services.moderation_bot import start_moderation_bot, stop_moderation_bot
 
 
 app = FastAPI(title="Iris API")
+
+# Ajoutés à chaque réponse HTTP s'ils sont absents : l'API ne sert jamais de page à afficher,
+# donc aucun contenu (fichier, JSON...) ne doit pouvoir s'exécuter ni être affiché dans un cadre.
+SECURITY_HEADERS = {
+    "x-content-type-options": "nosniff",
+    "content-security-policy": "default-src 'none'; frame-ancestors 'none'; sandbox",
+    "x-frame-options": "DENY",
+    "referrer-policy": "no-referrer",
+}
+
+
+class SecurityHeadersMiddleware:
+    """Middleware ASGI pur (pas BaseHTTPMiddleware) : compatible streaming, SSE, Range et WebSocket."""
+
+    def __init__(self, app, csp_exempt_paths: tuple[str, ...] = ()) -> None:
+        self.app = app
+        self.csp_exempt_paths = set(csp_exempt_paths)
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # La documentation interactive (/docs, /redoc) charge ses scripts depuis un CDN.
+        skip_csp = scope.get("path") in self.csp_exempt_paths
+
+        async def send_with_security_headers(message) -> None:
+            if message["type"] == "http.response.start":
+                message.setdefault("headers", [])
+                headers = MutableHeaders(scope=message)
+                for name, value in SECURITY_HEADERS.items():
+                    if skip_csp and name == "content-security-policy":
+                        continue
+                    if name not in headers:
+                        headers.append(name, value)
+            await send(message)
+
+        await self.app(scope, receive, send_with_security_headers)
+
 
 _bot_task = None
 @app.get("/api/")
@@ -40,6 +80,12 @@ app.add_middleware(
     allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    csp_exempt_paths=tuple(
+        path for path in (app.docs_url, app.redoc_url, app.swagger_ui_oauth2_redirect_url) if path
+    ),
 )
 
 logging.basicConfig(

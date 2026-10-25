@@ -6,14 +6,33 @@ from urllib.parse import quote
 from fastapi import HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from services.storage_service import STORAGE_ROOT
+from services import storage_service
 
 
 CHUNK_SIZE = 256 * 1024
 
 
+def safe_content_type(content_type: str | None) -> str:
+    """Type MIME servable depuis le domaine de l'API : jamais de HTML, SVG, XML ni JavaScript."""
+    media_type = (content_type or "").split(";", 1)[0].strip().lower()
+    if "/" not in media_type:
+        return "application/octet-stream"
+    subtype = media_type.split("/", 1)[1]
+    if (
+        media_type in {"text/html", "application/xhtml+xml"}
+        or subtype == "xml"
+        or subtype.endswith("+xml")
+        or "svg" in subtype
+        or "javascript" in subtype
+        or "ecmascript" in subtype
+    ):
+        return "application/octet-stream"
+    return media_type
+
+
 def _resolve_file(storage_path: str) -> Path:
-    root = STORAGE_ROOT.resolve()
+    # Lu à chaque appel : la racine peut être redéfinie (IRIS_STORAGE_ROOT, tests).
+    root = storage_service.STORAGE_ROOT.resolve()
     source = (root / storage_path).resolve()
 
     try:
@@ -139,10 +158,8 @@ def stream_local_file(
             f"{disposition}; filename*=UTF-8''{encoded_name}"
         )
 
-    media_type = (
-        content_type
-        or mimetypes.guess_type(source.name)[0]
-        or "application/octet-stream"
+    media_type = safe_content_type(
+        content_type or mimetypes.guess_type(source.name)[0]
     )
 
     return StreamingResponse(

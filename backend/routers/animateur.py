@@ -1,11 +1,12 @@
 """Router pour la gestion des projets animateur."""
+import asyncio
+import mimetypes
 import os
 import tempfile
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request, status
-from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from config import DISCORD_ANIMATEUR_ROLE_ID
@@ -21,12 +22,27 @@ from services.auth_service import (
     is_responsable_helper,
 )
 from services.discord_service import DiscordService
-from services.storage_service import extension_from_filename, get_object, put_object_from_file
+from services.file_response_service import safe_content_type, stream_local_file
+from services.storage_service import extension_from_filename, put_object_from_file, sanitize_extension
 
 router = APIRouter(prefix="/animateur/projects", tags=["animateur-projects"])
 tasks_router = APIRouter(prefix="/animateur/tasks", tags=["animateur-tasks"])
 resources_router = APIRouter(prefix="/animateur/resources", tags=["animateur-resources"])
 members_router = APIRouter(prefix="/animateur/members", tags=["animateur-members"])
+
+
+def _upload_limit_mb() -> int:
+    try:
+        value = int(os.environ.get("ANIMATEUR_MAX_UPLOAD_MB", "100"))
+    except ValueError:
+        return 100
+    return value if value > 0 else 100
+
+
+# Taille max d'un rendu de tâche ou d'une ressource de projet.
+MAX_UPLOAD_MB = _upload_limit_mb()
+MAX_UPLOAD_SIZE = MAX_UPLOAD_MB * 1024 * 1024
+UPLOAD_CHUNK_SIZE = 1024 * 1024
 
 
 def _now() -> str:
@@ -58,6 +74,65 @@ async def current_project_editor(request: Request) -> AuthenticatedHelper:
     if await is_responsable_helper(helper.id):
         return helper
     raise HTTPException(status_code=403, detail="Rôle Animateur ou Responsable requis.")
+
+
+def _is_project_member(project: dict | None, helper_id: str) -> bool:
+    if not project:
+        return False
+    if (project.get("created_by") or {}).get("id") == helper_id:
+        return True
+    return any(member.get("id") == helper_id for member in project.get("members") or [])
+
+
+async def _ensure_project_member_or_responsable(project: dict | None, helper: AuthenticatedHelper) -> None:
+    if _is_project_member(project, helper.id) or await is_responsable_helper(helper.id):
+        return
+    raise HTTPException(status_code=403, detail="Réservé aux membres du projet ou à un Responsable.")
+
+
+def _upload_extension(filename: str | None) -> str:
+    return sanitize_extension(extension_from_filename(filename or ""))
+
+
+# Absents de la table intégrée de Python (image python:3.11-slim sans /etc/mime.types).
+_EXTRA_CONTENT_TYPES = {
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "odt": "application/vnd.oasis.opendocument.text",
+    "ods": "application/vnd.oasis.opendocument.spreadsheet",
+    "odp": "application/vnd.oasis.opendocument.presentation",
+    "webp": "image/webp",
+}
+
+
+def _upload_content_type(extension: str) -> str:
+    # Déduit de l'extension assainie : le type annoncé par le navigateur n'est jamais conservé.
+    guessed = _EXTRA_CONTENT_TYPES.get(extension) or mimetypes.guess_type(f"fichier.{extension}")[0]
+    return safe_content_type(guessed)
+
+
+async def _store_upload(file: UploadFile, storage_path: str, content_type: str) -> int:
+    """Copie l'upload par blocs de 1 Mio vers le stockage ; 413 au-delà de MAX_UPLOAD_SIZE."""
+    temp_path = None
+    total_size = 0
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_path = temp_file.name
+            while chunk := await file.read(UPLOAD_CHUNK_SIZE):
+                total_size += len(chunk)
+                if total_size > MAX_UPLOAD_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"Fichier trop volumineux (max {MAX_UPLOAD_MB} Mo).",
+                    )
+                temp_file.write(chunk)
+        await asyncio.to_thread(put_object_from_file, storage_path, temp_path, content_type)
+    finally:
+        await file.close()
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
+    return total_size
 
 
 @members_router.get("/search", response_model=list[HelperIdentity])
@@ -212,6 +287,7 @@ async def update_project(
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Projet introuvable.")
+    await _ensure_project_member_or_responsable(existing, helper)
 
     title_after = (payload.title or "").strip()
     description_after = (payload.description or "").strip()
@@ -448,28 +524,25 @@ async def submit_task(
     if not existing:
         raise HTTPException(status_code=404, detail="Tâche introuvable.")
 
+    is_assignee = (existing.get("assignee") or {}).get("id") == helper.id
+    if not is_assignee and not await is_responsable_helper(helper.id):
+        raise HTTPException(
+            status_code=403,
+            detail="Seul le membre assigné ou un Responsable peut rendre cette tâche.",
+        )
+
     submission_file = None
     if file and file.filename:
-        extension = extension_from_filename(file.filename)
+        extension = _upload_extension(file.filename)
+        content_type = _upload_content_type(extension)
         file_id = str(uuid4())
         storage_path = f"iris/task-submissions/{file_id}.{extension}"
-
-        temp_path = None
-        try:
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                temp_path = temp_file.name
-                content = await file.read()
-                temp_file.write(content)
-            put_object_from_file(storage_path, temp_path, file.content_type or "application/octet-stream")
-        finally:
-            await file.close()
-            if temp_path and os.path.exists(temp_path):
-                os.unlink(temp_path)
+        size = await _store_upload(file, storage_path, content_type)
 
         submission_file = {
             "original_filename": file.filename,
-            "content_type": file.content_type or "application/octet-stream",
-            "size": len(content),
+            "content_type": content_type,
+            "size": size,
             "storage_path": storage_path,
         }
 
@@ -502,21 +575,25 @@ async def submit_task(
 
 
 @tasks_router.get("/{task_id}/submission/download")
-async def download_submission(task_id: str, _: AuthenticatedHelper = Depends(current_staff)):
+async def download_submission(
+    task_id: str,
+    request: Request,
+    _: AuthenticatedHelper = Depends(current_staff),
+):
     task = await db.project_tasks.find_one({"id": task_id}, {"_id": 0})
     if not task or not task.get("submission_file"):
         raise HTTPException(status_code=404, detail="Aucun fichier pour cette tâche.")
 
     submission_file = task["submission_file"]
-    try:
-        content, _unused = get_object(submission_file["storage_path"])
-    except FileNotFoundError as error:
-        raise HTTPException(status_code=404, detail="Fichier introuvable sur le disque.") from error
+    if not submission_file.get("storage_path"):
+        raise HTTPException(status_code=404, detail="Fichier introuvable sur le disque.")
 
-    return Response(
-        content=content,
-        media_type=submission_file.get("content_type", "application/octet-stream"),
-        headers={"Content-Disposition": f'attachment; filename="{submission_file.get("original_filename", "fichier")}"'},
+    return stream_local_file(
+        request,
+        submission_file["storage_path"],
+        content_type=safe_content_type(submission_file.get("content_type")),
+        filename=submission_file.get("original_filename") or "fichier",
+        attachment=True,
     )
 
 
@@ -592,22 +669,16 @@ async def upload_resource(
     file: UploadFile = File(...),
     helper: AuthenticatedHelper = Depends(current_staff),
 ):
-    extension = extension_from_filename(file.filename)
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0, "id": 1})
+    if not project:
+        await file.close()
+        raise HTTPException(status_code=404, detail="Projet introuvable.")
+
+    extension = _upload_extension(file.filename)
+    content_type = _upload_content_type(extension)
     resource_id = str(uuid4())
     storage_path = f"iris/project-resources/{resource_id}.{extension}"
-
-    temp_path = None
-    try:
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            temp_path = temp_file.name
-            content = await file.read()
-            temp_file.write(content)
-
-        put_object_from_file(storage_path, temp_path, file.content_type or "application/octet-stream")
-    finally:
-        await file.close()
-        if temp_path and os.path.exists(temp_path):
-            os.unlink(temp_path)
+    size = await _store_upload(file, storage_path, content_type)
 
     now = _now()
     resource = {
@@ -615,8 +686,8 @@ async def upload_resource(
         "project_id": project_id,
         "title": title.strip(),
         "original_filename": file.filename,
-        "content_type": file.content_type or "application/octet-stream",
-        "size": len(content),
+        "content_type": content_type,
+        "size": size,
         "storage_path": storage_path,
         "uploaded_by": _helper_identity(helper),
         "created_at": now,
@@ -644,21 +715,22 @@ async def upload_resource(
 @resources_router.get("/{resource_id}/download")
 async def download_resource(
     resource_id: str,
-    _: AuthenticatedHelper = Depends(current_project_editor),
+    request: Request,
+    helper: AuthenticatedHelper = Depends(current_project_editor),
 ):
     resource = await db.project_resources.find_one({"id": resource_id}, {"_id": 0})
     if not resource:
         raise HTTPException(status_code=404, detail="Ressource introuvable.")
 
-    try:
-        content, _unused = get_object(resource["storage_path"])
-    except FileNotFoundError as error:
-        raise HTTPException(status_code=404, detail="Fichier introuvable sur le disque.") from error
+    project = await db.projects.find_one({"id": resource.get("project_id")}, {"_id": 0, "created_by": 1, "members": 1})
+    await _ensure_project_member_or_responsable(project, helper)
 
-    return Response(
-        content=content,
-        media_type=resource.get("content_type", "application/octet-stream"),
-        headers={"Content-Disposition": f'attachment; filename="{resource.get("original_filename", "fichier")}"'},
+    return stream_local_file(
+        request,
+        resource["storage_path"],
+        content_type=safe_content_type(resource.get("content_type")),
+        filename=resource.get("original_filename") or "fichier",
+        attachment=True,
     )
 
 

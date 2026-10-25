@@ -1,4 +1,6 @@
+import hmac
 import os
+import re
 from datetime import datetime
 
 import httpx
@@ -29,6 +31,9 @@ DISCORD_API_BASE = "https://discord.com/api/v10"
 GHOST_BOT_API_KEY = os.getenv("GHOST_BOT_API_KEY")
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+# Snowflake Discord : uniquement des chiffres ASCII (aucun autre caractère ne doit atteindre une URL Discord).
+DISCORD_ID_PATTERN = re.compile(r"[0-9]{17,20}")
 
 SANCTION_LABELS = {
     "avertissement": "⚠️ Avertissement",
@@ -146,6 +151,17 @@ def object_id_or_400(value: str) -> ObjectId:
         raise HTTPException(status_code=400, detail="Identifiant invalide.")
 
 
+def is_discord_id(value) -> bool:
+    return isinstance(value, str) and DISCORD_ID_PATTERN.fullmatch(value) is not None
+
+
+def discord_id_or_422(value: str | None) -> str:
+    cleaned = (value or "").strip()
+    if not is_discord_id(cleaned):
+        raise HTTPException(status_code=422, detail="Identifiant Discord invalide.")
+    return cleaned
+
+
 def ensure_discord_config():
     if not DISCORD_BOT_TOKEN or not DISCORD_GUILD_ID:
         raise HTTPException(status_code=500, detail="Configuration Discord manquante.")
@@ -165,7 +181,11 @@ def discord_avatar_url(user: dict) -> str | None:
 
 
 async def verify_bot_api_key(api_key: str | None = Depends(api_key_header)) -> str:
-    if not GHOST_BOT_API_KEY or not api_key or api_key != GHOST_BOT_API_KEY:
+    if (
+        not GHOST_BOT_API_KEY
+        or not api_key
+        or not hmac.compare_digest(api_key.encode("utf-8"), GHOST_BOT_API_KEY.encode("utf-8"))
+    ):
         raise HTTPException(status_code=401, detail="Clé API invalide ou manquante.")
     return api_key
 
@@ -231,6 +251,9 @@ async def search_guild_members(query: str, limit: int = 10) -> list[dict]:
 
 
 async def fetch_guild_member(discord_id: str) -> dict | None:
+    if not is_discord_id(discord_id):
+        return None
+
     url = f"{DISCORD_API_BASE}/guilds/{DISCORD_GUILD_ID}/members/{discord_id}"
 
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -377,6 +400,7 @@ async def get_casier_for_bot(
     des sanctions déjà formaté en markdown, ainsi que la présence ou non
     d'une fiche S active. Ne crée jamais de casier et n'expose pas le
     contenu des fiches S (uniquement leur présence)."""
+    discord_id = discord_id_or_422(discord_id)
     casier = await db.casiers.find_one({"discord_id": discord_id})
 
     if not casier:
@@ -442,7 +466,7 @@ async def create_casier(
     payload: CreateCasierPayload,
     staff=Depends(current_staff),
 ):
-    discord_id = payload.discord_id.strip()
+    discord_id = discord_id_or_422(payload.discord_id)
     username = (payload.username or "").strip()
 
     existing = await db.casiers.find_one({"discord_id": discord_id})

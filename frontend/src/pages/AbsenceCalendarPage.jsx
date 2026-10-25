@@ -88,7 +88,7 @@ function HelperAvatar({ helper, size = 20 }) {
   );
 }
 
-export default function AbsenceCalendarPage({ isResponsable }) {
+export default function AbsenceCalendarPage({ isResponsable, currentHelperId }) {
   const [absences, setAbsences] = useState([]);
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -488,9 +488,12 @@ export default function AbsenceCalendarPage({ isResponsable }) {
                   </small>
                   {entry.reason && <p>{entry.reason}</p>}
                 </div>
-                <button type="button" className="icon-button" onClick={() => removeAbsence(entry.id)} aria-label="Supprimer l’absence">
-                  <Trash2 size={15} />
-                </button>
+                {/* Même règle que l’API : l’auteur de l’absence ou un responsable. */}
+                {(isResponsable || (currentHelperId && entry.helper?.id === currentHelperId)) && (
+                  <button type="button" className="icon-button" onClick={() => removeAbsence(entry.id)} aria-label="Supprimer l’absence">
+                    <Trash2 size={15} />
+                  </button>
+                )}
               </div>
             ))
           )}

@@ -60,7 +60,7 @@ function TaskCard({ task, currentHelperId, isResponsable, onSubmit, onValidate, 
           {task.submission_note && <SummaryReader content={task.submission_note} />}
           {task.submission_file && (
             <a
-              href={`/api/animateur/tasks/${task.id}/submission/download`}
+              href={`${api.defaults.baseURL}/animateur/tasks/${task.id}/submission/download`}
               onClick={(e) => e.stopPropagation()}
               style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6 }}
             >
@@ -130,7 +130,7 @@ function ValidatedTaskRow({ task }) {
 
       {task.submission_file && (
         <a
-          href={`/api/animateur/tasks/${task.id}/submission/download`}
+          href={`${api.defaults.baseURL}/animateur/tasks/${task.id}/submission/download`}
           onClick={(e) => e.stopPropagation()}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
         >

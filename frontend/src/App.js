@@ -215,7 +215,7 @@ function AuthenticatedApp({
             path="/staff/calendrier"
             element={
               canSeeStaff ? (
-                <AbsenceCalendarPage isResponsable={isResponsable} />
+                <AbsenceCalendarPage isResponsable={isResponsable} currentHelperId={helper?.id} />
               ) : (
                 <Navigate to={defaultRoute} replace />
               )

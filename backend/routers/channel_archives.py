@@ -1,12 +1,15 @@
 import asyncio
 import logging
 import mimetypes
+import os
+import re
+import tempfile
 from datetime import datetime, timezone
-from io import BytesIO
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from database import db
@@ -20,7 +23,8 @@ from models.channel_archive import (
 from models.ticket import AuthenticatedHelper
 from services.auth_service import current_responsable
 from services.discord_service import DiscordService
-from services.storage_service import channel_archive_attachment_path, get_object, put_object_from_bytes
+from services.file_response_service import stream_local_file
+from services.storage_service import channel_archive_attachment_path, put_object_from_file
 
 
 router = APIRouter(prefix="/channel-archives", tags=["channel-archives"])
@@ -43,6 +47,22 @@ MAX_ATTACHMENT_SIZE = 200 * 1024 * 1024
 # Téléchargements de pièces jointes en parallèle pendant la phase de mirroring.
 ATTACHMENT_CONCURRENCY = 6
 
+DOWNLOAD_CHUNK_SIZE = 1024 * 1024
+
+# Seuls les fichiers hébergés par le CDN Discord sont copiés localement.
+ALLOWED_ATTACHMENT_HOSTS = {"cdn.discordapp.com", "media.discordapp.net"}
+
+# Seules ces images matricielles peuvent s'afficher dans le navigateur ; tout le reste
+# (HTML, SVG, PDF, texte...) est servi en téléchargement.
+INLINE_IMAGE_TYPES = {
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "gif": "image/gif",
+    "webp": "image/webp",
+}
+_CONTENT_TYPE_ALIASES = {"image/jpg": "image/jpeg", "image/pjpeg": "image/jpeg"}
+
 # Fréquence minimale (en secondes) entre deux écritures de progression en base, pour ne
 # pas spammer Mongo sur un salon de plusieurs milliers de messages/fichiers.
 PROGRESS_FLUSH_INTERVAL = 1.0
@@ -52,32 +72,78 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _attachment_extension(filename: str) -> str:
+    return filename.rsplit(".", 1)[-1] if "." in filename else "bin"
+
+
+def _is_discord_cdn_url(url: str) -> bool:
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return False
+    return parts.scheme == "https" and (parts.hostname or "").lower() in ALLOWED_ATTACHMENT_HOSTS
+
+
+def _inline_image_type(content_type: str | None, filename: str) -> str | None:
+    """Type image sûr si l'extension ET le type déclaré désignent une image matricielle."""
+    by_extension = INLINE_IMAGE_TYPES.get(_attachment_extension(filename).lower())
+    if not by_extension:
+        return None
+    declared = (content_type or "").split(";", 1)[0].strip().lower()
+    declared = _CONTENT_TYPE_ALIASES.get(declared, declared)
+    if not declared:
+        return by_extension
+    return declared if declared in INLINE_IMAGE_TYPES.values() else None
+
+
+async def _download_to_temp_file(url: str) -> str:
+    """Télécharge en flux vers un fichier temporaire, en s'arrêtant dès que la limite est dépassée."""
+    temp_path = None
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            async with client.stream("GET", url) as response:
+                response.raise_for_status()
+                total_size = 0
+                with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                    temp_path = temp_file.name
+                    async for chunk in response.aiter_bytes(DOWNLOAD_CHUNK_SIZE):
+                        total_size += len(chunk)
+                        if total_size > MAX_ATTACHMENT_SIZE:
+                            raise ValueError("Pièce jointe trop volumineuse pour être copiée localement.")
+                        temp_file.write(chunk)
+        return temp_path
+    except BaseException:
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise
+
+
 async def _mirror_attachment(archive_id: str, message_id: str, attachment: dict) -> ChannelArchiveAttachment:
     filename = attachment["filename"]
     content_type = attachment.get("content_type")
-    extension = filename.rsplit(".", 1)[-1] if "." in filename else "bin"
+    extension = _attachment_extension(filename)
     storage_path = channel_archive_attachment_path(archive_id, message_id, attachment["id"], extension)
     local_url = None
+    temp_path = None
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.get(attachment["url"])
-            response.raise_for_status()
-            data = response.content
+        if not _is_discord_cdn_url(attachment["url"]):
+            raise ValueError("URL de pièce jointe hors du CDN Discord.")
 
-        if len(data) > MAX_ATTACHMENT_SIZE:
-            raise ValueError("Pièce jointe trop volumineuse pour être copiée localement.")
-
+        temp_path = await _download_to_temp_file(attachment["url"])
         await asyncio.to_thread(
-            put_object_from_bytes,
+            put_object_from_file,
             storage_path,
-            data,
+            temp_path,
             content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream",
         )
         local_url = f"/channel-archives/{archive_id}/messages/{message_id}/attachments/{attachment['id']}"
     except Exception:
         # Le fichier d'origine reste consultable via son URL Discord même si la copie locale a échoué.
         local_url = None
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
 
     return ChannelArchiveAttachment(
         id=attachment["id"],
@@ -200,7 +266,11 @@ async def _run_import(archive_id: str, channel_id: str) -> None:
         )
     except Exception as error:
         logger.exception("Échec de l'import de l'archive de salon %s", archive_id)
-        message = getattr(error, "detail", None) or str(error) or "Erreur inconnue pendant l'import."
+        # Le détail technique reste dans les logs : seul le message d'une HTTPException est exposé.
+        message = (
+            error.detail if isinstance(error, HTTPException) and error.detail
+            else "Erreur inattendue pendant l'import du salon."
+        )
         await db.channel_archives.update_one(
             {"id": archive_id},
             {"$set": {
@@ -317,6 +387,7 @@ async def get_archived_attachment(
     archive_id: str,
     message_id: str,
     attachment_id: str,
+    request: Request,
     _: AuthenticatedHelper = Depends(current_responsable),
 ) -> StreamingResponse:
     archive = await archive_or_404(archive_id)
@@ -327,16 +398,26 @@ async def get_archived_attachment(
     if not attachment or not attachment.get("local_url"):
         raise HTTPException(status_code=404, detail="Copie locale indisponible pour ce fichier.")
 
-    extension = attachment["filename"].rsplit(".", 1)[-1] if "." in attachment["filename"] else "bin"
+    filename = attachment["filename"]
+    extension = _attachment_extension(filename)
     storage_path = channel_archive_attachment_path(archive_id, message_id, attachment_id, extension)
-    try:
-        content, fallback_type = await asyncio.to_thread(get_object, storage_path)
-    except Exception as error:
-        raise HTTPException(status_code=502, detail="Fichier temporairement indisponible.") from error
+    inline_type = _inline_image_type(attachment.get("content_type"), filename)
 
-    headers = {"Content-Disposition": f'inline; filename="{attachment["filename"]}"'}
-    return StreamingResponse(
-        BytesIO(content),
-        media_type=attachment.get("content_type") or fallback_type,
-        headers=headers,
-    )
+    def serve(path: str) -> StreamingResponse:
+        return stream_local_file(
+            request,
+            path,
+            content_type=inline_type or "application/octet-stream",
+            filename=filename,
+            attachment=inline_type is None,
+        )
+
+    try:
+        return serve(storage_path)
+    except HTTPException as error:
+        # Archives importées avant l'assainissement des extensions : ancien nom sur le disque.
+        legacy_extension = extension.lower()
+        legacy_path = f"{storage_path.rsplit('.', 1)[0]}.{legacy_extension}"
+        if error.status_code != 404 or legacy_path == storage_path or re.search(r"[/\\\x00]", legacy_extension):
+            raise
+        return serve(legacy_path)

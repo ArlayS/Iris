@@ -353,7 +353,8 @@ export default function ChannelArchiveWorkspacePage() {
                   <div className="message-line"><strong>{message.author.display_name || message.author.username}</strong><time>{formatTime(message.timestamp)}</time></div>
                   {message.content && <p>{message.content}</p>}
                   {(message.attachments || []).map((attachment) => {
-                    const isImage = attachment.content_type?.startsWith("image/")
+                    // Mêmes formats que ceux que l'API sert en image (les SVG et autres sont téléchargés).
+                    const isImage = /^image\/(png|jpe?g|gif|webp)\b/i.test(attachment.content_type || "")
                       || /\.(png|jpe?g|gif|webp)$/i.test(attachment.filename);
                     const href = attachment.local_url ? attachmentSrc(attachment) : attachment.url;
 

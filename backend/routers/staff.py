@@ -23,7 +23,7 @@ from models.staff import (
     VolunteerRating,
 )
 from models.ticket import AuthenticatedHelper, HelperIdentity
-from services.auth_service import current_responsable, current_staff
+from services.auth_service import current_responsable, current_staff, is_responsable_helper
 from services.discord_service import DiscordService
 from services.storage_service import extension_from_filename, get_object, put_object_from_file
 
@@ -39,6 +39,9 @@ MAX_MEETING_MEDIA_SIZE = 50 * 1024 * 1024
 
 VIDEO_EXTENSIONS = {"mp4", "webm", "mov"}
 AUDIO_EXTENSIONS = {"mp3", "wav", "ogg", "m4a"}
+
+# Évaluation privée des responsables : visible d'eux et du volontaire concerné uniquement.
+PRIVATE_VOLUNTEER_FIELDS = {"rating", "note"}
 
 
 def _now() -> str:
@@ -65,6 +68,19 @@ def _helper_identity(helper: AuthenticatedHelper) -> dict:
         "display_name": helper.global_name,
         "avatar_url": helper.avatar_url,
     }
+
+
+async def _hide_private_ratings(tasks: list[dict], helper: AuthenticatedHelper) -> list[dict]:
+    if await is_responsable_helper(helper.id):
+        return tasks
+    for task in tasks:
+        task["volunteers"] = [
+            volunteer
+            if volunteer.get("id") == helper.id
+            else {key: value for key, value in volunteer.items() if key not in PRIVATE_VOLUNTEER_FIELDS}
+            for volunteer in task.get("volunteers", [])
+        ]
+    return tasks
 
 
 # ---------------------------------------------------------------------------
@@ -151,8 +167,16 @@ async def create_absence(
 @router.delete("/calendrier/{absence_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_absence(
     absence_id: str,
-    _: AuthenticatedHelper = Depends(current_staff),
+    helper: AuthenticatedHelper = Depends(current_staff),
 ) -> None:
+    existing = await db.absences.find_one({"id": absence_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Absence introuvable.")
+    if (existing.get("helper") or {}).get("id") != helper.id and not await is_responsable_helper(helper.id):
+        raise HTTPException(
+            status_code=403,
+            detail="Seul l'auteur de l'absence ou un responsable peut la supprimer.",
+        )
     result = await db.absences.delete_one({"id": absence_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Absence introuvable.")
@@ -239,9 +263,10 @@ async def delete_period(
 @router.get("/tasks", response_model=list[QuarterlyTask])
 async def list_tasks(
     period_id: str,
-    _: AuthenticatedHelper = Depends(current_staff),
+    helper: AuthenticatedHelper = Depends(current_staff),
 ) -> list[QuarterlyTask]:
-    return await db.quarterly_tasks.find({"period_id": period_id}, {"_id": 0}).sort("task_date", 1).to_list(500)
+    tasks = await db.quarterly_tasks.find({"period_id": period_id}, {"_id": 0}).sort("task_date", 1).to_list(500)
+    return await _hide_private_ratings(tasks, helper)
 
 
 import unicodedata
@@ -331,7 +356,7 @@ async def signup_task(
     )
     existing["volunteers"] = volunteers
     existing["updated_at"] = updated_at
-    return existing
+    return (await _hide_private_ratings([existing], helper))[0]
 
 
 @router.delete("/tasks/{task_id}/volunteers/{helper_id}", response_model=QuarterlyTask)
