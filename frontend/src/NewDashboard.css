@@ -1861,3 +1861,72 @@ body.dashboard-no-nav .app-shell > .app-main {
     transition: none;
   }
 }
+/* À venir — violet plus soutenu */
+
+.nd-page .nd-anim-calendar {
+  border-color: #cfc0e0;
+  background: #faf7fd;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-panel-heading {
+  border-bottom-color: #d3c3e4;
+  background: #dfd0ef;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-heading-icon {
+  background: #cbb5e2;
+  color: #573478;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-panel-heading h3 {
+  color: #492b65;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-panel-heading p {
+  color: #715587;
+}
+
+/* Projets à venir */
+
+.nd-page .nd-anim-calendar .nd-anim-upcoming-row {
+  color: #492b65;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-upcoming-row
+  + .nd-anim-upcoming-row {
+  border-top-color: #e1d5ed;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-upcoming-row:hover {
+  background: #eee5f7;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-date {
+  border-color: #cbb5df;
+  background: #e2d4ef;
+  color: #573478;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-upcoming-copy small {
+  color: #765c8b;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-upcoming-row > svg {
+  color: #704694;
+}
+
+/* Accès au calendrier */
+
+.nd-page .nd-anim-calendar .nd-anim-calendar-footer {
+  border-top-color: #d3c3e4;
+  background: #e8ddf2;
+  color: #573478;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-calendar-footer:hover {
+  background: #dac8eb;
+}
+
+.nd-page .nd-anim-calendar .nd-anim-message {
+  color: #765c8b;
+}
