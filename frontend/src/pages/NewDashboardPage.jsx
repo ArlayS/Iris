@@ -108,32 +108,28 @@ export default function NewDashboardPage({
     presenceState = currentAbsence ? "away" : "available";
   }
 
-  const pills = [
-    isHelper && {
-      label: "Helper",
-      tone: "helper",
-    },
-    isStaff && {
-      label: "Staff",
-      tone: "staff",
-    },
-    isResponsable && {
-      label: "Responsable",
-      tone: "responsable",
-    },
-    isAnimateur && {
-      label: "Animateur",
-      tone: "animateur",
-    },
-    isOperateur && {
-      label: "Opérateur",
-      tone: "operateur",
-    },
-    isAdmin && {
-      label: "Coordinateur",
-      tone: "admin",
-    },
-  ].filter(Boolean);
+const pills = [
+  isResponsable && {
+    label: "Responsable",
+    tone: "responsable",
+  },
+  isAdmin && {
+    label: "Coordinateur",
+    tone: "admin",
+  },
+  (isOperateur || isStaff) && {
+    label: "Opérateur",
+    tone: "operateur",
+  },
+  isHelper && {
+    label: "Helper",
+    tone: "helper",
+  },
+  isAnimateur && {
+    label: "Animateur",
+    tone: "animateur",
+  },
+].filter(Boolean);
 
   const quickCards = [
     canSeeModeration && {
