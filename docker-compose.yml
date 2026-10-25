@@ -6,13 +6,14 @@ services:
   # Base de données MongoDB (non exposée sur l'hôte : accessible uniquement via le réseau Docker)
   mongodb:
     # Fixer la version réellement utilisée : docker exec emergent-mongodb mongod --version
-    image: mongo:${MONGO_VERSION:?Définir MONGO_VERSION dans .env (ex: 7.0.14)}
+    image: mongo:${MONGO_VERSION:?MONGO_VERSION}
     container_name: emergent-mongodb
     volumes:
       - mongo-data:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Définir MONGO_ROOT_PASSWORD dans .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD}
+  docker-compose.yml
     networks:
       - npm_default
 
