@@ -226,7 +226,48 @@ export default function NewDashboardPage({
           </span>
         )}
       </header>
+{isResponsable && (
+  <section
+    className="nd-responsable-banner"
+    aria-labelledby="nd-responsable-title"
+  >
+    <div className="nd-responsable-content">
+      <p className="nd-responsable-eyebrow">ESPACE RESPONSABLE</p>
 
+      <h2 id="nd-responsable-title">
+        Veiller au bon fonctionnement d’Iris.
+      </h2>
+
+      <p className="nd-responsable-description">
+        Consultez les journaux d’accès et retrouvez les sauvegardes
+        des salons Discord.
+      </p>
+    </div>
+
+    <nav
+      className="nd-responsable-actions"
+      aria-label="Outils du responsable"
+    >
+      <Link
+        to="/responsable/auth-logs"
+        className="nd-responsable-link"
+      >
+        <FileText size={18} aria-hidden="true" />
+        <span>Logs d’authentification</span>
+        <ArrowRight size={18} aria-hidden="true" />
+      </Link>
+
+      <Link
+        to="/responsable/archives-salons"
+        className="nd-responsable-link"
+      >
+        <Archive size={18} aria-hidden="true" />
+        <span>Sauvegardes de salons</span>
+        <ArrowRight size={18} aria-hidden="true" />
+      </Link>
+    </nav>
+  </section>
+)}
       {quickCards.length > 0 && (
         <nav className="nd-shortcuts" aria-label="Accès principaux">
           {quickCards.map(({ to, title, description, tone, Icon }) => (
