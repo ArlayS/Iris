@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  FileText,
   LoaderCircle,
   RefreshCw,
   Search,
@@ -23,7 +24,7 @@ import {
 } from "../components/casier/casierConstants";
 import { casierLogLink, formatBytes } from "../components/casier/formatters";
 
-import "@/NewDashboard.css";
+import "@/Casier.css";
 import "@/ResponsableAuthLogs.css";
 
 const AGENDA_EVENT_LABELS = {
@@ -103,7 +104,7 @@ function formatDateTime(value) {
 }
 
 function EventBadge({ eventType }) {
-  const colorClass =
+  const tone =
     eventType === "auth.login.success" ||
     eventType === "project.created" ||
     eventType === "project.task.created" ||
@@ -122,13 +123,11 @@ function EventBadge({ eventType }) {
             eventType === "project.task.deleted" ||
             eventType === "project.resource.deleted"
           ? "status-bad"
-          : "";
-
-  const tone = isCasierEvent(eventType)
-    ? casierEventTone(eventType)
-    : AGENDA_EVENT_LABELS[eventType]
-      ? "status-pending"
-      : colorClass;
+          : isCasierEvent(eventType)
+            ? casierEventTone(eventType)
+            : AGENDA_EVENT_LABELS[eventType]
+              ? "status-pending"
+              : "";
 
   return (
     <span className={`status-badge ${tone}`}>
@@ -142,26 +141,10 @@ function DetailLine({ label, value }) {
 
   return (
     <span className="ral-detail">
-      {label} : {String(value)}
+      <b>{label}</b>
+      {String(value)}
     </span>
   );
-}
-
-const yesNo = (value) =>
-  value === undefined || value === null
-    ? undefined
-    : value
-      ? "Oui"
-      : "Non";
-
-function transition(before, after, label) {
-  if (!before && !after) return undefined;
-
-  if (before && after && before !== after) {
-    return `${label(before)} → ${label(after)}`;
-  }
-
-  return label(after || before);
 }
 
 function CasierLogDetails({ eventType, details }) {
@@ -191,14 +174,17 @@ function CasierLogDetails({ eventType, details }) {
   return (
     <div className="ral-details">
       <DetailLine label="Membre" value={member} />
+
       <DetailLine
         label="Statut"
         value={data.status ? statusMeta(data.status).label : undefined}
       />
+
       <DetailLine
         label="Revue"
         value={data.review ? reviewMeta(data.review).label : undefined}
       />
+
       <DetailLine
         label="Sanction"
         value={
@@ -207,6 +193,7 @@ function CasierLogDetails({ eventType, details }) {
             : undefined
         }
       />
+
       <DetailLine
         label="Commentaire"
         value={
@@ -219,15 +206,16 @@ function CasierLogDetails({ eventType, details }) {
       {(data.before_length !== undefined ||
         data.after_length !== undefined) && (
         <span className="ral-detail">
-          Contenu : {data.before_length ?? 0} → {data.after_length ?? 0}{" "}
-          caractères
+          <b>Contenu</b>
+          {data.before_length ?? 0} → {data.after_length ?? 0} caractères
         </span>
       )}
 
       {data.content_length !== undefined &&
         data.before_length === undefined && (
           <span className="ral-detail">
-            Contenu : {data.content_length} caractères
+            <b>Contenu</b>
+            {data.content_length} caractères
           </span>
         )}
 
@@ -260,10 +248,10 @@ export default function ResponsableAuthLogsPage() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   useEffect(() => {
-    document.body.classList.add("dashboard-no-nav");
+    document.body.classList.add("casier-no-nav");
 
     return () => {
-      document.body.classList.remove("dashboard-no-nav");
+      document.body.classList.remove("casier-no-nav");
     };
   }, []);
 
@@ -310,230 +298,212 @@ export default function ResponsableAuthLogsPage() {
 
   return (
     <section
-      className="nd-page ral-page"
+      className="cz-page ral-page"
       data-testid="responsable-auth-logs-page"
     >
-      <header className="nd-header">
-        <div className="nd-heading">
-          <p className="nd-eyebrow">ESPACE RESPONSABLE</p>
+      <header className="cz-header">
+        <div className="cz-header-copy">
+          <p className="cz-eyebrow">ESPACE RESPONSABLE</p>
 
           <h1>Journal d’activité</h1>
 
-          <p className="ral-intro">
+          <p className="cz-intro">
             Consultez les connexions, accès refusés et actions
             enregistrées dans Iris.
           </p>
         </div>
 
-        <div className="nd-account-actions">
-          <Link to="/" className="nd-profile-button">
+        <div className="cz-header-actions">
+          <Link to="/" className="cz-home">
             Accueil
-            <ArrowRight size={17} aria-hidden="true" />
+            <ArrowRight size={18} aria-hidden="true" />
           </Link>
         </div>
       </header>
 
-      <section
-        className="nd-responsable-banner ral-toolbar"
-        aria-labelledby="ral-filters-title"
-      >
-        <div className="nd-responsable-content">
-          <p className="nd-responsable-eyebrow">FILTRER LE JOURNAL</p>
-
-          <h2 id="ral-filters-title">Rechercher une activité</h2>
-
-          <p className="nd-responsable-description">
-            Filtrez par type d’événement, identifiant helper et
-            nombre d’entrées affichées.
-          </p>
-        </div>
-
-        <form className="ral-filters-form" onSubmit={applyFilters}>
-          <label className="ral-field">
-            <span>Type d’événement</span>
-
-            <select
-              value={eventType}
-              onChange={(event) => {
-                setEventType(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Tous les événements</option>
-
-              {EVENT_GROUPS.map((group) => (
-                <optgroup key={group.label} label={group.label}>
-                  {group.types.map((type) => (
-                    <option key={type} value={type}>
-                      {EVENT_LABELS[type] || type}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-
-          <label className="ral-field">
-            <span>ID helper</span>
-
-            <input
-              value={helperIdInput}
-              onChange={(event) => setHelperIdInput(event.target.value)}
-              placeholder="Ex. 123456789"
-            />
-          </label>
-
-          <label className="ral-field">
-            <span>Par page</span>
-
-            <select
-              value={limit}
-              onChange={(event) => {
-                setLimit(Number(event.target.value));
-                setPage(1);
-              }}
-            >
-              <option value={25}>25 entrées</option>
-              <option value={50}>50 entrées</option>
-              <option value={100}>100 entrées</option>
-              <option value={200}>200 entrées</option>
-            </select>
-          </label>
-
-          <div className="ral-filter-actions">
-            <button type="submit" className="nd-profile-button">
-              <Search size={16} aria-hidden="true" />
-              Rechercher
-            </button>
-
-            <button
-              type="button"
-              className="nd-profile-button"
-              onClick={resetFilters}
-            >
-              Réinitialiser
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section className="ral-panel" aria-labelledby="ral-table-title">
-        <header className="ral-panel-header">
-          <span className="ral-panel-icon">
-            <Shield size={22} aria-hidden="true" />
+      <section className="cz-panel ral-panel">
+        <header className="cz-panel-header cz-panel-header--red">
+          <span className="cz-panel-icon" aria-hidden="true">
+            <Shield size={23} />
           </span>
 
-          <div>
-            <h2 id="ral-table-title">Activité enregistrée</h2>
-
+          <div className="cz-panel-heading">
+            <h2>Filtrer le journal</h2>
             <p>
-              {total} entrée{total > 1 ? "s" : ""} · conservation de
-              180 jours par défaut
+              Recherchez une activité par type d’événement ou
+              identifiant helper.
             </p>
           </div>
 
-          <button
-            type="button"
-            className="nd-profile-button"
-            onClick={load}
-            disabled={loading}
-          >
-            <RefreshCw
-              className={loading ? "spin" : ""}
-              size={16}
-              aria-hidden="true"
-            />
-            Actualiser
-          </button>
+          <span className="cz-count-live">
+            <span className="cz-count">
+              {total} entrée{total > 1 ? "s" : ""}
+            </span>
+          </span>
         </header>
 
-        {loading ? (
-          <div className="ral-state" role="status">
-            <LoaderCircle className="spin" size={24} aria-hidden="true" />
-            <p>Chargement du journal…</p>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="ral-state">
-            <Search size={30} aria-hidden="true" />
-            <h2>Aucun log trouvé pour ces filtres.</h2>
-            <p>Modifiez le type d’événement ou l’identifiant helper.</p>
-          </div>
-        ) : (
-          <div className="ral-table-wrap">
-            <table className="ral-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Événement</th>
-                  <th>Utilisateur</th>
-                  <th>IP</th>
-                  <th>Méthode</th>
-                  <th>Chemin</th>
-                  <th>Code</th>
-                  <th>Détails</th>
-                </tr>
-              </thead>
+        <div className="cz-panel-toolbar">
+          <form className="ral-filters" onSubmit={applyFilters}>
+            <label className="ral-field">
+              <span>Type d’événement</span>
 
-              <tbody>
-                {items.map((log) => (
-                  <tr
-                    key={`${log.id ?? log.created_at}-${log.event_type}`}
-                  >
-                    <td>{formatDateTime(log.created_at)}</td>
+              <select
+                value={eventType}
+                onChange={(event) => {
+                  setEventType(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Tous les événements</option>
 
-                    <td>
-                      <EventBadge eventType={log.event_type} />
-                    </td>
-
-                    <td>
-                      <strong>{log.username || "Inconnu"}</strong>
-                      <small>{log.helper_id || "—"}</small>
-                    </td>
-
-                    <td>{log.ip || "—"}</td>
-                    <td>{log.method || "—"}</td>
-                    <td className="ral-path">{log.path || "—"}</td>
-                    <td>{log.status_code ?? "—"}</td>
-
-                    <td>
-                      {isCasierEvent(log.event_type) ? (
-                        <CasierLogDetails
-                          eventType={log.event_type}
-                          details={log.details}
-                        />
-                      ) : (
-                        <div className="ral-details">
-                          {(log.details?.before_length !== undefined ||
-                            log.details?.after_length !== undefined) && (
-                            <span className="ral-detail">
-                              Contenu : {log.details?.before_length ?? 0} →{" "}
-                              {log.details?.after_length ?? 0} caractères
-                            </span>
-                          )}
-
-                          {(log.details?.before?.content_length !==
-                            undefined ||
-                            log.details?.after?.content_length !==
-                              undefined) && (
-                            <span className="ral-detail">
-                              Contenu :{" "}
-                              {log.details?.before?.content_length ?? 0} →{" "}
-                              {log.details?.after?.content_length ?? 0}{" "}
-                              caractères
-                            </span>
-                          )}
-
-                          {(!log.details ||
-                            Object.keys(log.details).length === 0) && "—"}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
+                {EVENT_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.types.map((type) => (
+                      <option key={type} value={type}>
+                        {EVENT_LABELS[type] || type}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              </select>
+            </label>
+
+            <label className="ral-field">
+              <span>ID helper</span>
+
+              <input
+                value={helperIdInput}
+                onChange={(event) =>
+                  setHelperIdInput(event.target.value)
+                }
+                placeholder="Ex. 123456789"
+              />
+            </label>
+
+            <label className="ral-field">
+              <span>Par page</span>
+
+              <select
+                value={limit}
+                onChange={(event) => {
+                  setLimit(Number(event.target.value));
+                  setPage(1);
+                }}
+              >
+                <option value={25}>25 entrées</option>
+                <option value={50}>50 entrées</option>
+                <option value={100}>100 entrées</option>
+                <option value={200}>200 entrées</option>
+              </select>
+            </label>
+
+            <div className="ral-filter-actions">
+              <button type="submit" className="cz-button cz-button--primary">
+                <Search size={16} aria-hidden="true" />
+                Rechercher
+              </button>
+
+              <button
+                type="button"
+                className="cz-button"
+                onClick={resetFilters}
+              >
+                Réinitialiser
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div className="cz-panel-scroll">
+          {loading ? (
+            <div className="ral-state" role="status">
+              <LoaderCircle className="spin" size={24} aria-hidden="true" />
+              <p>Chargement du journal…</p>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="ral-state">
+              <FileText size={30} aria-hidden="true" />
+              <h2>Aucun log trouvé pour ces filtres.</h2>
+              <p>Modifiez le type d’événement ou l’identifiant helper.</p>
+            </div>
+          ) : (
+            <div className="ral-table-wrap">
+              <table className="ral-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Événement</th>
+                    <th>Utilisateur</th>
+                    <th>IP</th>
+                    <th>Méthode</th>
+                    <th>Chemin</th>
+                    <th>Code</th>
+                    <th>Détails</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {items.map((log) => (
+                    <tr
+                      key={`${log.id ?? log.created_at}-${log.event_type}`}
+                    >
+                      <td>{formatDateTime(log.created_at)}</td>
+
+                      <td>
+                        <EventBadge eventType={log.event_type} />
+                      </td>
+
+                      <td>
+                        <strong>{log.username || "Inconnu"}</strong>
+                        <small>{log.helper_id || "—"}</small>
+                      </td>
+
+                      <td>{log.ip || "—"}</td>
+                      <td>{log.method || "—"}</td>
+                      <td className="ral-path">{log.path || "—"}</td>
+                      <td>{log.status_code ?? "—"}</td>
+
+                      <td>
+                        {isCasierEvent(log.event_type) ? (
+                          <CasierLogDetails
+                            eventType={log.event_type}
+                            details={log.details}
+                          />
+                        ) : (
+                          <div className="ral-details">
+                            {(log.details?.before_length !== undefined ||
+                              log.details?.after_length !== undefined) && (
+                              <span className="ral-detail">
+                                <b>Contenu</b>
+                                {log.details?.before_length ?? 0} →{" "}
+                                {log.details?.after_length ?? 0} caractères
+                              </span>
+                            )}
+
+                            {(log.details?.before?.content_length !==
+                              undefined ||
+                              log.details?.after?.content_length !==
+                                undefined) && (
+                              <span className="ral-detail">
+                                <b>Contenu</b>
+                                {log.details?.before?.content_length ?? 0} →{" "}
+                                {log.details?.after?.content_length ?? 0}{" "}
+                                caractères
+                              </span>
+                            )}
+
+                            {(!log.details ||
+                              Object.keys(log.details).length === 0) && "—"}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
         <footer className="ral-pagination">
           <span>
