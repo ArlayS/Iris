@@ -1,30 +1,36 @@
-import { useCallback, useEffect, useState } from "react";
-import "@/App.css";
-import "@/MentalHealth.css";
+import { useCallback, useEffect, useState, Suspense, lazy } from "react";
+import "@App.css";
+import "@MentalHealth.css";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "./api/client";
 import AppShell from "./components/AppShell";
-import AdminDashboardPage from "./pages/AdminDashboardPage";
-import DashboardPage from "./pages/DashboardPage";
-import HelperProfilePage from "./pages/HelperProfilePage";
-import LoginPage from "./pages/LoginPage";
-import NewTicketPage from "./pages/NewTicketPage";
-import ResourcesPage from "./pages/ResourcesPage";
 import ActivityPage from "./pages/ActivityPage";
-import TicketWorkspacePage from "./pages/TicketWorkspacePage";
-import AbsenceCalendarPage from "./pages/AbsenceCalendarPage";
-import MeetingSummariesPage from "./pages/MeetingSummariesPage";
-import MeetingSummaryEditorPage from "./pages/MeetingSummaryEditorPage";
-import QuarterlyTasksPage from "./pages/QuarterlyTasksPage";
-import ProjectsListPage from "./pages/ProjectsListPage";
-import ProjectDetailPage from "./pages/ProjectDetailPage";
-import ProjectCalendarPage from "./pages/ProjectCalendarPage";
-import ResponsableAuthLogsPage from "./pages/ResponsableAuthLogsPage";
-import ResponsableChannelArchivesPage from "./pages/ResponsableChannelArchivesPage";
-import ChannelArchiveWorkspacePage from "./pages/ChannelArchiveWorkspacePage";
-import ModerationCasierPage from "./pages/ModerationCasierPage";
+
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
+const HelperProfilePage = lazy(() => import("./pages/HelperProfilePage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const NewTicketPage = lazy(() => import("./pages/NewTicketPage"));
+const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
+const TicketWorkspacePage = lazy(() => import("./pages/TicketWorkspacePage"));
+const AbsenceCalendarPage = lazy(() => import("./pages/AbsenceCalendarPage"));
+const MeetingSummariesPage = lazy(() => import("./pages/MeetingSummariesPage"));
+const MeetingSummaryEditorPage = lazy(() => import("./pages/MeetingSummaryEditorPage"));
+const QuarterlyTasksPage = lazy(() => import("./pages/QuarterlyTasksPage"));
+const ProjectsListPage = lazy(() => import("./pages/ProjectsListPage"));
+const ProjectDetailPage = lazy(() => import("./pages/ProjectDetailPage"));
+const ProjectCalendarPage = lazy(() => import("./pages/ProjectCalendarPage"));
+const ResponsableAuthLogsPage = lazy(() => import("./pages/ResponsableAuthLogsPage"));
+const ResponsableChannelArchivesPage = lazy(() => import("./pages/ResponsableChannelArchivesPage"));
+const ChannelArchiveWorkspacePage = lazy(() => import("./pages/ChannelArchiveWorkspacePage"));
+const ModerationCasierPage = lazy(() => import("./pages/ModerationCasierPage"));
+
+function Loading() {
+  return <div className="app-loading">Chargement…</div>;
+}
 
 function AuthenticatedApp({
   helper,
@@ -36,12 +42,7 @@ function AuthenticatedApp({
   isAnimateur,
   onSessionRefresh,
 }) {
-  const [tickets, setTickets] = useState([]);
-  const [stats, setStats] = useState({
-    active_count: 0,
-    archived_count: 0,
-    total_messages: 0,
-  });
+  const queryClient = useQueryClient();
 
   const canSeeHelper = isResponsable || isAdmin || isHelper;
   const canSeeAdmin = isResponsable || isAdmin;
@@ -49,37 +50,44 @@ function AuthenticatedApp({
   const canSeeAnimateur = isAnimateur || isResponsable;
   const canSeeOperateur = isOperateur || isResponsable;
 
-  const refreshDashboard = useCallback(async () => {
-    const [ticketsResponse, statsResponse] = await Promise.all([
-      api.get("/tickets"),
-      api.get("/tickets/stats"),
-    ]);
-    setTickets(ticketsResponse.data);
-    setStats(statsResponse.data);
-  }, []);
+  const ticketsQuery = useQuery({
+    queryKey: ["tickets"],
+    queryFn: async () => {
+      const response = await api.get("/tickets");
+      return response.data;
+    },
+    enabled: canSeeHelper,
+  });
 
-  useEffect(() => {
-    if (!canSeeHelper) return;
-    refreshDashboard().catch(() => undefined);
-  }, [canSeeHelper, refreshDashboard]);
+  const statsQuery = useQuery({
+    queryKey: ["tickets", "stats"],
+    queryFn: async () => {
+      const response = await api.get("/tickets/stats");
+      return response.data;
+    },
+    enabled: canSeeHelper,
+  });
+
+  const tickets = ticketsQuery.data || [];
+  const stats = statsQuery.data || {
+    active_count: 0,
+    archived_count: 0,
+    total_messages: 0,
+  };
 
   const updateTicket = (ticket) => {
-    setTickets((current) => [
+    queryClient.setQueryData(["tickets"], (current) => [
       ticket,
-      ...current.filter((item) => item.id !== ticket.id),
+      ...(current || []).filter((item) => item.id !== ticket.id),
     ]);
-    api
-      .get("/tickets/stats")
-      .then((response) => setStats(response.data))
-      .catch(() => undefined);
+    queryClient.invalidateQueries({ queryKey: ["tickets", "stats"] });
   };
 
   const deleteTicket = (ticketId) => {
-    setTickets((current) => current.filter((ticket) => ticket.id !== ticketId));
-    api
-      .get("/tickets/stats")
-      .then((response) => setStats(response.data))
-      .catch(() => undefined);
+    queryClient.setQueryData(["tickets"], (current) =>
+      (current || []).filter((ticket) => ticket.id !== ticketId)
+    );
+    queryClient.invalidateQueries({ queryKey: ["tickets", "stats"] });
   };
 
   const logout = async () => {
@@ -105,229 +113,231 @@ function AuthenticatedApp({
       isOperateur={isOperateur}
       isHelper={isHelper}
     >
-      <Routes>
-        <Route
-          path="/"
-          element={
-            canSeeHelper ? (
-              <DashboardPage stats={stats} tickets={tickets} />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              canSeeHelper ? (
+                <DashboardPage stats={stats} tickets={tickets} />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/new"
-          element={
-            canSeeHelper ? (
-              <NewTicketPage onCreated={updateTicket} />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/new"
+            element={
+              canSeeHelper ? (
+                <NewTicketPage onCreated={updateTicket} />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/tickets/:ticketId"
-          element={
-            canSeeHelper ? (
-              <TicketWorkspacePage
-                onTicketUpdate={updateTicket}
-                onTicketDeleted={deleteTicket}
-                isAdmin={isAdmin}
-                helper={helper}
-              />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/tickets/:ticketId"
+            element={
+              canSeeHelper ? (
+                <TicketWorkspacePage
+                  onTicketUpdate={updateTicket}
+                  onTicketDeleted={deleteTicket}
+                  isAdmin={isAdmin}
+                  helper={helper}
+                />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/archives"
-          element={
-            canSeeHelper ? (
-              <DashboardPage
-                stats={stats}
-                tickets={tickets.filter((ticket) => ticket.status === "archived")}
-              />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/archives"
+            element={
+              canSeeHelper ? (
+                <DashboardPage
+                  stats={stats}
+                  tickets={tickets.filter((ticket) => ticket.status === "archived")}
+                />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/admin"
-          element={
-            canSeeAdmin ? (
-              <AdminDashboardPage />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/admin"
+            element={
+              canSeeAdmin ? (
+                <AdminDashboardPage />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
+          <Route path="/profile" element={<HelperProfilePage helper={helper} />} />
 
-        <Route
-          path="/resources"
-          element={
-            canSeeHelper ? (
-              <ResourcesPage isAdmin={isAdmin} />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/resources"
+            element={
+              canSeeHelper ? (
+                <ResourcesPage isAdmin={isAdmin} />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/staff/calendrier"
-          element={
-            canSeeStaff ? (
-              <AbsenceCalendarPage isResponsable={isResponsable} />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/staff/calendrier"
+            element={
+              canSeeStaff ? (
+                <AbsenceCalendarPage isResponsable={isResponsable} />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/staff/meetings"
-          element={
-            canSeeStaff ? (
-              <MeetingSummariesPage isResponsable={isResponsable} />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/staff/meetings"
+            element={
+              canSeeStaff ? (
+                <MeetingSummariesPage isResponsable={isResponsable} />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/staff/meetings/new"
-          element={
-            canSeeStaff && isResponsable ? (
-              <MeetingSummaryEditorPage />
-            ) : (
-              <Navigate to="/staff/meetings" replace />
-            )
-          }
-        />
+          <Route
+            path="/staff/meetings/new"
+            element={
+              canSeeStaff && isResponsable ? (
+                <MeetingSummaryEditorPage />
+              ) : (
+                <Navigate to="/staff/meetings" replace />
+              )
+            }
+          />
 
-        <Route
-          path="/staff/meetings/:meetingId"
-          element={
-            canSeeStaff ? (
-              <MeetingSummaryEditorPage isResponsable={isResponsable} />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/staff/meetings/:meetingId"
+            element={
+              canSeeStaff ? (
+                <MeetingSummaryEditorPage isResponsable={isResponsable} />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/staff/taches"
-          element={
-            canSeeStaff ? (
-              <QuarterlyTasksPage isResponsable={isResponsable} />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/staff/taches"
+            element={
+              canSeeStaff ? (
+                <QuarterlyTasksPage isResponsable={isResponsable} />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/responsable/auth-logs"
-          element={
-            isResponsable ? (
-              <ResponsableAuthLogsPage />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/responsable/auth-logs"
+            element={
+              isResponsable ? (
+                <ResponsableAuthLogsPage />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/responsable/archives-salons"
-          element={
-            isResponsable ? (
-              <ResponsableChannelArchivesPage />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/responsable/archives-salons"
+            element={
+              isResponsable ? (
+                <ResponsableChannelArchivesPage />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/responsable/archives-salons/:archiveId"
-          element={
-            isResponsable ? (
-              <ChannelArchiveWorkspacePage />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/responsable/archives-salons/:archiveId"
+            element={
+              isResponsable ? (
+                <ChannelArchiveWorkspacePage />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/moderation/casiers"
-          element={
-            canSeeOperateur ? (
-              <ModerationCasierPage />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/moderation/casiers"
+            element={
+              canSeeOperateur ? (
+                <ModerationCasierPage />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/animateur/projects"
-          element={
-            canSeeAnimateur ? (
-              <ProjectsListPage
-                helper={helper}
-                isResponsable={isResponsable}
-                isResponsableGlobal={isResponsable}
-              />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/animateur/projects"
+            element={
+              canSeeAnimateur ? (
+                <ProjectsListPage
+                  helper={helper}
+                  isResponsable={isResponsable}
+                  isResponsableGlobal={isResponsable}
+                />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/animateur/projects/:projectId"
-          element={
-            canSeeAnimateur ? (
-              <ProjectDetailPage
-                helper={helper}
-                isResponsable={isResponsable}
-                isResponsableGlobal={isResponsable}
-              />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/animateur/projects/:projectId"
+            element={
+              canSeeAnimateur ? (
+                <ProjectDetailPage
+                  helper={helper}
+                  isResponsable={isResponsable}
+                  isResponsableGlobal={isResponsable}
+                />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route
-          path="/animateur/calendrier"
-          element={
-            canSeeAnimateur ? (
-              <ProjectCalendarPage
-                helper={helper}
-                isResponsable={isResponsable}
-                isResponsableGlobal={isResponsable}
-              />
-            ) : (
-              <Navigate to={defaultRoute} replace />
-            )
-          }
-        />
+          <Route
+            path="/animateur/calendrier"
+            element={
+              canSeeAnimateur ? (
+                <ProjectCalendarPage
+                  helper={helper}
+                  isResponsable={isResponsable}
+                  isResponsableGlobal={isResponsable}
+                />
+              ) : (
+                <Navigate to={defaultRoute} replace />
+              )
+            }
+          />
 
-        <Route path="*" element={<Navigate to={defaultRoute} replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to={defaultRoute} replace />} />
+        </Routes>
+      </Suspense>
     </AppShell>
   );
 }
@@ -344,34 +354,31 @@ export default function App() {
 }
 
 function MainApp() {
-  const [session, setSession] = useState(null);
+  const sessionQuery = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const response = await api.get("/auth/session", {
+        params: { refresh: Date.now() },
+      });
+      return response.data;
+    },
+    retry: false,
+  });
 
-  const loadSession = useCallback(async () => {
-    const response = await api.get("/auth/session", {
-      params: { refresh: Date.now() },
-    });
-    setSession(response.data);
-    return response.data;
-  }, []);
-
-  useEffect(() => {
-    loadSession().catch(() => {
-      setSession({ authenticated: false });
-    });
-  }, [loadSession]);
+  const session = sessionQuery.data;
 
   useEffect(() => {
     if (!session?.authenticated) return undefined;
 
     const refreshWhenVisible = () => {
       if (document.visibilityState === "visible") {
-        loadSession().catch(() => undefined);
+        sessionQuery.refetch();
       }
     };
 
     const refreshInterval = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        loadSession().catch(() => undefined);
+        sessionQuery.refetch();
       }
     }, 5 * 60 * 1000);
 
@@ -383,9 +390,9 @@ function MainApp() {
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       window.removeEventListener("focus", refreshWhenVisible);
     };
-  }, [session?.authenticated, loadSession]);
+  }, [session?.authenticated, sessionQuery]);
 
-  if (!session) {
+  if (sessionQuery.isLoading || !session) {
     return <div className="app-loading">Initialisation d’Iris</div>;
   }
 
@@ -401,10 +408,12 @@ function MainApp() {
             isResponsable={session.is_responsable}
             isOperateur={session.is_operateur}
             isAnimateur={session.is_animateur}
-            onSessionRefresh={loadSession}
+            onSessionRefresh={() => sessionQuery.refetch()}
           />
         ) : (
-          <LoginPage />
+          <Suspense fallback={<Loading />}>
+            <LoginPage />
+          </Suspense>
         )}
       </BrowserRouter>
       <Toaster theme="light" position="bottom-right" />
