@@ -3,20 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Archive,
-  BookHeart,
   CalendarDays,
-  CheckCircle2,
   FileText,
-  FolderKanban,
-  HeartHandshake,
-  Plus,
-  Radio,
   ShieldCheck,
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import HelperDashboardModule from "../components/HelperDashboardModule";
+
 import { api } from "../api/client";
+import QuarterlyDashboardModule from "../components/QuarterlyDashboardModule";
+import HelperDashboardModule from "../components/HelperDashboardModule";
+import AnimateurDashboardModule from "../components/AnimateurDashboardModule";
+
 import "@/NewDashboard.css";
 
 function localDateKey() {
@@ -29,13 +27,7 @@ function localDateKey() {
   ].join("-");
 }
 
-function timestamp(value) {
-  const result = Date.parse(value || "");
-  return Number.isNaN(result) ? 0 : result;
-}
-
 export default function NewDashboardPage({
-  stats = {},
   tickets = [],
   helper,
   isAdmin = false,
@@ -59,14 +51,24 @@ export default function NewDashboardPage({
     helper?.username ||
     "toi";
 
+  const canSeeHelperModule = isHelper || isAdmin;
   const canSeeModeration = isOperateur || isResponsable;
+  const canSeeAnimateur = isAnimateur || isResponsable;
+
   const canSeeStaff =
-    isStaff || isResponsable || isAdmin || isHelper || isOperateur;
+    isStaff ||
+    isResponsable ||
+    isAdmin ||
+    isHelper ||
+    isOperateur;
 
   const absencesQuery = useQuery({
     queryKey: ["dashboard", "absences", helper?.id],
+    enabled: Boolean(helper?.id && canSeeStaff),
     queryFn: async ({ signal }) => {
-      const response = await api.get("/staff/calendrier", { signal });
+      const response = await api.get("/staff/calendrier", {
+        signal,
+      });
 
       if (!Array.isArray(response.data)) {
         throw new Error("Format de réponse inattendu pour les absences.");
@@ -74,7 +76,6 @@ export default function NewDashboardPage({
 
       return response.data;
     },
-    enabled: Boolean(helper?.id && canSeeStaff),
     staleTime: 60_000,
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
@@ -95,199 +96,252 @@ export default function NewDashboardPage({
 
   if (canSeeStaff && absencesQuery.isPending) {
     presenceLabel = "Vérification du statut…";
-  } else if (canSeeStaff && !absencesQuery.isError) {
-    presenceLabel = currentAbsence ? "En absence" : "Aucune absence déclarée";
+  } else if (
+    canSeeStaff &&
+    absencesQuery.isSuccess &&
+    !absencesQuery.isError
+  ) {
+    presenceLabel = currentAbsence
+      ? "En absence"
+      : "Aucune absence déclarée";
+
     presenceState = currentAbsence ? "away" : "available";
   }
 
-  const myTickets = helper?.id
-    ? tickets
-        .filter(
-          (ticket) =>
-            String(ticket.assigned_helper?.id) === String(helper.id)
-        )
-        .sort(
-          (a, b) =>
-            timestamp(b.updated_at || b.created_at) -
-            timestamp(a.updated_at || a.created_at)
-        )
-        .slice(0, 5)
-    : [];
-
   const pills = [
-    isHelper && { label: "Helper", tone: "helper" },
-    isStaff && { label: "Staff", tone: "staff" },
-    isResponsable && { label: "Responsable", tone: "responsable" },
-    isAnimateur && { label: "Animateur", tone: "animateur" },
-    isOperateur && { label: "Opérateur", tone: "operateur" },
-    isAdmin && { label: "Coordinateur", tone: "admin" },
+    isHelper && {
+      label: "Helper",
+      tone: "helper",
+    },
+    isStaff && {
+      label: "Staff",
+      tone: "staff",
+    },
+    isResponsable && {
+      label: "Responsable",
+      tone: "responsable",
+    },
+    isAnimateur && {
+      label: "Animateur",
+      tone: "animateur",
+    },
+    isOperateur && {
+      label: "Opérateur",
+      tone: "operateur",
+    },
+    isAdmin && {
+      label: "Coordinateur",
+      tone: "admin",
+    },
   ].filter(Boolean);
 
   const quickCards = [
     canSeeModeration && {
       to: "/moderation/casiers",
       title: "Accéder au casier",
-      description: "Consulter les dossiers et les historiques de modération.",
+      description:
+        "Consulter les dossiers et les historiques de modération.",
       tone: "red",
       Icon: ShieldCheck,
     },
     canSeeStaff && {
       to: "/staff/meetings",
       title: "Voir les réunions passées",
-      description: "Retrouver les comptes-rendus et les documents partagés.",
+      description:
+        "Retrouver les comptes-rendus et les documents partagés.",
       tone: "blue",
       Icon: FileText,
     },
     canSeeStaff && {
       to: "/staff/calendrier",
       title: "Calendrier",
-      description: "Consulter les absences et déclarer une indisponibilité.",
+      description:
+        "Consulter les absences et déclarer une indisponibilité.",
       tone: "white",
       Icon: CalendarDays,
     },
   ].filter(Boolean);
 
-  const extraLinks = [
-    canSeeStaff && {
-      to: "/staff/taches",
-      label: "Tâches trimestrielles",
-      Icon: CheckCircle2,
-    },
-    (isAnimateur || isResponsable) && {
-      to: "/animateur/projects",
-      label: "Projets animateur",
-      Icon: FolderKanban,
-    },
-    (isAnimateur || isResponsable) && {
-      to: "/animateur/calendrier",
-      label: "Calendrier des projets",
-      Icon: CalendarDays,
-    },
-  ].filter(Boolean);
-
   return (
-    <section className="nd-page" data-testid="new-dashboard-page">
+    <section
+      className="nd-page"
+      data-testid="new-dashboard-page"
+    >
+      {/* Titre, accès et compte utilisateur */}
       <header className="nd-header">
         <div className="nd-heading">
           <p className="nd-eyebrow">ESPACE IRIS</p>
 
           <h1>Bienvenue {pseudo}</h1>
 
-          <div className="nd-pills" aria-label="Vos accès">
-            {pills.map((pill) => (
-              <span
-                key={pill.label}
-                className={`nd-pill nd-pill--${pill.tone}`}
-              >
-                {pill.label}
-              </span>
-            ))}
-          </div>
+          {pills.length > 0 && (
+            <div className="nd-pills" aria-label="Vos accès">
+              {pills.map((pill) => (
+                <span
+                  key={pill.label}
+                  className={`nd-pill nd-pill--${pill.tone}`}
+                >
+                  {pill.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        {canSeeStaff ? (
-          <Link
-            to="/staff/calendrier"
-            className={`nd-presence nd-presence--${presenceState}`}
-            title="Ouvrir le calendrier des absences"
-          >
-            <span className="nd-presence-dot" aria-hidden="true" />
-            <span aria-live="polite">{presenceLabel}</span>
-            <CalendarDays size={17} aria-hidden="true" />
-          </Link>
-        ) : (
-          <span className="nd-presence nd-presence--unknown">
-            Statut d’absence non accessible
-          </span>
-        )}
-      </header>
-{isResponsable && (
-  <section
-    className="nd-responsable-banner"
-    aria-labelledby="nd-responsable-title"
-  >
-    <div className="nd-responsable-content">
-      <p className="nd-responsable-eyebrow">ESPACE RESPONSABLE</p>
-
-      <h2 id="nd-responsable-title">
-        Veiller au bon fonctionnement d’Iris.
-      </h2>
-
-      <p className="nd-responsable-description">
-        Consultez les journaux d’accès et retrouvez les sauvegardes
-        des salons Discord.
-      </p>
-    </div>
-
-    <nav
-      className="nd-responsable-actions"
-      aria-label="Outils du responsable"
-    >
-      <Link
-        to="/responsable/auth-logs"
-        className="nd-responsable-link"
-      >
-        <FileText size={18} aria-hidden="true" />
-        <span>Logs d’authentification</span>
-        <ArrowRight size={18} aria-hidden="true" />
-      </Link>
-
-      <Link
-        to="/responsable/archives-salons"
-        className="nd-responsable-link"
-      >
-        <Archive size={18} aria-hidden="true" />
-        <span>Sauvegardes de salons</span>
-        <ArrowRight size={18} aria-hidden="true" />
-      </Link>
-    </nav>
-  </section>
-)}
-      {quickCards.length > 0 && (
-        <nav className="nd-shortcuts" aria-label="Accès principaux">
-          {quickCards.map(({ to, title, description, tone, Icon }) => (
+        <div className="nd-account-actions">
+          {canSeeStaff ? (
             <Link
-              key={to}
-              to={to}
-              className={`nd-shortcut nd-shortcut--${tone}`}
+              to="/staff/calendrier"
+              className={`nd-presence nd-presence--${presenceState}`}
+              title="Ouvrir le calendrier des absences"
             >
-              <span className="nd-shortcut-icon">
-                <Icon size={23} aria-hidden="true" />
+              <span
+                className="nd-presence-dot"
+                aria-hidden="true"
+              />
+
+              <span aria-live="polite">
+                {presenceLabel}
               </span>
 
-              <h2>{title}</h2>
-              <p>{description}</p>
-
-              <span className="nd-shortcut-footer">
-                Ouvrir
-                <ArrowRight size={18} aria-hidden="true" />
-              </span>
+              <CalendarDays size={17} aria-hidden="true" />
             </Link>
-          ))}
+          ) : (
+            <span className="nd-presence nd-presence--unknown">
+              Statut d’absence non accessible
+            </span>
+          )}
+
+          <Link
+            to="/profile"
+            className="nd-profile-button"
+          >
+            Modifier mon profil
+            <ArrowRight size={17} aria-hidden="true" />
+          </Link>
+        </div>
+      </header>
+
+      {/* Espace réservé aux responsables */}
+      {isResponsable && (
+        <section
+          className="nd-responsable-banner"
+          aria-labelledby="nd-responsable-title"
+        >
+          <div className="nd-responsable-content">
+            <p className="nd-responsable-eyebrow">
+              ESPACE RESPONSABLE
+            </p>
+
+            <h2 id="nd-responsable-title">
+              Veiller au bon fonctionnement d’Iris.
+            </h2>
+
+            <p className="nd-responsable-description">
+              Consultez les journaux d’accès et retrouvez les
+              sauvegardes des salons Discord.
+            </p>
+          </div>
+
+          <nav
+            className="nd-responsable-actions"
+            aria-label="Outils du responsable"
+          >
+            <Link
+              to="/responsable/auth-logs"
+              className="nd-responsable-link"
+            >
+              <FileText size={18} aria-hidden="true" />
+              <span>Logs d’authentification</span>
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+
+            <Link
+              to="/responsable/archives-salons"
+              className="nd-responsable-link"
+            >
+              <Archive size={18} aria-hidden="true" />
+              <span>Sauvegardes de salons</span>
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+          </nav>
+        </section>
+      )}
+
+      {/* Accès principaux selon les rôles */}
+      {quickCards.length > 0 && (
+        <nav
+          className="nd-shortcuts"
+          aria-label="Accès principaux"
+        >
+          {quickCards.map(
+            ({ to, title, description, tone, Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                className={`nd-shortcut nd-shortcut--${tone}`}
+              >
+                <span className="nd-shortcut-icon">
+                  <Icon size={23} aria-hidden="true" />
+                </span>
+
+                <h2>{title}</h2>
+                <p>{description}</p>
+
+                <span className="nd-shortcut-footer">
+                  Ouvrir
+                  <ArrowRight size={18} aria-hidden="true" />
+                </span>
+              </Link>
+            )
+          )}
         </nav>
       )}
 
-      {(isHelper || isAdmin) && (
-  <HelperDashboardModule
-    tickets={tickets}
-    helper={helper}
-    isAdmin={isAdmin}
-  />
-)}
+      {/* Mes engagements trimestriels */}
+      {canSeeStaff && (
+        <QuarterlyDashboardModule helper={helper} />
+      )}
 
-      <section className="nd-other" aria-labelledby="nd-other-title">
-        <h2 id="nd-other-title">Mes autres accès</h2>
+      {/* Suivis et outils d’accompagnement */}
+      {canSeeHelperModule && (
+        <HelperDashboardModule
+          tickets={tickets}
+          helper={helper}
+          isAdmin={isAdmin}
+        />
+      )}
 
-        <nav className="nd-other-links" aria-label="Autres espaces">
-          {extraLinks.map(({ to, label, Icon }) => (
-            <Link key={to} to={to} className="nd-other-link">
-              <Icon size={18} aria-hidden="true" />
-              <span>{label}</span>
+      {/* Projets animateur et tâches personnelles */}
+      {canSeeAnimateur && (
+        <AnimateurDashboardModule helper={helper} />
+      )}
+
+      {/* Accès secondaire au calendrier des projets */}
+      {canSeeAnimateur && (
+        <section
+          className="nd-other"
+          aria-labelledby="nd-other-title"
+        >
+          <h2 id="nd-other-title">
+            Planifier mes animations
+          </h2>
+
+          <nav
+            className="nd-other-links"
+            aria-label="Planification des projets"
+          >
+            <Link
+              to="/animateur/calendrier"
+              className="nd-other-link"
+            >
+              <CalendarDays size={18} aria-hidden="true" />
+              <span>Calendrier des projets</span>
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
-          ))}
-        </nav>
-      </section>
+          </nav>
+        </section>
+      )}
     </section>
   );
 }
