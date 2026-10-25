@@ -4,7 +4,7 @@ import tempfile
 import re
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
-
+from pydantic import BaseModel, StrictBool
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import Response
 
@@ -620,3 +620,77 @@ async def get_meeting_media(
         "Content-Length": str(len(chunk)),
     }
     return Response(content=chunk, status_code=206, media_type=content_type, headers=headers)
+
+class QuarterlyCompletionUpdate(BaseModel):
+    completed: StrictBool
+
+
+@router.patch("/tasks/{task_id}/completion")
+async def update_my_quarterly_completion(
+    task_id: str,
+    payload: QuarterlyCompletionUpdate,
+    helper: AuthenticatedHelper = Depends(current_staff),
+):
+    task = await db.quarterly_tasks.find_one(
+        {"id": task_id},
+        {"_id": 0},
+    )
+    if not task:
+        raise HTTPException(status_code=404, detail="Tâche introuvable.")
+
+    volunteer = next(
+        (
+            entry
+            for entry in task.get("volunteers", [])
+            if entry.get("id") == helper.id
+        ),
+        None,
+    )
+    if volunteer is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Vous devez être inscrit à cette tâche.",
+        )
+
+    period = await db.quarterly_periods.find_one(
+        {"id": task["period_id"]},
+        {"_id": 0},
+    )
+    if not period:
+        raise HTTPException(status_code=404, detail="Période introuvable.")
+
+    if period.get("is_archived", False):
+        raise HTTPException(
+            status_code=409,
+            detail="Cette période est archivée.",
+        )
+
+    now = _now()
+
+    result = await db.quarterly_tasks.update_one(
+        {
+            "id": task_id,
+            "volunteers.id": helper.id,
+        },
+        {
+            "$set": {
+                "volunteers.$.completed": payload.completed,
+                "volunteers.$.completed_at": (
+                    now if payload.completed else None
+                ),
+                "updated_at": now,
+            }
+        },
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(
+            status_code=409,
+            detail="Votre inscription à cette tâche a changé. Actualisez la page.",
+        )
+
+    return {
+        "task_id": task_id,
+        "helper_id": helper.id,
+        "completed": payload.completed,
+    }
