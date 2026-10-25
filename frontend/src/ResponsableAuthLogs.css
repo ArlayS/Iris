@@ -1,102 +1,28 @@
-@import "./ResponsableBase.css";
+@import "./NewDashboard.css";
 
 .ral-page {
-  width: 100%;
-  min-height: 100vh;
-  padding: clamp(24px, 4vw, 60px);
-  background:
-    radial-gradient(circle at 10% 0%, rgba(74, 103, 92, 0.08), transparent 30%),
-    var(--canvas, #f8f8f4);
-  color: var(--ink, #1c2622);
-  font-family: "IBM Plex Sans", sans-serif;
-}
-
-.ral-page *,
-.ral-page *::before,
-.ral-page *::after {
-  box-sizing: border-box;
-}
-
-.ral-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
-}
-
-.ral-eyebrow {
-  margin: 0 0 10px;
-  color: var(--muted, #64706a);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.ral-header h1 {
-  margin: 0;
-  font: 600 clamp(30px, 4vw, 50px) / 1.1 "Manrope", sans-serif;
-  letter-spacing: -0.035em;
+  padding-bottom: 60px;
 }
 
 .ral-intro {
-  max-width: 65ch;
-  margin: 12px 0 0;
+  max-width: 62ch;
+  margin: 14px 0 0;
   color: var(--muted, #64706a);
   font-size: 14px;
   line-height: 1.7;
 }
 
-.ral-header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.ral-ghost-button,
-.ral-primary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-height: 44px;
-  padding: 11px 18px;
-  border: 1px solid var(--line, #e2e8e2);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--sage, #4a675c);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.ral-primary-button {
-  border-color: var(--sage, #4a675c);
-  background: var(--sage, #4a675c);
-  color: #fff;
-}
-
-.ral-ghost-button:hover {
-  background: var(--sage-soft, #e8efea);
-}
-
-.ral-primary-button:hover {
-  background: #3b564b;
-}
-
 .ral-toolbar {
-  padding: 20px;
-  margin-bottom: 24px;
-  border: 1px solid var(--line, #e2e8e2);
-  border-radius: 20px;
-  background: #fff;
+  margin-bottom: 28px;
 }
 
 .ral-filters-form {
   display: grid;
-  grid-template-columns: minmax(240px, 1.4fr) minmax(180px, 1fr) minmax(140px, 0.8fr) auto;
+  grid-template-columns: minmax(240px, 1.4fr) minmax(180px, 1fr)
+    minmax(140px, 0.8fr) auto;
   gap: 14px;
   align-items: end;
+  width: 100%;
 }
 
 .ral-field {
@@ -120,13 +46,14 @@
   padding: 11px 13px;
   border: 1px solid #dce5de;
   border-radius: 12px;
-  background: #fcfdfb;
+  background: #fff;
   color: var(--ink, #1c2622);
   font: 13px "IBM Plex Sans", sans-serif;
 }
 
 .ral-filter-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -174,24 +101,14 @@
   font-size: 12px;
 }
 
-.ral-count {
-  flex-shrink: 0;
-  padding: 7px 12px;
-  border: 1px solid #d0ded4;
-  border-radius: 999px;
-  background: #f9fcf8;
-  color: var(--sage, #4a675c);
-  font-size: 12px;
-}
-
 .ral-table-wrap {
   overflow-x: auto;
 }
 
 .ral-table {
   width: 100%;
-  border-collapse: collapse;
   min-width: 1080px;
+  border-collapse: collapse;
 }
 
 .ral-table th {
@@ -230,6 +147,28 @@
 .ral-path {
   max-width: 280px;
   overflow-wrap: anywhere;
+}
+
+.ral-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 180px;
+}
+
+.ral-detail {
+  color: var(--muted, #64706a);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ral-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--sage, #4a675c);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .ral-state {
@@ -292,11 +231,6 @@
 }
 
 @media (max-width: 1000px) {
-  .ral-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .ral-filters-form {
     grid-template-columns: minmax(0, 1fr);
   }
