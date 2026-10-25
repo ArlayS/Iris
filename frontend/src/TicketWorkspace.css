@@ -124,3 +124,82 @@ body.ticket-workspace-no-nav .app-shell > .app-main { grid-column:1 / -1 !import
   border: 0;
   background: transparent;
 }
+/* Listes déroulantes : statut et interlocuteur. */
+
+.tw-page .follow-up-control select,
+.tw-page .assignment-widget select {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: auto;
+  max-width: 100%;
+  min-height: 42px;
+
+  padding: 10px 42px 10px 15px;
+
+  border: 1px solid #d3dfd6;
+  border-radius: 12px;
+
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234a675c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  background-size: 16px;
+
+  color: var(--ink, #1c2622);
+  font: 500 13px "IBM Plex Sans", sans-serif;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.tw-page .follow-up-control select {
+  min-width: 210px;
+}
+
+.tw-page .assignment-widget select {
+  width: 100%;
+  max-width: 460px;
+}
+
+.tw-page .follow-up-control select:hover,
+.tw-page .assignment-widget select:hover {
+  border-color: #9eb5a5;
+}
+
+.tw-page .follow-up-control select:focus,
+.tw-page .assignment-widget select:focus {
+  outline: none;
+  border-color: #88a492;
+  box-shadow: 0 0 0 3px rgba(74, 103, 92, 0.1);
+}
+
+/* Si des médias audio/vidéo sont présents dans la transcription. */
+
+.tw-page audio {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 12px;
+  border: 1px solid var(--line, #e2e8e2);
+  border-radius: 14px;
+  background: #edf3ed;
+}
+
+.tw-page video {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  margin-top: 12px;
+  border: 1px solid var(--line, #e2e8e2);
+  border-radius: 14px;
+  background: #1c2622;
+}
+
+@media (max-width: 640px) {
+  .tw-page .follow-up-control,
+  .tw-page .follow-up-control select,
+  .tw-page .assignment-widget select {
+    width: 100%;
+    min-width: 0;
+  }
+}
