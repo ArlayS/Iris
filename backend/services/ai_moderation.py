@@ -15,6 +15,11 @@ Fonctionnement :
 Le champ « Action » de l'alerte affiche la sanction suggérée par l'échelle de sanctions.
 Les alertes utilisent Components V2 (discord.py >= 2.6 : ui.LayoutView / ui.Container).
 
+Ping du rôle staff : une alerte ping le rôle AI_MODERATION_PING_ROLE_ID seulement si la gravité
+atteint AI_MODERATION_PING_MIN_GRAVITY ET si la confiance du modèle atteint
+AI_MODERATION_PING_MIN_CONFIDENCE (60 % par défaut). L'alerte est postée dans tous les cas.
+Les alertes sans verdict (refus du modèle, analyse échouée) pinguent toujours.
+
 Prompt caching : le prompt système (consignes + règlement + échelle de sanctions) est identique à
 chaque appel, il est donc marqué `cache_control`. Les lectures du cache sont facturées environ 10 %
 du prix normal d'entrée, l'écriture 1,25x (TTL 5 min) ou 2x (TTL 1 h). Le contenu variable (contexte
@@ -31,6 +36,9 @@ Variables d'environnement (à mettre dans le .env du VPS) :
   AI_MODERATION_ENABLED              true / false (défaut : false)
   AI_MODERATION_MODE                 log (défaut) ou act
   AI_MODERATION_ALERT_CHANNEL_ID     salon staff où poster les signalements
+  AI_MODERATION_PING_ROLE_ID         rôle pingé dans les alertes (0 = aucun ping)
+  AI_MODERATION_PING_MIN_GRAVITY     gravité minimale pour pinger, 1 à 3 (défaut : 1)
+  AI_MODERATION_PING_MIN_CONFIDENCE  confiance minimale pour pinger (défaut : 0.60 ; "60" = 60 % accepté)
   AI_MODERATION_IGNORED_CHANNEL_IDS  salons ignorés, séparés par des virgules
   AI_MODERATION_TRUSTED_ROLE_IDS     rôles ignorés (staff), séparés par des virgules
   AI_MODERATION_DAILY_TOKEN_LIMIT    défaut : 2000000 (tokens "équivalents" : le cache est pondéré)
@@ -106,6 +114,18 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _env_ratio(name: str, default: float) -> float:
+    """Lit un taux entre 0 et 1. Accepte 0.6, 0,6, 60 ou 60 % (interprétés comme 60 %)."""
+    raw = os.getenv(name, "").strip().replace(",", ".").replace("%", "")
+    try:
+        value = float(raw) if raw else default
+    except ValueError:
+        return default
+    if value > 1:
+        value /= 100
+    return max(0.0, min(1.0, value))
+
+
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 ENABLED = _env_bool("AI_MODERATION_ENABLED", False)
 MODE = os.getenv("AI_MODERATION_MODE", "log").strip().lower()  # "log" ou "act"
@@ -119,8 +139,9 @@ SKIP_ADMINS = _env_bool("AI_MODERATION_SKIP_ADMINS", True)
 ALERT_ALL = _env_bool("AI_MODERATION_ALERT_ALL", False)
 DISABLE_THINKING = _env_bool("AI_MODERATION_DISABLE_THINKING", False)
 
-PING_ROLE_ID = _env_int("AI_MODERATION_PING_ROLE_ID", 0)          # 0 = pas de ping
+PING_ROLE_ID = _env_int("AI_MODERATION_PING_ROLE_ID", 0)  # 0 = pas de ping
 PING_MIN_GRAVITY = _env_int("AI_MODERATION_PING_MIN_GRAVITY", 1)  # gravité minimale pour pinger (1 à 3)
+PING_MIN_CONFIDENCE = _env_ratio("AI_MODERATION_PING_MIN_CONFIDENCE", 0.60)  # confiance minimale pour pinger
 
 PROMPT_CACHE = _env_bool("AI_MODERATION_PROMPT_CACHE", True)
 CACHE_TTL = os.getenv("AI_MODERATION_CACHE_TTL", "5m").strip().lower()
@@ -504,6 +525,11 @@ def decide_action(verdict: Verdict) -> str:
     return "alert"
 
 
+def should_ping(verdict: Verdict) -> bool:
+    """Ping du rôle staff : gravité >= PING_MIN_GRAVITY ET confiance >= PING_MIN_CONFIDENCE."""
+    return verdict.gravite >= PING_MIN_GRAVITY and verdict.confiance >= PING_MIN_CONFIDENCE
+
+
 ACTION_LABELS = {
     "alert": "signalement seul",
     "delete": "suppression du message",
@@ -578,7 +604,6 @@ async def send_alert(
         f"**Auteur :** {author.mention} (`{author.id}`)\n"
         f"**Salon :** {message.channel.mention}\n"
         f"{stats}\n"
-        
     )
 
     container = ui.Container(
@@ -617,7 +642,10 @@ async def send_alert(
 
     try:
         await channel.send(view=view, allowed_mentions=mentions)
-        logger.info("Alerte postée dans le salon %s (message %s).", ALERT_CHANNEL_ID, message.id)
+        logger.info(
+            "Alerte postée dans le salon %s (message %s, ping=%s).",
+            ALERT_CHANNEL_ID, message.id, bool(ping and PING_ROLE_ID),
+        )
     except (discord.Forbidden, discord.HTTPException):
         logger.exception(
             "Échec de l'envoi de l'alerte d'automodération (permissions View/Send du salon %s ?).",
@@ -638,7 +666,7 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
                 color=discord.Color.green(),
                 verdict=verdict,
                 action_line="Aucune sanction : le modèle n'a détecté aucune violation.",
-                ping=verdict.gravite >= PING_MIN_GRAVITY,
+                ping=False,  # un message jugé OK ne ping jamais
             )
         return
 
@@ -647,6 +675,14 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
     color = {1: discord.Color.gold(), 2: discord.Color.orange(), 3: discord.Color.red()}[verdict.gravite]
     suggestion = suggestion_line(verdict, planned)
 
+    ping = should_ping(verdict)
+    if PING_ROLE_ID and not ping:
+        logger.info(
+            "Message %s : ping non envoyé (gravité %s/%s requise, confiance %.0f %%/%.0f %% requise).",
+            message.id, verdict.gravite, PING_MIN_GRAVITY,
+            verdict.confiance * 100, PING_MIN_CONFIDENCE * 100,
+        )
+
     if MODE != "act":
         await send_alert(
             job,
@@ -654,7 +690,7 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
             color=color,
             verdict=verdict,
             action_line=f"{suggestion}\n",
-            ping=verdict.gravite >= PING_MIN_GRAVITY,
+            ping=ping,
         )
         return
 
@@ -686,7 +722,7 @@ async def apply_verdict(job: Job, verdict: Verdict) -> None:
         color=color,
         verdict=verdict,
         action_line=f"{suggestion}\nExécuté par le bot : {executed}.",
-        ping=verdict.gravite >= PING_MIN_GRAVITY,
+        ping=ping,
     )
 
 
@@ -881,10 +917,12 @@ def start(discord_client: discord.Client) -> None:
     logger.info(
         "Automodération IA démarrée : modèle=%s, mode=%s, max_tokens=%s, thinking_désactivé=%s, "
         "prompt_cache=%s (TTL %s), budget=%s tokens/jour (utilisé : %s), serveur=%s, salon_alertes=%s, "
-        "salons_ignorés=%s, rôles_de_confiance=%s, ignorer_admins=%s, sanctions=%s.",
+        "ping_rôle=%s (gravité>=%s, confiance>=%.0f %%), salons_ignorés=%s, rôles_de_confiance=%s, "
+        "ignorer_admins=%s, sanctions=%s.",
         MODEL, "act" if MODE == "act" else "log", MAX_OUTPUT_TOKENS, DISABLE_THINKING,
         "oui" if PROMPT_CACHE else "non", CACHE_TTL, DAILY_TOKEN_LIMIT, _budget.used, GUILD_ID or "tous",
-        ALERT_CHANNEL_ID or "AUCUN", sorted(IGNORED_CHANNEL_IDS), sorted(TRUSTED_ROLE_IDS), SKIP_ADMINS,
+        ALERT_CHANNEL_ID or "AUCUN", PING_ROLE_ID or "AUCUN", PING_MIN_GRAVITY, PING_MIN_CONFIDENCE * 100,
+        sorted(IGNORED_CHANNEL_IDS), sorted(TRUSTED_ROLE_IDS), SKIP_ADMINS,
         "oui" if _sanctions.get() else "non",
     )
 
