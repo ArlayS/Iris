@@ -27,6 +27,7 @@ const ResponsableAuthLogsPage = lazy(() => import("./pages/ResponsableAuthLogsPa
 const ResponsableChannelArchivesPage = lazy(() => import("./pages/ResponsableChannelArchivesPage"));
 const ChannelArchiveWorkspacePage = lazy(() => import("./pages/ChannelArchiveWorkspacePage"));
 const ModerationCasierPage = lazy(() => import("./pages/ModerationCasierPage"));
+const TicketArchivesPage = lazy(() => import("./pages/TicketArchivesPage"));
 
 function Loading() {
   return <div className="app-loading">Chargement…</div>;
@@ -173,18 +174,18 @@ function AuthenticatedApp({
           />
 
           <Route
-            path="/archives"
-            element={
-              canSeeHelper ? (
-                <DashboardPage
-                  stats={stats}
-                  tickets={tickets.filter((ticket) => ticket.status === "archived")}
-                />
-              ) : (
-                <Navigate to={defaultRoute} replace />
-              )
-            }
-          />
+  path="/archives"
+  element={
+    canSeeHelper ? (
+      <TicketArchivesPage
+        tickets={tickets}
+        helper={helper}
+      />
+    ) : (
+      <Navigate to={defaultRoute} replace />
+    )
+  }
+/>
 
           <Route
             path="/admin"
