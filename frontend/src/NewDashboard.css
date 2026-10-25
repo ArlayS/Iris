@@ -10,3 +10,11 @@
 .nd-module { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.05); text-decoration: none; color: inherit; }
 .nd-module:hover { background: rgba(255,255,255,0.1); }
 .nd-module span { flex: 1; }
+body.dashboard-no-nav .sidebar {
+  display: none;
+}
+
+body.dashboard-no-nav .app-main {
+  margin-left: 0;
+  width: 100%;
+}
