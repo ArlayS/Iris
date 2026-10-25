@@ -8,7 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api/client";
 import AppShell from "./components/AppShell";
 import ActivityPage from "./pages/ActivityPage";
-
+const NewDashboardPage = lazy(() => import("./pages/NewDashboardPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const HelperProfilePage = lazy(() => import("./pages/HelperProfilePage"));
@@ -116,15 +116,25 @@ function AuthenticatedApp({
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route
-            path="/"
-            element={
-              canSeeHelper ? (
-                <DashboardPage stats={stats} tickets={tickets} />
-              ) : (
-                <Navigate to={defaultRoute} replace />
-              )
-            }
-          />
+  path="/"
+  element={
+    canSeeHelper ? (
+      <NewDashboardPage
+        stats={stats}
+        tickets={tickets}
+        helper={helper}
+        isAdmin={isAdmin}
+        isStaff={isStaff}
+        isHelper={isHelper}
+        isResponsable={isResponsable}
+        isOperateur={isOperateur}
+        isAnimateur={isAnimateur}
+      />
+    ) : (
+      <Navigate to={defaultRoute} replace />
+    )
+  }
+/>
 
           <Route
             path="/new"
