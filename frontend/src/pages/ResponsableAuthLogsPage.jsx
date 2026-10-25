@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  LoaderCircle,
 } from "lucide-react";
 import { api, getErrorMessage } from "../api/client";
 import {
@@ -20,7 +21,7 @@ import {
   statusMeta,
 } from "../components/casier/casierConstants";
 import { casierLogLink, formatBytes } from "../components/casier/formatters";
-
+import "@/ResponsableAuthLogs.css";
 const AGENDA_EVENT_LABELS = {
   "agenda.settings.updated": "Agenda : réglages des rappels modifiés",
   "agenda.settings.test_sent": "Agenda : message de test envoyé",
@@ -262,7 +263,13 @@ export default function ResponsableAuthLogsPage() {
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
+useEffect(() => {
+  document.body.classList.add("responsable-page-no-nav");
 
+  return () => {
+    document.body.classList.remove("responsable-page-no-nav");
+  };
+}, []);
   const skip = useMemo(() => (page - 1) * limit, [page, limit]);
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
