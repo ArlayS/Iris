@@ -15,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-
+import HelperDashboardModule from "../components/HelperDashboardModule";
 import { api } from "../api/client";
 import "@/NewDashboard.css";
 
@@ -251,119 +251,13 @@ export default function NewDashboardPage({
         </nav>
       )}
 
-      {isHelper && (
-        <section className="nd-helper" aria-labelledby="nd-helper-title">
-          <div className="nd-section-heading">
-            <div>
-              <p className="nd-eyebrow">ACCOMPAGNEMENT</p>
-              <h2 id="nd-helper-title">Mon espace helper</h2>
-              <p className="nd-description">
-                Vos repères et les derniers suivis dont vous êtes
-                l’interlocuteur.
-              </p>
-            </div>
-
-            <Link className="nd-button" to="/new">
-              <Plus size={17} aria-hidden="true" />
-              Nouveau suivi
-            </Link>
-          </div>
-
-          <div className="nd-metrics">
-            <div className="nd-metric">
-              <span>
-                <HeartHandshake size={17} aria-hidden="true" />
-                Suivis ouverts
-              </span>
-              <strong>{stats.active_count ?? 0}</strong>
-            </div>
-
-            <div className="nd-metric">
-              <span>
-                <BookHeart size={17} aria-hidden="true" />
-                Échanges consignés
-              </span>
-              <strong>{stats.total_messages ?? 0}</strong>
-            </div>
-
-            <div className="nd-metric">
-              <span>
-                <ShieldCheck size={17} aria-hidden="true" />
-                Suivis archivés
-              </span>
-              <strong>{stats.archived_count ?? 0}</strong>
-            </div>
-          </div>
-
-          <div className="nd-tickets">
-            <div className="nd-tickets-heading">
-              <h3>Mes derniers suivis</h3>
-              <span>Interlocuteur attribué</span>
-            </div>
-
-            {myTickets.length > 0 ? (
-              <div className="nd-ticket-list">
-                {myTickets.map((ticket) => {
-                  const member = ticket.member || {};
-                  const name =
-                    member.display_name ||
-                    member.username ||
-                    ticket.title ||
-                    "Membre";
-
-                  return (
-                    <Link
-                      key={ticket.id}
-                      to={`/tickets/${ticket.id}`}
-                      className="nd-ticket"
-                    >
-                      <span className="nd-ticket-person">
-                        <span className="nd-avatar">
-                          {member.avatar_url ? (
-                            <img
-                              src={member.avatar_url}
-                              alt=""
-                              loading="lazy"
-                            />
-                          ) : (
-                            <Users size={17} aria-hidden="true" />
-                          )}
-                        </span>
-
-                        <span className="nd-ticket-copy">
-                          <strong>{name}</strong>
-                          <small>{ticket.title || "Ticket d’aide"}</small>
-                        </span>
-                      </span>
-
-                      <span className="nd-ticket-count">
-                        {ticket.message_count ?? 0} échanges
-                      </span>
-
-                      <span
-                        className={`nd-ticket-status ${
-                          ticket.status === "active"
-                            ? "nd-ticket-status--active"
-                            : ""
-                        }`}
-                      >
-                        {ticket.status === "active" ? "Actif" : "Archivé"}
-                      </span>
-
-                      <ArrowRight size={17} aria-hidden="true" />
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="nd-empty">
-                <Radio size={27} aria-hidden="true" />
-                <p>Aucun suivi ne vous est attribué pour le moment.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+      {(isHelper || isAdmin) && (
+  <HelperDashboardModule
+    tickets={tickets}
+    helper={helper}
+    isAdmin={isAdmin}
+  />
+)}
 
       <section className="nd-other" aria-labelledby="nd-other-title">
         <h2 id="nd-other-title">Mes autres accès</h2>
