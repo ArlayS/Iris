@@ -1,22 +1,14 @@
-@import "./NewDashboard.css";
+@import "./Casier.css";
 
 .ral-page {
   padding-bottom: 60px;
 }
 
-.ral-intro {
-  max-width: 62ch;
-  margin: 14px 0 0;
-  color: var(--muted, #64706a);
-  font-size: 14px;
-  line-height: 1.7;
+.ral-panel {
+  margin-bottom: 0;
 }
 
-.ral-toolbar {
-  margin-bottom: 28px;
-}
-
-.ral-filters-form {
+.ral-filters {
   display: grid;
   grid-template-columns: minmax(240px, 1.4fr) minmax(180px, 1fr)
     minmax(140px, 0.8fr) auto;
@@ -55,50 +47,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.ral-panel {
-  overflow: hidden;
-  border: 1px solid var(--line, #e2e8e2);
-  border-radius: 22px;
-  background: #fff;
-}
-
-.ral-panel-header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 24px;
-  border-bottom: 1px solid #d8e3da;
-  background: #edf3ed;
-}
-
-.ral-panel-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  background: #dce8df;
-  color: var(--sage, #4a675c);
-}
-
-.ral-panel-header > div {
-  flex: 1;
-  min-width: 0;
-}
-
-.ral-panel-header h2 {
-  margin: 0;
-  font: 600 19px "Manrope", sans-serif;
-}
-
-.ral-panel-header p {
-  margin: 6px 0 0;
-  color: var(--muted, #64706a);
-  font-size: 12px;
 }
 
 .ral-table-wrap {
@@ -157,9 +105,17 @@
 }
 
 .ral-detail {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
   color: var(--muted, #64706a);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.ral-detail b {
+  color: var(--ink, #1c2622);
+  font-weight: 600;
 }
 
 .ral-detail-link {
@@ -231,7 +187,7 @@
 }
 
 @media (max-width: 1000px) {
-  .ral-filters-form {
+  .ral-filters {
     grid-template-columns: minmax(0, 1fr);
   }
 
