@@ -36,3 +36,12 @@ body.new-ticket-no-nav .app-shell > .app-main { grid-column:1 / -1 !important; m
 .nt-page .nt-form-wrap button[type=submit] { display:inline-flex; justify-content:center; align-items:center; gap:9px; min-height:44px; padding:12px 20px; border:0; border-radius:999px; background:var(--sage,#4a675c); color:#fff; font-size:13px; font-weight:600; }
 @media(max-width:900px) { .nt-page .nt-layout { grid-template-columns:1fr; } }
 @media(max-width:640px) { .nt-page { padding:24px 16px; } .nt-page .nt-header { flex-direction:column; align-items:flex-start; } .nt-page .nt-guide, .nt-page .nt-form-wrap { padding:22px; } .nt-page .nt-form-card > header { padding:22px; } }
+/* Correctif d’alignement du formulaire d’import : à ajouter à la fin de NewTicket.css. */
+.nt-page .nt-form-wrap .command-form { display:flex; flex-direction:column; align-items:stretch; gap:22px; min-height:0; height:auto; }
+.nt-page .nt-form-wrap .command-form .command-row { display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; gap:9px; width:100%; min-height:0; height:auto; margin:0; padding:0; border:0; }
+.nt-page .nt-form-wrap .command-form .command-label { display:flex; flex-direction:row; align-items:center; justify-content:flex-start; gap:8px; width:100%; min-height:22px; margin:0; padding:0; color:var(--ink,#1c2622); font:600 12px "IBM Plex Sans",sans-serif; letter-spacing:.04em; line-height:1.5; }
+.nt-page .nt-form-wrap .command-form .command-label svg { flex-shrink:0; width:16px; height:16px; color:var(--sage,#4a675c); }
+.nt-page .nt-form-wrap .command-form .command-row input { width:100%; min-width:0; height:46px; margin:0; padding:11px 14px; font:400 14px "IBM Plex Sans",sans-serif; }
+.nt-page .nt-form-wrap .command-form .optional-command-row { margin:0; padding:0; opacity:1; }
+.nt-page .nt-form-wrap .command-form button[type="submit"] { margin:2px 0 0; }
+.nt-page .nt-form-wrap .command-form .form-error { margin:0; color:#a14455; font-size:13px; line-height:1.6; }
