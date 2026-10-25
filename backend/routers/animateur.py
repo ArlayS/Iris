@@ -642,7 +642,10 @@ async def upload_resource(
 
 
 @resources_router.get("/{resource_id}/download")
-async def download_resource(resource_id: str):
+async def download_resource(
+    resource_id: str,
+    _: AuthenticatedHelper = Depends(current_project_editor),
+):
     resource = await db.project_resources.find_one({"id": resource_id}, {"_id": 0})
     if not resource:
         raise HTTPException(status_code=404, detail="Ressource introuvable.")

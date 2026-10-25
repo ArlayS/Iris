@@ -498,7 +498,7 @@ async def update_meeting(
 @router.delete("/meetings/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_meeting(
     meeting_id: str,
-    helper: AuthenticatedHelper = Depends(current_responsable),  # au lieu de current_staff
+    helper: AuthenticatedHelper = Depends(current_responsable),
 ) -> None:
     existing = await db.meeting_summaries.find_one({"id": meeting_id}, {"_id": 0})
     if not existing:
@@ -561,7 +561,11 @@ async def upload_meeting_media(
 
 
 @router.get("/meetings/images/{filename}")
-async def get_meeting_media(filename: str, request: Request):
+async def get_meeting_media(
+    filename: str,
+    request: Request,
+    _: AuthenticatedHelper = Depends(current_staff),
+):
     extension = filename.rsplit(".", 1)[-1].lower()
     content_type = _media_content_type(extension)
     try:
@@ -571,18 +575,48 @@ async def get_meeting_media(filename: str, request: Request):
 
     file_size = len(content)
     range_header = request.headers.get("range")
+    base_headers = {"Accept-Ranges": "bytes", "Content-Length": str(file_size)}
 
-    if range_header:
-        start_str, end_str = range_header.replace("bytes=", "").split("-")
+    if not range_header:
+        return Response(content=content, media_type=content_type, headers=base_headers)
+
+    match = re.fullmatch(r"\s*bytes\s*=\s*(\d*)\s*-\s*(\d*)\s*", range_header)
+    if not match:
+        # Header Range mal formé : on renvoie le fichier complet plutôt que de planter.
+        return Response(content=content, media_type=content_type, headers=base_headers)
+
+    start_str, end_str = match.groups()
+
+    if not start_str and not end_str:
+        return Response(content=content, media_type=content_type, headers=base_headers)
+
+    if start_str:
         start = int(start_str)
         end = int(end_str) if end_str else file_size - 1
-        chunk = content[start:end + 1]
-        headers = {
-            "Content-Range": f"bytes {start}-{end}/{file_size}",
-            "Accept-Ranges": "bytes",
-            "Content-Length": str(len(chunk)),
-        }
-        return Response(content=chunk, status_code=206, media_type=content_type, headers=headers)
+    else:
+        # Suffix range : bytes=-N => les N derniers octets
+        suffix_length = int(end_str)
+        if suffix_length <= 0:
+            raise HTTPException(
+                status_code=416,
+                detail="Plage demandée invalide.",
+                headers={"Content-Range": f"bytes */{file_size}"},
+            )
+        start = max(file_size - suffix_length, 0)
+        end = file_size - 1
 
-    headers = {"Accept-Ranges": "bytes", "Content-Length": str(file_size)}
-    return Response(content=content, media_type=content_type, headers=headers)
+    if start >= file_size or end < start:
+        raise HTTPException(
+            status_code=416,
+            detail="Plage demandée invalide.",
+            headers={"Content-Range": f"bytes */{file_size}"},
+        )
+
+    end = min(end, file_size - 1)
+    chunk = content[start:end + 1]
+    headers = {
+        "Content-Range": f"bytes {start}-{end}/{file_size}",
+        "Accept-Ranges": "bytes",
+        "Content-Length": str(len(chunk)),
+    }
+    return Response(content=chunk, status_code=206, media_type=content_type, headers=headers)
