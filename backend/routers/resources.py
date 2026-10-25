@@ -5,7 +5,18 @@ from datetime import datetime, timezone
 from io import BytesIO
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
+
+from services.file_response_service import stream_local_file
 from fastapi.responses import StreamingResponse
 
 from database import db
