@@ -80,3 +80,47 @@ body.ticket-workspace-no-nav .app-shell > .app-main { grid-column:1 / -1 !import
 @media(max-width:900px) { .tw-page .workspace-grid, .tw-page .ticket-tools-band { grid-template-columns:1fr; } .tw-page .follow-up-control { margin-left:0; } .tw-page .transcript-scroll { max-height:500px; } }
 @media(max-width:640px) { .tw-page { padding:24px 16px; } .tw-page .member-title { align-items:flex-start; gap:12px; } .tw-page .tw-member-avatar { width:46px; height:46px; border-radius:14px; } .tw-page .workspace-actions { width:100%; } .tw-page .workspace-actions > * { flex:1 1 130px; } .tw-page .ai-summary-widget, .tw-page .person-triggers-widget, .tw-page .vocal-widget, .tw-page .notes-widget { padding:20px; } .tw-page .notes-widget .column-header { margin:-20px -20px 20px; } .tw-page .transcript-scroll { padding:8px 16px; } }
 @media(prefers-reduced-motion:reduce) { .tw-page .spin { animation:none; } }
+/* Notes : aucune hauteur réservée quand la liste est vide. */
+
+.tw-page .notes-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: auto;
+  min-height: 0;
+}
+
+.tw-page .notes-widget .notes-stack {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 12px;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.tw-page .notes-widget .notes-stack:empty {
+  display: none;
+}
+
+.tw-page .notes-widget .new-note-form {
+  flex: none;
+  margin: 18px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--line, #e2e8e2);
+}
+
+.tw-page .notes-widget .notes-stack:empty + .new-note-form {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.tw-page .notes-widget .editor-foot {
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
