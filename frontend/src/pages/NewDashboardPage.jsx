@@ -317,31 +317,7 @@ export default function NewDashboardPage({
         <AnimateurDashboardModule helper={helper} />
       )}
 
-      {/* Accès secondaire au calendrier des projets */}
-      {canSeeAnimateur && (
-        <section
-          className="nd-other"
-          aria-labelledby="nd-other-title"
-        >
-          <h2 id="nd-other-title">
-            Planifier mes animations
-          </h2>
-
-          <nav
-            className="nd-other-links"
-            aria-label="Planification des projets"
-          >
-            <Link
-              to="/animateur/calendrier"
-              className="nd-other-link"
-            >
-              <CalendarDays size={18} aria-hidden="true" />
-              <span>Calendrier des projets</span>
-              <ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          </nav>
-        </section>
-      )}
+      
     </section>
   );
 }
