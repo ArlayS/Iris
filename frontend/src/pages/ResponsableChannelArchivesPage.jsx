@@ -1,33 +1,35 @@
-import { Archive, ArrowRight, ImageDown, LoaderCircle, MessagesSquare, PlusCircle, Radio, RotateCcw, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ArrowRight,
+  LoaderCircle,
+  MessagesSquare,
+  Radio,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import "@/ResponsableChannelArchives.css";
+
 import { api, getErrorMessage } from "../api/client";
 
+import "@/NewDashboard.css";
+import "@/ResponsableChannelArchives.css";
 
-const formatTime = (timestamp) => new Date(timestamp).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+const formatTime = (timestamp) =>
+  new Date(timestamp).toLocaleString("fr-FR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 
-// Pendant qu'au moins un import est en cours, on réinterroge la liste toutes les 2s pour
-// suivre la progression (comptes de messages/fichiers mis à jour côté backend en tâche de fond).
 const POLL_INTERVAL_MS = 2000;
 
 function ImportProgress({ archive, onRetry }) {
   if (archive.status === "failed") {
     return (
-      <div className="channel-archive-progress" data-testid={`channel-archive-progress-${archive.id}`} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <p style={{ fontSize: "13px", color: "#b91c1c", margin: 0 }}>
-          Échec de l’import{archive.error_message ? ` : ${archive.error_message}` : "."}
-        </p>
-        <button
-          type="button"
-          onClick={() => onRetry(archive.id)}
-          data-testid={`retry-channel-archive-${archive.id}`}
-          style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: "6px", padding: "5px 10px", borderRadius: "8px", border: "1px solid rgba(0,0,0,0.15)", background: "transparent", cursor: "pointer", fontSize: "12px" }}
-        >
-          <RotateCcw size={13} /> Réessayer
-        </button>
-      </div>
+      <p className="rca-progress rca-progress--failed">
+        Import interrompu. Vous pouvez relancer une synchronisation.
+      </p>
     );
   }
 
@@ -35,28 +37,41 @@ function ImportProgress({ archive, onRetry }) {
 
   if (archive.phase === "mirroring_files") {
     const percent = archive.files_total
-      ? Math.min(100, Math.round((archive.local_attachment_count / archive.files_total) * 100))
+      ? Math.min(
+          100,
+          Math.round(
+            (archive.local_attachment_count / archive.files_total) * 100
+          )
+        )
       : 100;
+
     return (
-      <div className="channel-archive-progress" data-testid={`channel-archive-progress-${archive.id}`} style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-        <div style={{ fontSize: "12px", opacity: 0.75 }}>
-          Copie des fichiers… {archive.local_attachment_count}/{archive.files_total ?? "?"} ({percent}%)
+      <div className="rca-progress">
+        <div className="rca-progress-copy">
+          <span>Copie des fichiers</span>
+          <b>{percent}%</b>
         </div>
-        <div style={{ height: "6px", borderRadius: "4px", background: "rgba(0,0,0,0.08)", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${percent}%`, background: "#2f6f4f", transition: "width 0.4s ease" }} />
+
+        <div className="rca-progress-track">
+          <span style={{ width: `${percent}%` }} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="channel-archive-progress" data-testid={`channel-archive-progress-${archive.id}`} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", opacity: 0.75 }}>
-      <LoaderCircle className="spin" size={13} />
-      Récupération des messages… {archive.message_count} importé{archive.message_count > 1 ? "s" : ""}
+    <div className="rca-progress">
+      <div className="rca-progress-copy">
+        <span>Récupération des messages</span>
+        <b>{archive.message_count}</b>
+      </div>
+
+      <div className="rca-progress-track">
+        <span className="is-indeterminate" />
+      </div>
     </div>
   );
 }
-
 
 export default function ResponsableChannelArchivesPage() {
   const [archives, setArchives] = useState([]);
@@ -64,11 +79,22 @@ export default function ResponsableChannelArchivesPage() {
   const [channelId, setChannelId] = useState("");
   const [title, setTitle] = useState("");
   const [creating, setCreating] = useState(false);
+
   const archivesRef = useRef(archives);
+
+  useEffect(() => {
+    document.body.classList.add("dashboard-no-nav");
+
+    return () => {
+      document.body.classList.remove("dashboard-no-nav");
+    };
+  }, []);
 
   const loadArchives = useCallback(() => {
     setLoading(true);
-    api.get("/channel-archives")
+
+    api
+      .get("/channel-archives")
       .then((response) => setArchives(response.data))
       .catch((error) => toast.error(getErrorMessage(error)))
       .finally(() => setLoading(false));
@@ -81,39 +107,44 @@ export default function ResponsableChannelArchivesPage() {
   useEffect(() => {
     archivesRef.current = archives;
   }, [archives]);
-useEffect(() => {
-  document.body.classList.add("responsable-page-no-nav");
 
-  return () => {
-    document.body.classList.remove("responsable-page-no-nav");
-  };
-}, []);
-  // Polling léger : tant qu'un salon est en cours d'import, on réinterroge la liste pour
-  // que les compteurs et la barre de progression avancent tout seuls, sans action de l'utilisateur.
   useEffect(() => {
     const interval = setInterval(() => {
-      const hasActiveImport = archivesRef.current.some((archive) => archive.status === "importing");
+      const hasActiveImport = archivesRef.current.some(
+        (archive) => archive.status === "importing"
+      );
+
       if (!hasActiveImport) return;
-      api.get("/channel-archives")
+
+      api
+        .get("/channel-archives")
         .then((response) => setArchives(response.data))
         .catch(() => undefined);
     }, POLL_INTERVAL_MS);
+
     return () => clearInterval(interval);
   }, []);
 
   const createArchive = async (event) => {
     event.preventDefault();
+
     if (!channelId.trim()) return;
+
     setCreating(true);
+
     try {
       const response = await api.post("/channel-archives", {
         channel_id: channelId.trim(),
         title: title.trim() || undefined,
       });
+
       setArchives((current) => [response.data, ...current]);
       setChannelId("");
       setTitle("");
-      toast.success("Import lancé — la progression s’affiche dans la liste.");
+
+      toast.success(
+        "Import lancé — la progression s’affiche dans la liste."
+      );
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -123,8 +154,16 @@ useEffect(() => {
 
   const retryArchive = async (archiveId) => {
     try {
-      const response = await api.post(`/channel-archives/${archiveId}/sync`);
-      setArchives((current) => current.map((archive) => (archive.id === archiveId ? response.data : archive)));
+      const response = await api.post(
+        `/channel-archives/${archiveId}/sync`
+      );
+
+      setArchives((current) =>
+        current.map((archive) =>
+          archive.id === archiveId ? response.data : archive
+        )
+      );
+
       toast.success("Nouvel essai lancé.");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -132,152 +171,212 @@ useEffect(() => {
   };
 
   const deleteArchive = async (archiveId) => {
-    if (!window.confirm("Supprimer définitivement cette archive de salon et ses fichiers ? Cette action est irréversible.")) return;
+    if (
+      !window.confirm(
+        "Supprimer définitivement cette archive de salon et ses fichiers ? Cette action est irréversible."
+      )
+    ) {
+      return;
+    }
+
     try {
       await api.delete(`/channel-archives/${archiveId}`);
-      setArchives((current) => current.filter((archive) => archive.id !== archiveId));
+
+      setArchives((current) =>
+        current.filter((archive) => archive.id !== archiveId)
+      );
+
       toast.success("Archive supprimée.");
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
   };
 
-  const totalMessages = archives.reduce((sum, archive) => sum + archive.message_count, 0);
-  const totalFiles = archives.reduce((sum, archive) => sum + archive.local_attachment_count, 0);
-  const importingCount = archives.filter((archive) => archive.status === "importing").length;
-  const latest = archives[0];
+  const totalMessages = archives.reduce(
+    (sum, archive) => sum + archive.message_count,
+    0
+  );
+
+  const totalFiles = archives.reduce(
+    (sum, archive) => sum + archive.local_attachment_count,
+    0
+  );
+
+  const importingCount = archives.filter(
+    (archive) => archive.status === "importing"
+  ).length;
 
   return (
-    <section className="page-content dashboard-page" data-testid="responsable-channel-archives-page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">RESPONSABLE · ARCHIVAGE</p>
-          <h1>Sauvegarder un salon Discord entier.</h1>
+    <section
+      className="nd-page rca-page"
+      data-testid="responsable-channel-archives-page"
+    >
+      <header className="nd-header">
+        <div className="nd-heading">
+          <p className="nd-eyebrow">ESPACE RESPONSABLE</p>
+
+          <h1>Sauvegardes de salons</h1>
+
+          <p className="rca-intro">
+            Importez un salon Discord, suivez la progression et
+            consultez les archives disponibles.
+          </p>
+        </div>
+
+        <div className="nd-account-actions">
+          <Link to="/" className="nd-profile-button">
+            Accueil
+            <ArrowRight size={17} aria-hidden="true" />
+          </Link>
         </div>
       </header>
 
-      <div className="metrics-grid" data-testid="channel-archive-statistics">
-        <div className="metric-block">
-          <Archive size={18} />
-          <span>Salons archivés</span>
-          <strong>{archives.length}</strong>
-        </div>
-        <div className="metric-block">
-          <MessagesSquare size={18} />
-          <span>Messages sauvegardés</span>
-          <strong>{totalMessages}</strong>
-        </div>
-        <div className="metric-block">
-          <ImageDown size={18} />
-          <span>Fichiers copiés</span>
-          <strong>{totalFiles}</strong>
-        </div>
-      </div>
+      <section
+        className="nd-responsable-banner rca-create"
+        aria-labelledby="rca-create-title"
+      >
+        <div className="nd-responsable-content">
+          <p className="nd-responsable-eyebrow">NOUVELLE SAUVEGARDE</p>
 
-      <section className="care-hero" data-testid="latest-channel-archive-hero">
-        <div>
-          <p className="eyebrow">{importingCount > 0 ? "IMPORT EN COURS" : "DERNIÈRE ARCHIVE"}</p>
-          <h2>{latest ? latest.title : "Aucun salon archivé pour le moment."}</h2>
-          {latest && latest.status === "importing" ? (
-            <ImportProgress archive={latest} onRetry={retryArchive} />
-          ) : (
-            <p>
-              {latest
-                ? `#${latest.channel_name} · ${latest.message_count} messages · dernière synchro le ${formatTime(latest.last_synced_at)}`
-                : "Archivez un premier salon avec le formulaire ci-contre."}
-            </p>
-          )}
+          <h2 id="rca-create-title">Importer un salon Discord</h2>
+
+          <p className="nd-responsable-description">
+            La progression de l’import apparaît automatiquement dans
+            la liste ci-dessous.
+          </p>
         </div>
-        {latest && latest.status === "archived" ? (
-          <Link to={`/responsable/archives-salons/${latest.id}`} className="care-open" data-testid="open-latest-channel-archive">
-            <span>Ouvrir l’archive</span>
-            <ArrowRight size={20} />
-          </Link>
-        ) : (
-          <Radio size={32} />
-        )}
+
+        <form className="rca-create-fields" onSubmit={createArchive}>
+          <input
+            value={channelId}
+            onChange={(event) => setChannelId(event.target.value)}
+            placeholder="ID du salon Discord"
+            required
+          />
+
+          <input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Titre facultatif"
+          />
+
+          <button
+            type="submit"
+            className="nd-profile-button"
+            disabled={creating || !channelId.trim()}
+          >
+            {creating ? (
+              <LoaderCircle className="spin" size={16} aria-hidden="true" />
+            ) : (
+              <Radio size={16} aria-hidden="true" />
+            )}
+            {creating ? "Import en cours…" : "Lancer l’import"}
+          </button>
+        </form>
       </section>
 
-      <div className="dashboard-grid">
-        <section className="activity-pane" data-testid="channel-archives-list-panel">
-          <div className="section-heading">
-            <span>SALONS ARCHIVÉS</span>
-            <span className="live-dot">CONFIDENTIEL</span>
-          </div>
+      <nav className="nd-shortcuts" aria-label="Vue d’ensemble">
+        <div className="rca-metric">
+          <span className="rca-metric-label">Archives</span>
+          <strong>{archives.length}</strong>
+        </div>
 
-          {loading ? (
-            <p className="dashboard-loading">Chargement…</p>
-          ) : archives.length === 0 ? (
-            <div className="dashboard-empty" data-testid="channel-archives-empty">
-              <Radio size={28} />
-              <p>Aucun salon archivé pour le moment.</p>
-            </div>
-          ) : (
-            <div className="ticket-table">
-              {archives.map((archive) => (
-                <div className="meeting-row-stacked" key={archive.id} data-testid={`channel-archive-row-${archive.id}`}>
-                  <div className="meeting-row-top">
-                    <div className="meeting-row-heading">
-                      <strong>{archive.title}</strong>
-                      <span className="meeting-row-date-inline">#{archive.channel_name} · {archive.channel_id}</span>
-                    </div>
-                    <span className={`status-dot ${archive.status === "failed" ? "pending" : "active"}`}>
-                      {archive.status === "importing" && "IMPORT…"}
-                      {archive.status === "failed" && "ÉCHEC"}
-                      {archive.status === "archived" && `${archive.local_attachment_count} FICHIER${archive.local_attachment_count > 1 ? "S" : ""}`}
-                    </span>
-                  </div>
+        <div className="rca-metric">
+          <span className="rca-metric-label">Messages</span>
+          <strong>{totalMessages}</strong>
+        </div>
 
-                  {archive.status === "archived" ? (
-                    <p className="meeting-agenda-full">{archive.message_count} messages · dernière synchro le {formatTime(archive.last_synced_at)}</p>
-                  ) : (
-                    <ImportProgress archive={archive} onRetry={retryArchive} />
-                  )}
+        <div className="rca-metric">
+          <span className="rca-metric-label">Fichiers</span>
+          <strong>{totalFiles}</strong>
+        </div>
 
-                  <div className="meeting-row-buttons">
-                    {archive.status === "archived" ? (
-                      <Link to={`/responsable/archives-salons/${archive.id}`} className="btn-consult" data-testid={`open-channel-archive-${archive.id}`}>
-                        Consulter <ArrowRight size={14} />
-                      </Link>
-                    ) : (
-                      <span style={{ fontSize: "12px", opacity: 0.6, alignSelf: "center" }}>
-                        {archive.status === "importing" ? "Disponible une fois l’import terminé" : "Import interrompu"}
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      className="icon-btn-danger"
-                      onClick={() => deleteArchive(archive.id)}
-                      aria-label="Supprimer l’archive"
-                      data-testid={`delete-channel-archive-row-${archive.id}`}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <div className="rca-metric rca-metric--amber">
+          <span className="rca-metric-label">Imports en cours</span>
+          <strong>{importingCount}</strong>
+        </div>
+      </nav>
 
-        <aside className="system-pane" data-testid="new-channel-archive-panel">
-          <p className="eyebrow">ARCHIVER UN SALON</p>
-          <form className="new-note-form" onSubmit={createArchive} data-testid="new-channel-archive-form">
-            <label htmlFor="archive-channel-id">ID du salon Discord</label>
-            <input id="archive-channel-id" value={channelId} onChange={(event) => setChannelId(event.target.value)} placeholder="123456789012345678" required data-testid="archive-channel-id-input" />
-            <label htmlFor="archive-title">Titre (optionnel)</label>
-            <input id="archive-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Nom donné à l’archive" maxLength={160} data-testid="archive-title-input" />
-            <button type="submit" disabled={creating} data-testid="create-channel-archive-button">
-              {creating ? <LoaderCircle className="spin" size={15} /> : <PlusCircle size={15} />} {creating ? "Lancement…" : "Archiver ce salon"}
-            </button>
-          </form>
-          <p className="admin-empty">
-            Iris importe tout l’historique et copie localement chaque pièce jointe en arrière-plan. Sur un gros
-            salon (plusieurs milliers de messages), la progression s’affiche en direct sur chaque ligne — inutile
-            de garder la page ouverte, elle se met à jour toute seule.
+      {loading ? (
+        <div className="rca-state" role="status">
+          <LoaderCircle className="spin" size={26} aria-hidden="true" />
+          <p>Chargement des sauvegardes…</p>
+        </div>
+      ) : archives.length === 0 ? (
+        <div className="rca-state">
+          <Archive size={32} aria-hidden="true" />
+          <h2>Aucune sauvegarde pour le moment.</h2>
+          <p>
+            Importez un salon Discord pour créer la première archive.
           </p>
-        </aside>
-      </div>
+        </div>
+      ) : (
+        <div className="rca-list">
+          {archives.map((archive) => (
+            <article
+              key={archive.id}
+              className="rca-card"
+              data-testid={`channel-archive-${archive.id}`}
+            >
+              <span className="rca-card-icon">
+                <MessagesSquare size={22} aria-hidden="true" />
+              </span>
+
+              <div className="rca-card-copy">
+                <h2>
+                  {archive.title || `Salon ${archive.channel_id}`}
+                </h2>
+
+                <p>
+                  {archive.message_count} message
+                  {archive.message_count > 1 ? "s" : ""} ·{" "}
+                  {archive.local_attachment_count} fichier
+                  {archive.local_attachment_count > 1 ? "s" : ""}
+                </p>
+
+                <small>Créée le {formatTime(archive.created_at)}</small>
+
+                <ImportProgress
+                  archive={archive}
+                  onRetry={retryArchive}
+                />
+              </div>
+
+              <div className="rca-card-actions">
+                <Link
+                  to={`/responsable/archives-salons/${archive.id}`}
+                  className="nd-profile-button"
+                >
+                  Consulter
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+
+                {archive.status === "failed" && (
+                  <button
+                    type="button"
+                    className="nd-profile-button"
+                    onClick={() => retryArchive(archive.id)}
+                  >
+                    <RotateCcw size={15} aria-hidden="true" />
+                    Réessayer
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="rca-danger"
+                  onClick={() => deleteArchive(archive.id)}
+                  aria-label={`Supprimer ${
+                    archive.title || archive.channel_id
+                  }`}
+                >
+                  <Trash2 size={15} aria-hidden="true" />
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
