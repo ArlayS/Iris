@@ -129,18 +129,18 @@ async def upload_resource(
 @router.get("/{resource_id}/download")
 async def download_resource(
     resource_id: str,
+    request: Request,
     _: AuthenticatedHelper = Depends(current_helper),
-) -> StreamingResponse:
+):
     resource = await resource_or_404(resource_id)
-    try:
-        content, content_type = await asyncio.to_thread(get_object, resource["storage_path"])
-    except Exception as error:
-        raise HTTPException(status_code=502, detail="Le document est temporairement indisponible.") from error
-    headers = {
-        "Content-Disposition": f'attachment; filename="{resource["original_filename"]}"',
-        "Content-Length": str(len(content)),
-    }
-    return StreamingResponse(BytesIO(content), media_type=resource.get("content_type", content_type), headers=headers)
+
+    return stream_local_file(
+        request=request,
+        storage_path=resource["storage_path"],
+        content_type=resource.get("content_type"),
+        filename=resource.get("original_filename", "document"),
+        attachment=True,
+    )
 
 
 @router.delete("/{resource_id}", status_code=status.HTTP_204_NO_CONTENT)
