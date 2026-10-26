@@ -1,22 +1,14 @@
-@import "./NewDashboard.css";
+@import "./Casier.css";
 
 .rca-page {
   padding-bottom: 60px;
 }
 
-.rca-intro {
-  max-width: 62ch;
-  margin: 14px 0 0;
-  color: var(--muted, #64706a);
-  font-size: 14px;
-  line-height: 1.7;
+.rca-create-panel {
+  margin-bottom: 20px;
 }
 
 .rca-create {
-  margin-bottom: 28px;
-}
-
-.rca-create-fields {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
   gap: 12px;
@@ -24,7 +16,7 @@
   width: 100%;
 }
 
-.rca-create-fields input {
+.rca-create input {
   min-height: 46px;
   padding: 11px 14px;
   border: 1px solid #dce5de;
@@ -34,18 +26,25 @@
   font: 14px "IBM Plex Sans", sans-serif;
 }
 
+.rca-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
 .rca-metric {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 118px;
+  min-height: 116px;
   padding: 20px 22px;
   border: 1px solid var(--line, #e2e8e2);
   border-radius: 20px;
   background: #fff;
 }
 
-.rca-metric-label {
+.rca-metric span {
   color: var(--muted, #64706a);
   font-size: 11px;
   font-weight: 600;
@@ -71,15 +70,16 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  padding: 20px;
 }
 
 .rca-card {
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 22px 24px;
+  padding: 20px;
   border: 1px solid var(--line, #e2e8e2);
-  border-radius: 20px;
+  border-radius: 18px;
   background: #fff;
   transition: box-shadow 160ms ease;
 }
@@ -164,7 +164,19 @@
 }
 
 .rca-progress--failed {
-  margin: 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #ecd8d4;
+  border-radius: 14px;
+  background: #fff8f7;
+}
+
+.rca-progress--failed p {
+  margin: 0;
   color: #a85b4b;
   font-size: 12px;
 }
@@ -200,9 +212,6 @@
   flex-direction: column;
   gap: 14px;
   padding: 70px 24px;
-  border: 1px solid var(--line, #e2e8e2);
-  border-radius: 22px;
-  background: #fff;
   color: var(--sage, #4a675c);
   text-align: center;
 }
@@ -230,8 +239,12 @@
 }
 
 @media (max-width: 1000px) {
-  .rca-create-fields {
+  .rca-create {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rca-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .rca-card {
@@ -242,6 +255,12 @@
   .rca-card-actions {
     justify-content: flex-start;
     width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .rca-metrics {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
