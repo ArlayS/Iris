@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 import { api, getErrorMessage } from "../api/client";
 
-import "@/NewDashboard.css";
+import "@/Casier.css";
 import "@/ResponsableChannelArchives.css";
 
 const formatTime = (timestamp) =>
@@ -27,9 +27,18 @@ const POLL_INTERVAL_MS = 2000;
 function ImportProgress({ archive, onRetry }) {
   if (archive.status === "failed") {
     return (
-      <p className="rca-progress rca-progress--failed">
-        Import interrompu. Vous pouvez relancer une synchronisation.
-      </p>
+      <div className="rca-progress rca-progress--failed">
+        <p>Import interrompu.</p>
+
+        <button
+          type="button"
+          className="cz-button cz-button--compact"
+          onClick={() => onRetry(archive.id)}
+        >
+          <RotateCcw size={14} aria-hidden="true" />
+          Réessayer
+        </button>
+      </div>
     );
   }
 
@@ -83,10 +92,10 @@ export default function ResponsableChannelArchivesPage() {
   const archivesRef = useRef(archives);
 
   useEffect(() => {
-    document.body.classList.add("dashboard-no-nav");
+    document.body.classList.add("casier-no-nav");
 
     return () => {
-      document.body.classList.remove("dashboard-no-nav");
+      document.body.classList.remove("casier-no-nav");
     };
   }, []);
 
@@ -208,175 +217,189 @@ export default function ResponsableChannelArchivesPage() {
 
   return (
     <section
-      className="nd-page rca-page"
+      className="cz-page rca-page"
       data-testid="responsable-channel-archives-page"
     >
-      <header className="nd-header">
-        <div className="nd-heading">
-          <p className="nd-eyebrow">ESPACE RESPONSABLE</p>
+      <header className="cz-header">
+        <div className="cz-header-copy">
+          <p className="cz-eyebrow">ESPACE RESPONSABLE</p>
 
           <h1>Sauvegardes de salons</h1>
 
-          <p className="rca-intro">
+          <p className="cz-intro">
             Importez un salon Discord, suivez la progression et
             consultez les archives disponibles.
           </p>
         </div>
 
-        <div className="nd-account-actions">
-          <Link to="/" className="nd-profile-button">
+        <div className="cz-header-actions">
+          <Link to="/" className="cz-home">
             Accueil
-            <ArrowRight size={17} aria-hidden="true" />
+            <ArrowRight size={18} aria-hidden="true" />
           </Link>
         </div>
       </header>
 
-      <section
-        className="nd-responsable-banner rca-create"
-        aria-labelledby="rca-create-title"
-      >
-        <div className="nd-responsable-content">
-          <p className="nd-responsable-eyebrow">NOUVELLE SAUVEGARDE</p>
+      <section className="cz-panel rca-create-panel">
+        <header className="cz-panel-header">
+          <span className="cz-panel-icon" aria-hidden="true">
+            <Radio size={23} />
+          </span>
 
-          <h2 id="rca-create-title">Importer un salon Discord</h2>
+          <div className="cz-panel-heading">
+            <h2>Importer un salon Discord</h2>
+            <p>
+              La progression de l’import apparaît automatiquement
+              dans la liste.
+            </p>
+          </div>
+        </header>
 
-          <p className="nd-responsable-description">
-            La progression de l’import apparaît automatiquement dans
-            la liste ci-dessous.
-          </p>
+        <div className="cz-panel-toolbar">
+          <form className="rca-create" onSubmit={createArchive}>
+            <input
+              value={channelId}
+              onChange={(event) => setChannelId(event.target.value)}
+              placeholder="ID du salon Discord"
+              required
+            />
+
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Titre facultatif"
+            />
+
+            <button
+              type="submit"
+              className="cz-button cz-button--primary"
+              disabled={creating || !channelId.trim()}
+            >
+              {creating ? (
+                <LoaderCircle className="spin" size={16} aria-hidden="true" />
+              ) : (
+                <Radio size={16} aria-hidden="true" />
+              )}
+              {creating ? "Import en cours…" : "Lancer l’import"}
+            </button>
+          </form>
         </div>
-
-        <form className="rca-create-fields" onSubmit={createArchive}>
-          <input
-            value={channelId}
-            onChange={(event) => setChannelId(event.target.value)}
-            placeholder="ID du salon Discord"
-            required
-          />
-
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Titre facultatif"
-          />
-
-          <button
-            type="submit"
-            className="nd-profile-button"
-            disabled={creating || !channelId.trim()}
-          >
-            {creating ? (
-              <LoaderCircle className="spin" size={16} aria-hidden="true" />
-            ) : (
-              <Radio size={16} aria-hidden="true" />
-            )}
-            {creating ? "Import en cours…" : "Lancer l’import"}
-          </button>
-        </form>
       </section>
 
-      <nav className="nd-shortcuts" aria-label="Vue d’ensemble">
+      <div className="rca-metrics">
         <div className="rca-metric">
-          <span className="rca-metric-label">Archives</span>
+          <span>Archives</span>
           <strong>{archives.length}</strong>
         </div>
 
         <div className="rca-metric">
-          <span className="rca-metric-label">Messages</span>
+          <span>Messages</span>
           <strong>{totalMessages}</strong>
         </div>
 
         <div className="rca-metric">
-          <span className="rca-metric-label">Fichiers</span>
+          <span>Fichiers</span>
           <strong>{totalFiles}</strong>
         </div>
 
         <div className="rca-metric rca-metric--amber">
-          <span className="rca-metric-label">Imports en cours</span>
+          <span>Imports en cours</span>
           <strong>{importingCount}</strong>
         </div>
-      </nav>
+      </div>
 
-      {loading ? (
-        <div className="rca-state" role="status">
-          <LoaderCircle className="spin" size={26} aria-hidden="true" />
-          <p>Chargement des sauvegardes…</p>
-        </div>
-      ) : archives.length === 0 ? (
-        <div className="rca-state">
-          <Archive size={32} aria-hidden="true" />
-          <h2>Aucune sauvegarde pour le moment.</h2>
-          <p>
-            Importez un salon Discord pour créer la première archive.
-          </p>
-        </div>
-      ) : (
-        <div className="rca-list">
-          {archives.map((archive) => (
-            <article
-              key={archive.id}
-              className="rca-card"
-              data-testid={`channel-archive-${archive.id}`}
-            >
-              <span className="rca-card-icon">
-                <MessagesSquare size={22} aria-hidden="true" />
-              </span>
+      <section className="cz-panel">
+        <header className="cz-panel-header">
+          <span className="cz-panel-icon" aria-hidden="true">
+            <Archive size={23} />
+          </span>
 
-              <div className="rca-card-copy">
-                <h2>
-                  {archive.title || `Salon ${archive.channel_id}`}
-                </h2>
+          <div className="cz-panel-heading">
+            <h2>Archives disponibles</h2>
+            <p>Consultez une sauvegarde ou suivez son import.</p>
+          </div>
 
-                <p>
-                  {archive.message_count} message
-                  {archive.message_count > 1 ? "s" : ""} ·{" "}
-                  {archive.local_attachment_count} fichier
-                  {archive.local_attachment_count > 1 ? "s" : ""}
-                </p>
+          <span className="cz-count-live">
+            <span className="cz-count">
+              {archives.length} archive{archives.length > 1 ? "s" : ""}
+            </span>
+          </span>
+        </header>
 
-                <small>Créée le {formatTime(archive.created_at)}</small>
-
-                <ImportProgress
-                  archive={archive}
-                  onRetry={retryArchive}
-                />
-              </div>
-
-              <div className="rca-card-actions">
-                <Link
-                  to={`/responsable/archives-salons/${archive.id}`}
-                  className="nd-profile-button"
+        <div className="cz-panel-scroll">
+          {loading ? (
+            <div className="rca-state" role="status">
+              <LoaderCircle className="spin" size={26} aria-hidden="true" />
+              <p>Chargement des sauvegardes…</p>
+            </div>
+          ) : archives.length === 0 ? (
+            <div className="rca-state">
+              <Archive size={32} aria-hidden="true" />
+              <h2>Aucune sauvegarde pour le moment.</h2>
+              <p>
+                Importez un salon Discord pour créer la première archive.
+              </p>
+            </div>
+          ) : (
+            <div className="rca-list">
+              {archives.map((archive) => (
+                <article
+                  key={archive.id}
+                  className="rca-card"
+                  data-testid={`channel-archive-${archive.id}`}
                 >
-                  Consulter
-                  <ArrowRight size={15} aria-hidden="true" />
-                </Link>
+                  <span className="rca-card-icon">
+                    <MessagesSquare size={22} aria-hidden="true" />
+                  </span>
 
-                {archive.status === "failed" && (
-                  <button
-                    type="button"
-                    className="nd-profile-button"
-                    onClick={() => retryArchive(archive.id)}
-                  >
-                    <RotateCcw size={15} aria-hidden="true" />
-                    Réessayer
-                  </button>
-                )}
+                  <div className="rca-card-copy">
+                    <h2>
+                      {archive.title || `Salon ${archive.channel_id}`}
+                    </h2>
 
-                <button
-                  type="button"
-                  className="rca-danger"
-                  onClick={() => deleteArchive(archive.id)}
-                  aria-label={`Supprimer ${
-                    archive.title || archive.channel_id
-                  }`}
-                >
-                  <Trash2 size={15} aria-hidden="true" />
-                </button>
-              </div>
-            </article>
-          ))}
+                    <p>
+                      {archive.message_count} message
+                      {archive.message_count > 1 ? "s" : ""} ·{" "}
+                      {archive.local_attachment_count} fichier
+                      {archive.local_attachment_count > 1 ? "s" : ""}
+                    </p>
+
+                    <small>
+                      Créée le {formatTime(archive.created_at)}
+                    </small>
+
+                    <ImportProgress
+                      archive={archive}
+                      onRetry={retryArchive}
+                    />
+                  </div>
+
+                  <div className="rca-card-actions">
+                    <Link
+                      to={`/responsable/archives-salons/${archive.id}`}
+                      className="cz-button cz-button--primary"
+                    >
+                      Consulter
+                      <ArrowRight size={15} aria-hidden="true" />
+                    </Link>
+
+                    <button
+                      type="button"
+                      className="rca-danger"
+                      onClick={() => deleteArchive(archive.id)}
+                      aria-label={`Supprimer ${
+                        archive.title || archive.channel_id
+                      }`}
+                    >
+                      <Trash2 size={15} aria-hidden="true" />
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </section>
     </section>
   );
 }
